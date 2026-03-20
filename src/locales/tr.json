@@ -1,0 +1,37 @@
+{
+  "nav": {
+    "features": "Özellikler",
+    "pricing": "Fiyatlandırma",
+    "login": "Giriş Yap / Panel",
+    "agency": "Ajans Paketi"
+  },
+  "hero": {
+    "title": "Erişiminizi Güçlendirin. Etkinizi Otomatikleştirin.",
+    "subtitle": "Tüm sosyal medya hesaplarınızı tek bir nihai platformdan planlayın, analiz edin ve yönetin.",
+    "cta": "Hemen Başla",
+    "slogan": "Kaliteli markalar için premium hizmet."
+  },
+  "features": {
+    "title": "Otomasyonun Gücünü Serbest Bırakın",
+    "f1_title": "Çapraz Platform Senkronizasyonu",
+    "f1_desc": "Twitter, Facebook, Instagram, TikTok ve daha fazlasında eşzamanlı yayınlayın.",
+    "f2_title": "Çoklu Ajans Yönetimi",
+    "f2_desc": "Birden fazla müşteriyi tek bir birleştirilmiş panelden yönetin.",
+    "f3_title": "Akıllı Zamanlama",
+    "f3_desc": "Haftalarca sürecek içeriği saniyeler içinde planlayın."
+  },
+  "pricing": {
+    "title": "Basit Fiyatlandırma",
+    "individual": "Bireysel",
+    "individual_desc": "İçerik üreticileri için ideal.",
+    "individual_price": "₺299",
+    "individual_perk1": "1 Proje Alanı",
+    "individual_perk2": "Temel Raporlama",
+    "agency": "Ajans",
+    "agency_desc": "Ölçeklenmek için tasarlandı.",
+    "agency_price": "₺1499",
+    "agency_perk1": "Sınırsız Müşteri",
+    "agency_perk2": "Müşteriye Özel Yönetim Paneli",
+    "choose": "Planı Seç"
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "nav": {
+    "features": "Features",
+    "pricing": "Pricing",
+    "login": "Login / Dashboard",
+    "agency": "Agency Suite"
+  },
+  "hero": {
+    "title": "Empower Your Reach. Automate Your Impact.",
+    "subtitle": "Schedule, analyze, and manage all your social media accounts from a single ultimate platform.",
+    "cta": "Get Started",
+    "slogan": "Premium service for premium brands."
+  },
+  "features": {
+    "title": "Unleash the Power of Automation",
+    "f1_title": "Cross-Platform Sync",
+    "f1_desc": "Publish to Twitter, Facebook, Instagram, TikTok and more simultaneously.",
+    "f2_title": "Agency Multi-Tenant",
+    "f2_desc": "Manage multiple clients from one unified dashboard.",
+    "f3_title": "Smart Scheduling",
+    "f3_desc": "Plan weeks of content in just minutes."
+  },
+  "pricing": {
+    "title": "Simple Pricing",
+    "individual": "Individual",
+    "individual_desc": "Perfect for creators.",
+    "individual_price": "$9",
+    "individual_perk1": "1 Project Workspace",
+    "individual_perk2": "Basic Analytics",
+    "agency": "Agency",
+    "agency_desc": "Built for scale.",
+    "agency_price": "$49",
+    "agency_perk1": "Unlimited Clients",
+    "agency_perk2": "Dedicated Client Admin Panels",
+    "choose": "Choose Plan"
+  }
+}

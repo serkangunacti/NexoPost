@@ -1,0 +1,174 @@
+"use client";
+
+import { useLanguage } from "@/context/LanguageContext";
+import { ArrowRight, CheckCircle2, Zap, Layers, BarChart3, Users, Clock } from "lucide-react";
+import Link from "next/link";
+import { SiX, SiFacebook, SiInstagram, SiTiktok } from "react-icons/si";
+import { FaLinkedin } from "react-icons/fa6";
+
+export default function LandingPage() {
+  const { t } = useLanguage();
+
+  const socialIcons = [
+    <SiX key="x" className="w-8 h-8 md:w-10 md:h-10 text-white hover:scale-110 transition-transform cursor-pointer" />,
+    <FaLinkedin key="in" className="w-8 h-8 md:w-10 md:h-10 text-[#0A66C2] hover:scale-110 transition-transform cursor-pointer drop-shadow-lg" />,
+    <SiFacebook key="fb" className="w-8 h-8 md:w-10 md:h-10 text-[#1877F2] hover:scale-110 transition-transform cursor-pointer drop-shadow-lg" />,
+    <SiInstagram key="ig" className="w-8 h-8 md:w-10 md:h-10 text-[#E1306C] hover:scale-110 transition-transform cursor-pointer drop-shadow-lg" />,
+    <SiTiktok key="tt" className="w-8 h-8 md:w-10 md:h-10 text-[#00f2fe] drop-shadow-[2px_2px_0_#fe0979] hover:scale-110 transition-transform cursor-pointer" />
+  ];
+
+  return (
+    <div className="w-full flex-1 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      
+      {/* Hero Section */}
+      <section className="relative w-full overflow-hidden flex flex-col items-center justify-center min-h-[85vh] text-center px-6">
+        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay pointer-events-none" />
+        
+        <div className="max-w-4xl mx-auto relative z-10 flex flex-col items-center mt-[-5vh]">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-violet-500/30 bg-violet-500/10 text-violet-300 text-sm font-semibold mb-8 shadow-[0_0_20px_rgba(139,92,246,0.2)]">
+            <Zap className="w-4 h-4 text-violet-400" />
+            {t.hero.slogan}
+          </div>
+          
+          <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight text-white mb-8 leading-[1.1]">
+            {t.hero.title.split('.').map((part, i, arr) => (
+              <span key={i}>
+                {i === 0 ? <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-neutral-500">{part}.</span> : <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-sky-400">{part}</span>}
+              </span>
+            ))}
+          </h1>
+          
+          <p className="text-xl md:text-2xl text-neutral-400 mb-12 max-w-2xl leading-relaxed">
+            {t.hero.subtitle}
+          </p>
+          
+          <div className="flex flex-col sm:flex-row items-center gap-5 w-full sm:w-auto">
+            <Link 
+              href="/dashboard"
+              className="w-full sm:w-auto bg-violet-600 py-4 px-10 rounded-full font-bold text-white text-lg hover:bg-violet-500 transition-all shadow-[0_0_30px_rgba(139,92,246,0.5)] hover:shadow-[0_0_40px_rgba(139,92,246,0.7)] flex items-center justify-center gap-3 border border-violet-400/50 hover:scale-105"
+            >
+              {t.hero.cta}
+              <ArrowRight className="w-5 h-5" />
+            </Link>
+          </div>
+
+          <div className="mt-20 flex items-center gap-6 md:gap-10 opacity-70">
+            {socialIcons.map((icon, i) => <div key={i}>{icon}</div>)}
+          </div>
+        </div>
+      </section>
+
+      {/* Features Section */}
+      <section className="w-full bg-white/[0.02] border-y border-white/5 py-32 px-6">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-20">
+            <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">{t.features.title}</h2>
+            <div className="w-24 h-1.5 bg-gradient-to-r from-violet-500 to-sky-500 mx-auto rounded-full" />
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="glass p-10 rounded-3xl border border-white/5 relative group hover:-translate-y-2 transition-transform duration-500">
+              <div className="absolute inset-0 bg-gradient-to-b from-sky-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-3xl" />
+              <Layers className="w-12 h-12 text-sky-400 mb-6 relative z-10" />
+              <h3 className="text-2xl font-bold text-white mb-4 relative z-10">{t.features.f1_title}</h3>
+              <p className="text-neutral-400 leading-relaxed font-medium relative z-10">{t.features.f1_desc}</p>
+            </div>
+            
+            <div className="glass p-10 rounded-3xl border border-white/5 relative group hover:-translate-y-2 transition-transform duration-500">
+              <div className="absolute inset-0 bg-gradient-to-b from-violet-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-3xl" />
+              <Users className="w-12 h-12 text-violet-400 mb-6 relative z-10" />
+              <h3 className="text-2xl font-bold text-white mb-4 relative z-10">{t.features.f2_title}</h3>
+              <p className="text-neutral-400 leading-relaxed font-medium relative z-10">{t.features.f2_desc}</p>
+            </div>
+            
+            <div className="glass p-10 rounded-3xl border border-white/5 relative group hover:-translate-y-2 transition-transform duration-500">
+              <div className="absolute inset-0 bg-gradient-to-b from-emerald-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-3xl" />
+              <Clock className="w-12 h-12 text-emerald-400 mb-6 relative z-10" />
+              <h3 className="text-2xl font-bold text-white mb-4 relative z-10">{t.features.f3_title}</h3>
+              <p className="text-neutral-400 leading-relaxed font-medium relative z-10">{t.features.f3_desc}</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Pricing Section */}
+      <section className="w-full py-32 px-6">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-20">
+            <h2 className="text-4xl font-bold text-white mb-6">{t.pricing.title}</h2>
+            <div className="w-24 h-1.5 bg-gradient-to-r from-violet-500 to-sky-500 mx-auto rounded-full" />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            
+            {/* Individual Tier */}
+            <div className="glass p-10 rounded-[2.5rem] border border-white/10 relative hover:border-violet-500/30 transition-colors flex flex-col">
+              <h3 className="text-2xl font-bold text-white mb-2">{t.pricing.individual}</h3>
+              <p className="text-neutral-400 font-medium mb-8">{t.pricing.individual_desc}</p>
+              
+              <div className="mb-8 flex items-end gap-1">
+                <span className="text-5xl font-extrabold text-white">{t.pricing.individual_price}</span>
+                <span className="text-neutral-500 font-medium mb-1">/mo</span>
+              </div>
+              
+              <ul className="space-y-4 mb-10 flex-1">
+                <li className="flex items-center gap-3 text-neutral-300 font-medium">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                  {t.pricing.individual_perk1}
+                </li>
+                <li className="flex items-center gap-3 text-neutral-300 font-medium">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                  {t.pricing.individual_perk2}
+                </li>
+              </ul>
+              
+              <Link href="/dashboard" className="w-full py-4 rounded-2xl glass font-bold text-white text-center hover:bg-white/10 transition-colors border-white/20">
+                {t.pricing.choose}
+              </Link>
+            </div>
+
+            {/* Agency Tier */}
+            <div className="glass p-10 rounded-[2.5rem] border border-violet-500/50 bg-violet-900/10 relative shadow-[0_0_50px_rgba(139,92,246,0.15)] flex flex-col transform md:-translate-y-4">
+              <div className="absolute -top-4 inset-x-0 mx-auto w-fit bg-gradient-to-r from-violet-500 to-sky-500 text-white text-xs font-bold uppercase tracking-widest py-1.5 px-4 rounded-full shadow-lg">
+                Most Popular
+              </div>
+              
+              <h3 className="text-2xl font-bold text-white mb-2">{t.pricing.agency}</h3>
+              <p className="text-violet-300 font-medium mb-8">{t.pricing.agency_desc}</p>
+              
+              <div className="mb-8 flex items-end gap-1">
+                <span className="text-5xl font-extrabold text-white">{t.pricing.agency_price}</span>
+                <span className="text-neutral-500 font-medium mb-1">/mo</span>
+              </div>
+              
+              <ul className="space-y-4 mb-10 flex-1">
+                <li className="flex items-center gap-3 text-neutral-300 font-medium">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                  {t.pricing.agency_perk1}
+                </li>
+                <li className="flex items-center gap-3 text-neutral-300 font-medium">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                  {t.pricing.agency_perk2}
+                </li>
+                <li className="flex items-center gap-3 text-neutral-300 font-medium">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                  Premium Support
+                </li>
+              </ul>
+              
+              <Link href="/dashboard" className="w-full py-4 rounded-2xl bg-violet-600 hover:bg-violet-500 font-bold text-white text-center transition-colors shadow-[0_0_20px_rgba(139,92,246,0.3)]">
+                {t.pricing.choose}
+              </Link>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="w-full border-t border-white/5 py-10 text-center">
+        <p className="text-neutral-500 text-sm font-medium">© 2026 NexoPost. Premium Social Media App.</p>
+      </footer>
+    </div>
+  );
+}
