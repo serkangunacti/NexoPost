@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import { Calendar as CalendarIcon, MoreVertical, Send, Eye, Loader2, Trash2 } from "lucide-react";
 import { db } from "@/lib/firebase";
 import { collection, onSnapshot, query, orderBy, deleteDoc, doc, updateDoc } from "firebase/firestore";
-import { SiX, SiLinkedin, SiFacebook, SiInstagram, SiTiktok, SiBluesky, SiThreads, SiPinterest } from "react-icons/si";
+import { SiX, SiFacebook, SiInstagram, SiTiktok, SiBluesky, SiThreads, SiPinterest } from "react-icons/si";
+import { FaLinkedin } from "react-icons/fa6";
 
 interface Post {
   id: string;
@@ -50,7 +51,7 @@ export default function ScheduledPage() {
   const renderPlatformIcon = (p: string) => {
     switch (p) {
       case 'twitter': return <SiX className="w-4 h-4" />;
-      case 'linkedin': return <SiLinkedin className="w-4 h-4 text-[#0A66C2]" />;
+      case 'linkedin': return <FaLinkedin className="w-4 h-4 text-[#0A66C2]" />;
       case 'facebook': return <SiFacebook className="w-4 h-4 text-[#1877F2]" />;
       case 'instagram': return <SiInstagram className="w-4 h-4 text-[#E1306C]" />;
       case 'tiktok': return <SiTiktok className="w-4 h-4 text-[#00f2fe] drop-shadow-[1px_1px_0_#fe0979]" />;

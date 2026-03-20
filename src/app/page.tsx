@@ -5,7 +5,8 @@ import { ArrowUpRight, BarChart3, Plus, Layers, Calendar, Loader2 } from "lucide
 import Link from "next/link";
 import { db } from "@/lib/firebase";
 import { collection, onSnapshot, query, orderBy, limit } from "firebase/firestore";
-import { SiX, SiLinkedin, SiFacebook, SiInstagram, SiTiktok, SiBluesky, SiThreads, SiPinterest } from "react-icons/si";
+import { SiX, SiFacebook, SiInstagram, SiTiktok, SiBluesky, SiThreads, SiPinterest } from "react-icons/si";
+import { FaLinkedin } from "react-icons/fa6";
 
 export default function Home() {
   const [stats, setStats] = useState({ total: 0, published: 0, scheduled: 0 });
@@ -41,7 +42,7 @@ export default function Home() {
   const renderPlatformIcon = (p: string) => {
     switch (p) {
       case 'twitter': return <SiX className="w-4 h-4" />;
-      case 'linkedin': return <SiLinkedin className="w-4 h-4 text-[#0A66C2]" />;
+      case 'linkedin': return <FaLinkedin className="w-4 h-4 text-[#0A66C2]" />;
       case 'facebook': return <SiFacebook className="w-4 h-4 text-[#1877F2]" />;
       case 'instagram': return <SiInstagram className="w-4 h-4 text-[#E1306C]" />;
       case 'tiktok': return <SiTiktok className="w-4 h-4 text-[#00f2fe] drop-shadow-[1px_1px_0_#fe0979]" />;

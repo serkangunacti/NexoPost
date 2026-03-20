@@ -2,12 +2,13 @@
 
 import { useState } from "react";
 import { Check, Link as LinkIcon, AlertCircle } from "lucide-react";
-import { SiX, SiLinkedin, SiFacebook, SiInstagram, SiTiktok, SiBluesky, SiThreads, SiPinterest } from "react-icons/si";
+import { SiX, SiFacebook, SiInstagram, SiTiktok, SiBluesky, SiThreads, SiPinterest } from "react-icons/si";
+import { FaLinkedin } from "react-icons/fa6";
 
 export default function AccountsPage() {
   const [platforms, setPlatforms] = useState([
     { id: "twitter", name: "Twitter/X", icon: <SiX className="w-6 h-6" />, color: "bg-neutral-900 border border-neutral-700", connected: true, handle: "@nexopost" },
-    { id: "linkedin", name: "LinkedIn", icon: <SiLinkedin className="w-6 h-6" />, color: "bg-[#0A66C2]", connected: false, handle: "" },
+    { id: "linkedin", name: "LinkedIn", icon: <FaLinkedin className="w-6 h-6" />, color: "bg-[#0A66C2]", connected: false, handle: "" },
     { id: "facebook", name: "Facebook", icon: <SiFacebook className="w-6 h-6" />, color: "bg-[#1877F2]", connected: true, handle: "NexoPost App" },
     { id: "instagram", name: "Instagram", icon: <SiInstagram className="w-6 h-6" />, color: "bg-gradient-to-tr from-[#FD1D1D] to-[#833AB4]", connected: false, handle: "" },
     { id: "tiktok", name: "TikTok", icon: <SiTiktok className="w-6 h-6 text-[#00f2fe] drop-shadow-[1px_1px_0_#fe0979]" />, color: "bg-black border border-white/10", connected: true, handle: "@nexopost_tiktok" },
