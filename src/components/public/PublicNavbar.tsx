@@ -26,12 +26,13 @@ export default function PublicNavbar() {
         <div className="flex items-center gap-4">
           
           {/* Language Selector */}
-          <div className="relative group">
+          <div className="relative group py-2">
             <button className="flex items-center gap-2 text-sm font-semibold text-neutral-400 hover:text-white transition-colors py-2 px-3 rounded-lg hover:bg-white/5">
               <Globe className="w-4 h-4" />
               {lang.toUpperCase()}
             </button>
-            <div className="absolute top-full right-0 mt-2 w-32 bg-[#0a0a0f] border border-white/10 rounded-xl shadow-2xl overflow-hidden opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all pointer-events-none group-hover:pointer-events-auto z-50">
+            
+            <div className="absolute top-full right-0 w-32 bg-[#0a0a0f] border border-white/10 rounded-xl shadow-2xl overflow-hidden opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
               <button 
                 onClick={() => setLang('tr')} 
                 className={`w-full text-left px-4 py-3 text-sm font-semibold transition-colors ${lang === 'tr' ? 'bg-violet-500/10 text-violet-400' : 'text-neutral-400 hover:text-white hover:bg-white/5'}`}
