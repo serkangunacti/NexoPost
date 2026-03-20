@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useLanguage } from "@/context/LanguageContext";
 import { ArrowRight, CheckCircle2, Zap, Layers, BarChart3, Users, Clock } from "lucide-react";
 import Link from "next/link";
-import { SiX, SiFacebook, SiInstagram, SiTiktok } from "react-icons/si";
+import { SiX, SiFacebook, SiInstagram, SiTiktok, SiBluesky, SiThreads, SiPinterest } from "react-icons/si";
 import { FaLinkedin } from "react-icons/fa6";
 
 export default function LandingPage() {
@@ -12,11 +12,14 @@ export default function LandingPage() {
   const [isAnnual, setIsAnnual] = useState(false);
 
   const socialIcons = [
-    <SiX key="x" className="w-8 h-8 md:w-10 md:h-10 text-white hover:scale-110 transition-transform cursor-pointer" />,
-    <FaLinkedin key="in" className="w-8 h-8 md:w-10 md:h-10 text-[#0A66C2] hover:scale-110 transition-transform cursor-pointer drop-shadow-lg" />,
-    <SiFacebook key="fb" className="w-8 h-8 md:w-10 md:h-10 text-[#1877F2] hover:scale-110 transition-transform cursor-pointer drop-shadow-lg" />,
-    <SiInstagram key="ig" className="w-8 h-8 md:w-10 md:h-10 text-[#E1306C] hover:scale-110 transition-transform cursor-pointer drop-shadow-lg" />,
-    <SiTiktok key="tt" className="w-8 h-8 md:w-10 md:h-10 text-[#00f2fe] drop-shadow-[2px_2px_0_#fe0979] hover:scale-110 transition-transform cursor-pointer" />
+    <SiX key="x" className="w-6 h-6 md:w-8 md:h-8 text-white hover:scale-110 transition-transform cursor-pointer" />,
+    <FaLinkedin key="in" className="w-6 h-6 md:w-8 md:h-8 text-[#0A66C2] hover:scale-110 transition-transform cursor-pointer drop-shadow-lg" />,
+    <SiFacebook key="fb" className="w-6 h-6 md:w-8 md:h-8 text-[#1877F2] hover:scale-110 transition-transform cursor-pointer drop-shadow-lg" />,
+    <SiInstagram key="ig" className="w-6 h-6 md:w-8 md:h-8 text-[#E1306C] hover:scale-110 transition-transform cursor-pointer drop-shadow-lg" />,
+    <SiTiktok key="tt" className="w-6 h-6 md:w-8 md:h-8 text-[#00f2fe] drop-shadow-[2px_2px_0_#fe0979] hover:scale-110 transition-transform cursor-pointer" />,
+    <SiThreads key="thr" className="w-6 h-6 md:w-8 md:h-8 text-white hover:scale-110 transition-transform cursor-pointer drop-shadow-lg" />,
+    <SiBluesky key="sky" className="w-6 h-6 md:w-8 md:h-8 text-[#0560FF] hover:scale-110 transition-transform cursor-pointer drop-shadow-lg" />,
+    <SiPinterest key="pin" className="w-6 h-6 md:w-8 md:h-8 text-[#E60023] hover:scale-110 transition-transform cursor-pointer drop-shadow-lg" />
   ];
 
   return (
@@ -54,7 +57,7 @@ export default function LandingPage() {
             </Link>
           </div>
 
-          <div className="mt-20 flex items-center gap-6 md:gap-10 opacity-70">
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-4 md:gap-8 opacity-70">
             {socialIcons.map((icon, i) => <div key={i}>{icon}</div>)}
           </div>
         </div>
