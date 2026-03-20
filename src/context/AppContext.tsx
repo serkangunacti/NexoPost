@@ -1,7 +1,7 @@
 "use client";
 import React, { createContext, useContext, useState } from "react";
 
-type UserType = "individual" | "agency";
+type UserType = "basic" | "pro" | "agency";
 
 interface Client {
   id: string;
@@ -22,7 +22,7 @@ const defaultClient = { id: "default_user", name: "My Personal Account" };
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
-  const [userType, setUserType] = useState<UserType>("individual");
+  const [userType, setUserType] = useState<UserType>("basic");
   const [clients, setClients] = useState<Client[]>([defaultClient]);
   const [activeClient, setActiveClient] = useState<Client>(defaultClient);
 

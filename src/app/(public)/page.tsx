@@ -93,48 +93,78 @@ export default function LandingPage() {
 
       {/* Pricing Section */}
       <section className="w-full py-32 px-6">
-        <div className="max-w-5xl mx-auto">
+        <div className="max-w-6xl mx-auto">
           <div className="text-center mb-20">
             <h2 className="text-4xl font-bold text-white mb-6">{t.pricing.title}</h2>
             <div className="w-24 h-1.5 bg-gradient-to-r from-violet-500 to-sky-500 mx-auto rounded-full" />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
             
-            {/* Individual Tier */}
+            {/* Basic Tier */}
             <div className="glass p-10 rounded-[2.5rem] border border-white/10 relative hover:border-violet-500/30 transition-colors flex flex-col">
-              <h3 className="text-2xl font-bold text-white mb-2">{t.pricing.individual}</h3>
-              <p className="text-neutral-400 font-medium mb-8">{t.pricing.individual_desc}</p>
+              <h3 className="text-2xl font-bold text-white mb-2">{t.pricing.basic}</h3>
+              <p className="text-neutral-400 font-medium mb-8">{t.pricing.basic_desc}</p>
               
               <div className="mb-8 flex items-end gap-1">
-                <span className="text-5xl font-extrabold text-white">{t.pricing.individual_price}</span>
+                <span className="text-5xl font-extrabold text-white">{t.pricing.basic_price}</span>
                 <span className="text-neutral-500 font-medium mb-1">/mo</span>
               </div>
               
               <ul className="space-y-4 mb-10 flex-1">
-                <li className="flex items-center gap-3 text-neutral-300 font-medium">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-400" />
-                  {t.pricing.individual_perk1}
+                <li className="flex items-center gap-3 text-neutral-300 font-medium tracking-wide">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+                  {t.pricing.basic_perk1}
                 </li>
-                <li className="flex items-center gap-3 text-neutral-300 font-medium">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-400" />
-                  {t.pricing.individual_perk2}
+                <li className="flex items-center gap-3 text-neutral-300 font-medium tracking-wide">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+                  {t.pricing.basic_perk2}
                 </li>
               </ul>
               
-              <Link href="/dashboard" className="w-full py-4 rounded-2xl glass font-bold text-white text-center hover:bg-white/10 transition-colors border-white/20">
+              <Link href="/dashboard" className="w-full py-4 rounded-2xl glass font-bold text-white text-center hover:bg-white/10 transition-colors border-white/20 shadow-lg">
+                {t.pricing.choose}
+              </Link>
+            </div>
+
+            {/* Pro Tier */}
+            <div className="glass p-10 rounded-[2.5rem] border border-violet-500/50 bg-violet-900/10 relative shadow-[0_0_50px_rgba(139,92,246,0.15)] flex flex-col transform md:-translate-y-4 z-10">
+              <div className="absolute -top-4 inset-x-0 mx-auto w-fit bg-gradient-to-r from-violet-500 to-sky-500 text-white text-xs font-bold uppercase tracking-widest py-1.5 px-4 rounded-full shadow-lg">
+                Most Popular
+              </div>
+              
+              <h3 className="text-2xl font-bold text-white mb-2">{t.pricing.pro}</h3>
+              <p className="text-violet-300 font-medium mb-8">{t.pricing.pro_desc}</p>
+              
+              <div className="mb-8 flex items-end gap-1">
+                <span className="text-5xl font-extrabold text-white">{t.pricing.pro_price}</span>
+                <span className="text-neutral-500 font-medium mb-1">/mo</span>
+              </div>
+              
+              <ul className="space-y-4 mb-10 flex-1">
+                <li className="flex items-center gap-3 text-neutral-300 font-medium tracking-wide">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+                  {t.pricing.pro_perk1}
+                </li>
+                <li className="flex items-center gap-3 text-neutral-300 font-medium tracking-wide">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+                  {t.pricing.pro_perk2}
+                </li>
+                <li className="flex items-center gap-3 text-neutral-300 font-medium tracking-wide">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+                  Priority Support
+                </li>
+              </ul>
+              
+              <Link href="/dashboard" className="w-full py-4 rounded-2xl bg-violet-600 hover:bg-violet-500 font-bold text-white text-center transition-colors shadow-[0_0_20px_rgba(139,92,246,0.3)]">
                 {t.pricing.choose}
               </Link>
             </div>
 
             {/* Agency Tier */}
-            <div className="glass p-10 rounded-[2.5rem] border border-violet-500/50 bg-violet-900/10 relative shadow-[0_0_50px_rgba(139,92,246,0.15)] flex flex-col transform md:-translate-y-4">
-              <div className="absolute -top-4 inset-x-0 mx-auto w-fit bg-gradient-to-r from-violet-500 to-sky-500 text-white text-xs font-bold uppercase tracking-widest py-1.5 px-4 rounded-full shadow-lg">
-                Most Popular
-              </div>
-              
+            <div className="glass p-10 rounded-[2.5rem] border border-white/10 relative hover:border-violet-500/30 transition-colors flex flex-col">
               <h3 className="text-2xl font-bold text-white mb-2">{t.pricing.agency}</h3>
-              <p className="text-violet-300 font-medium mb-8">{t.pricing.agency_desc}</p>
+              <p className="text-neutral-400 font-medium mb-8">{t.pricing.agency_desc}</p>
               
               <div className="mb-8 flex items-end gap-1">
                 <span className="text-5xl font-extrabold text-white">{t.pricing.agency_price}</span>
@@ -142,21 +172,21 @@ export default function LandingPage() {
               </div>
               
               <ul className="space-y-4 mb-10 flex-1">
-                <li className="flex items-center gap-3 text-neutral-300 font-medium">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                <li className="flex items-center gap-3 text-neutral-300 font-medium tracking-wide">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
                   {t.pricing.agency_perk1}
                 </li>
-                <li className="flex items-center gap-3 text-neutral-300 font-medium">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                <li className="flex items-center gap-3 text-neutral-300 font-medium tracking-wide">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
                   {t.pricing.agency_perk2}
                 </li>
-                <li className="flex items-center gap-3 text-neutral-300 font-medium">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-400" />
-                  Premium Support
+                <li className="flex items-center gap-3 text-neutral-300 font-medium tracking-wide">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+                  Multi-Tenant Architecture
                 </li>
               </ul>
               
-              <Link href="/dashboard" className="w-full py-4 rounded-2xl bg-violet-600 hover:bg-violet-500 font-bold text-white text-center transition-colors shadow-[0_0_20px_rgba(139,92,246,0.3)]">
+              <Link href="/dashboard" className="w-full py-4 rounded-2xl glass font-bold text-white text-center hover:bg-white/10 transition-colors border-white/20 shadow-lg">
                 {t.pricing.choose}
               </Link>
             </div>

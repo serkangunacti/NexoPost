@@ -19,12 +19,14 @@ export default function AccountsPage() {
     { id: "pinterest", name: "Pinterest", icon: <SiPinterest className="w-6 h-6" />, color: "bg-[#E60023]", connected: false, handle: "" },
   ]);
 
+  const connectedCount = platforms.filter(p => p.connected).length;
+  const maxAccounts = userType === 'basic' ? 1 : userType === 'pro' ? 3 : Infinity;
+
   const toggleConnect = (id: string) => {
     const platform = platforms.find(p => p.id === id);
-    const connectedCount = platforms.filter(p => p.connected).length;
     
-    if (!platform?.connected && userType === 'individual' && connectedCount >= 1) {
-      alert("Bireysel kullanıcılar yalnızca 1 hesap bağlayabilir. Sınırsız müşteri ve platform desteği için Ajans paketinizi başlatın.");
+    if (!platform?.connected && connectedCount >= maxAccounts) {
+      alert(`Mevcut paketiniz (${userType.toUpperCase()}) en fazla ${maxAccounts} hesap bağlamanıza izin veriyor. Lütfen paketinizi yükseltin.`);
       return;
     }
 
@@ -38,9 +40,15 @@ export default function AccountsPage() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
-      <header className="mb-8 pl-2">
-        <h1 className="text-4xl font-extrabold text-white mb-3 tracking-tight">Social Accounts</h1>
-        <p className="text-neutral-400 text-lg font-medium">Connect your profiles to enable cross-posting to multiple networks at once.</p>
+      <header className="mb-6 pl-2 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-4xl font-extrabold text-white mb-3 tracking-tight">Social Accounts</h1>
+          <p className="text-neutral-400 text-lg font-medium">Connect your profiles to enable cross-posting to multiple networks at once.</p>
+        </div>
+        <div className={`px-4 py-2.5 rounded-xl border font-bold text-sm ${connectedCount >= maxAccounts ? 'bg-amber-500/10 border-amber-500/30 text-amber-400' : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'}`}>
+          {connectedCount} / {maxAccounts === Infinity ? 'Unlimited' : maxAccounts} Accounts Connected
+          <span className="block text-xs font-semibold opacity-70 uppercase mt-0.5">{userType} Plan</span>
+        </div>
       </header>
 
       <div className="glass rounded-[2rem] p-8 md:p-12 border border-white/5 relative overflow-hidden shadow-2xl">

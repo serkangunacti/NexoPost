@@ -98,9 +98,9 @@ export default function Sidebar({ className }: SidebarProps) {
       </nav>
 
       <div className="mt-auto px-4 space-y-2 pt-8 relative z-10 border-t border-white/5 mx-4 pb-12">
-        <button onClick={() => setUserType(userType === 'agency' ? 'individual' : 'agency')} className="flex items-center w-full gap-4 px-4 py-3 rounded-2xl text-neutral-500 hover:text-white hover:bg-white/[0.04] transition-all font-semibold group cursor-pointer border border-transparent hover:border-white/5">
+        <button onClick={() => setUserType(userType === 'basic' ? 'pro' : userType === 'pro' ? 'agency' : 'basic')} className="flex items-center w-full gap-4 px-4 py-3 rounded-2xl text-neutral-500 hover:text-white hover:bg-white/[0.04] transition-all font-semibold group cursor-pointer border border-transparent hover:border-white/5">
           <Settings className="w-5 h-5 transition-transform group-hover:rotate-45" />
-          <span className="hidden md:block tracking-wide text-xs">Switch to {userType === 'agency' ? 'Individual' : 'Agency'} (Test)</span>
+          <span className="hidden md:block tracking-wide text-xs uppercase leading-tight">Switch Mode (Now:<br/><span className="text-violet-400 font-bold">{userType}</span>)</span>
         </button>
         <Link href="/" className="flex items-center gap-4 px-4 py-3 rounded-2xl text-neutral-500 hover:text-red-400 hover:bg-red-500/10 transition-all font-semibold group cursor-pointer">
           <LogOut className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
