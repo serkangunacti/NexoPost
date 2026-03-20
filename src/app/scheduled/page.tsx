@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Calendar as CalendarIcon, MoreVertical, Send, Eye, Loader2, Trash2 } from "lucide-react";
 import { db } from "@/lib/firebase";
 import { collection, onSnapshot, query, orderBy, deleteDoc, doc, updateDoc } from "firebase/firestore";
+import { SiX, SiLinkedin, SiFacebook, SiInstagram, SiTiktok, SiBluesky, SiThreads, SiPinterest } from "react-icons/si";
 
 interface Post {
   id: string;
@@ -46,11 +47,18 @@ export default function ScheduledPage() {
     }
   };
 
-  const platformIcons: Record<string, string> = {
-    "twitter": "𝕏",
-    "linkedin": "in",
-    "facebook": "f",
-    "instagram": "IG"
+  const renderPlatformIcon = (p: string) => {
+    switch (p) {
+      case 'twitter': return <SiX className="w-4 h-4" />;
+      case 'linkedin': return <SiLinkedin className="w-4 h-4 text-[#0A66C2]" />;
+      case 'facebook': return <SiFacebook className="w-4 h-4 text-[#1877F2]" />;
+      case 'instagram': return <SiInstagram className="w-4 h-4 text-[#E1306C]" />;
+      case 'tiktok': return <SiTiktok className="w-4 h-4 text-[#00f2fe] drop-shadow-[1px_1px_0_#fe0979]" />;
+      case 'threads': return <SiThreads className="w-4 h-4" />;
+      case 'bluesky': return <SiBluesky className="w-4 h-4 text-[#0560FF]" />;
+      case 'pinterest': return <SiPinterest className="w-4 h-4 text-[#E60023]" />;
+      default: return p;
+    }
   };
 
   const filteredPosts = posts.filter(post => {
@@ -113,8 +121,8 @@ export default function ScheduledPage() {
                 <div className="flex-1 space-y-5">
                   <div className="flex items-center gap-2 flex-wrap">
                     {post.platforms?.map((p, i) => (
-                      <span key={i} className="w-8 h-8 rounded-full bg-neutral-800 border border-white/10 flex items-center justify-center text-sm font-bold text-white shadow-md">
-                        {platformIcons[p] || p}
+                      <span key={i} className="w-8 h-8 rounded-full bg-neutral-800 border border-white/10 flex items-center justify-center text-white shadow-md">
+                        {renderPlatformIcon(p)}
                       </span>
                     ))}
                     <span className={`ml-3 px-3 py-1.5 rounded-md text-xs font-bold uppercase tracking-wider ${post.status === 'Scheduled' ? 'bg-sky-500/10 text-sky-400 border border-sky-500/20' : post.status === 'Published' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'}`}>

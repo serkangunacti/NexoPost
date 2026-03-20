@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Send, Calendar as CalendarIcon, Image as ImageIcon, Smile, Type, Clock, Loader2 } from "lucide-react";
 import { db } from "@/lib/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { SiX, SiLinkedin, SiFacebook, SiInstagram, SiTiktok, SiBluesky, SiThreads, SiPinterest } from "react-icons/si";
 
 export default function ComposePage() {
   const [text, setText] = useState("");
@@ -11,10 +12,14 @@ export default function ComposePage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const platforms = [
-    { id: "twitter", name: "Twitter", icon: "𝕏", color: "hover:bg-neutral-800 bg-neutral-900", activeColor: "bg-neutral-800 ring-2 ring-white" },
-    { id: "linkedin", name: "LinkedIn", icon: "in", color: "hover:bg-[#0A66C2]/80 bg-[#0A66C2]/40", activeColor: "bg-[#0A66C2] ring-2 ring-white" },
-    { id: "facebook", name: "Facebook", icon: "f", color: "hover:bg-[#1877F2]/80 bg-[#1877F2]/40", activeColor: "bg-[#1877F2] ring-2 ring-white" },
-    { id: "instagram", name: "Instagram", icon: "IG", color: "hover:bg-gradient-to-tr hover:from-[#FD1D1D]/80 hover:to-[#833AB4]/80 bg-gradient-to-tr from-[#FD1D1D]/40 to-[#833AB4]/40", activeColor: "bg-gradient-to-tr from-[#FD1D1D] to-[#833AB4] ring-2 ring-white" },
+    { id: "twitter", name: "Twitter", icon: <SiX className="w-6 h-6" />, color: "hover:bg-neutral-800 bg-neutral-900 border border-neutral-700", activeColor: "bg-black ring-2 ring-white text-white" },
+    { id: "linkedin", name: "LinkedIn", icon: <SiLinkedin className="w-6 h-6" />, color: "hover:bg-[#0A66C2]/80 bg-[#0A66C2]/40 text-white/70", activeColor: "bg-[#0A66C2] ring-2 ring-white text-white" },
+    { id: "facebook", name: "Facebook", icon: <SiFacebook className="w-6 h-6" />, color: "hover:bg-[#1877F2]/80 bg-[#1877F2]/40 text-white/70", activeColor: "bg-[#1877F2] ring-2 ring-white text-white" },
+    { id: "instagram", name: "Instagram", icon: <SiInstagram className="w-6 h-6" />, color: "hover:bg-gradient-to-tr hover:from-[#FD1D1D]/80 hover:to-[#833AB4]/80 bg-gradient-to-tr from-[#FD1D1D]/40 to-[#833AB4]/40 text-white/70", activeColor: "bg-gradient-to-tr from-[#FD1D1D] to-[#833AB4] ring-2 ring-white text-white" },
+    { id: "tiktok", name: "TikTok", icon: <SiTiktok className="w-6 h-6 drop-shadow-[1px_1px_0_#fe0979]" />, color: "hover:bg-[#000000]/80 bg-[#000000]/40 border border-[#fe0979]/30 text-[#00f2fe]/70", activeColor: "bg-black ring-2 ring-[#00f2fe] text-[#00f2fe] shadow-[0_0_15px_#fe0979]" },
+    { id: "threads", name: "Threads", icon: <SiThreads className="w-6 h-6" />, color: "hover:bg-neutral-800 bg-neutral-900 border border-neutral-800 text-white/70", activeColor: "bg-black ring-2 ring-white text-white" },
+    { id: "bluesky", name: "Bluesky", icon: <SiBluesky className="w-6 h-6" />, color: "hover:bg-[#0560FF]/80 bg-[#0560FF]/40 text-white/70", activeColor: "bg-[#0560FF] ring-2 ring-white text-white" },
+    { id: "pinterest", name: "Pinterest", icon: <SiPinterest className="w-6 h-6" />, color: "hover:bg-[#E60023]/80 bg-[#E60023]/40 text-white/70", activeColor: "bg-[#E60023] ring-2 ring-white text-white" },
   ];
 
   const handleToggle = (id: string) => {
@@ -65,8 +70,9 @@ export default function ComposePage() {
                 return (
                   <button
                     key={p.id}
+                    title={p.name}
                     onClick={() => handleToggle(p.id)}
-                    className={`w-14 h-14 rounded-[1rem] flex items-center justify-center text-3xl font-bold transition-all duration-300 transform ${isActive ? p.activeColor + ' scale-105 shadow-lg shadow-white/10' : p.color + ' opacity-60 hover:opacity-100 hover:scale-105'}`}
+                    className={`w-14 h-14 rounded-[1rem] flex items-center justify-center font-bold transition-all duration-300 transform ${isActive ? p.activeColor + ' scale-105 shadow-lg shadow-white/10' : p.color + ' opacity-60 hover:opacity-100 hover:scale-105'}`}
                   >
                     {p.icon}
                   </button>
@@ -96,14 +102,21 @@ export default function ComposePage() {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex justify-end gap-4 pt-4">
+          <div className="flex justify-end gap-4 pt-4 flex-wrap">
+            <button 
+              onClick={() => handleSavePost('Draft')}
+              disabled={isSubmitting || !text || selectedPlatforms.length === 0}
+              className="glass py-4 px-8 rounded-full font-bold text-neutral-300 hover:text-white hover:bg-white/10 transition-all border border-white/10 flex items-center gap-2.5 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Save Draft
+            </button>
             <button 
               onClick={() => handleSavePost('Scheduled')}
               disabled={isSubmitting || !text || selectedPlatforms.length === 0}
               className="glass py-4 px-8 rounded-full font-bold text-white hover:bg-white/10 transition-all border border-white/10 flex items-center gap-2.5 group disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin text-sky-400" /> : <Clock className="w-5 h-5 text-sky-400 group-hover:rotate-12 transition-transform" />}
-              Schedule Draft
+              Schedule
             </button>
             <button 
               onClick={() => handleSavePost('Published')}
@@ -138,7 +151,7 @@ export default function ComposePage() {
                         <div className={`w-11 h-11 rounded-full flex items-center justify-center font-bold text-lg shadow-inner ${p?.activeColor}`}>{p?.icon}</div>
                         <div>
                           <div className="font-bold text-white text-sm">NexoPost App</div>
-                          <div className="text-xs text-neutral-400 font-medium">Just now · Public</div>
+                          <div className="text-xs text-neutral-400 font-medium">Just now · {p?.name}</div>
                         </div>
                       </div>
                       <p className="text-white text-sm leading-relaxed whitespace-pre-wrap font-medium break-words">

@@ -5,6 +5,7 @@ import { ArrowUpRight, BarChart3, Plus, Layers, Calendar, Loader2 } from "lucide
 import Link from "next/link";
 import { db } from "@/lib/firebase";
 import { collection, onSnapshot, query, orderBy, limit } from "firebase/firestore";
+import { SiX, SiLinkedin, SiFacebook, SiInstagram, SiTiktok, SiBluesky, SiThreads, SiPinterest } from "react-icons/si";
 
 export default function Home() {
   const [stats, setStats] = useState({ total: 0, published: 0, scheduled: 0 });
@@ -36,6 +37,20 @@ export default function Home() {
 
     return () => unsubscribe();
   }, []);
+
+  const renderPlatformIcon = (p: string) => {
+    switch (p) {
+      case 'twitter': return <SiX className="w-4 h-4" />;
+      case 'linkedin': return <SiLinkedin className="w-4 h-4 text-[#0A66C2]" />;
+      case 'facebook': return <SiFacebook className="w-4 h-4 text-[#1877F2]" />;
+      case 'instagram': return <SiInstagram className="w-4 h-4 text-[#E1306C]" />;
+      case 'tiktok': return <SiTiktok className="w-4 h-4 text-[#00f2fe] drop-shadow-[1px_1px_0_#fe0979]" />;
+      case 'threads': return <SiThreads className="w-4 h-4" />;
+      case 'bluesky': return <SiBluesky className="w-4 h-4 text-[#0560FF]" />;
+      case 'pinterest': return <SiPinterest className="w-4 h-4 text-[#E60023]" />;
+      default: return p;
+    }
+  };
 
   return (
     <div className="max-w-6xl mx-auto space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20">
@@ -119,8 +134,8 @@ export default function Home() {
                 <div className="flex items-center justify-between mb-5">
                   <div className="flex -space-x-2">
                     {post.platforms.map((p: string, i: number) => (
-                      <div key={i} className="w-9 h-9 rounded-full bg-neutral-800 border-2 border-[#0a0a0f] flex items-center justify-center text-xs font-extrabold text-white shadow-sm z-10 relative">
-                        {p === 'twitter' ? '𝕏' : p === 'linkedin' ? 'in' : p === 'facebook' ? 'f' : 'IG'}
+                      <div key={i} className="w-9 h-9 rounded-full bg-neutral-800 border-2 border-[#0a0a0f] flex items-center justify-center text-white shadow-sm z-10 relative">
+                        {renderPlatformIcon(p)}
                       </div>
                     ))}
                   </div>
