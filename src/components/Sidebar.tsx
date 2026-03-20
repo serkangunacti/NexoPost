@@ -55,20 +55,22 @@ export default function Sidebar({ className }: SidebarProps) {
               >
                 {clients.map(c => <option key={c.id} value={c.id} className="bg-[#0a0a0f]">{c.name}</option>)}
               </select>
-              <button 
-                onClick={() => {
-                  const maxClients = userType === 'basic' ? 1 : userType === 'pro' ? 3 : Infinity;
-                  if (clients.length >= maxClients) {
-                    alert(`Planınız (${userType.toUpperCase()}) en fazla ${maxClients} çalışma alanı (müşteri) eklemenize izin veriyor.`);
-                    return;
-                  }
-                  const name = prompt("Enter new client / workspace name:");
-                  if(name) addClient(name);
-                }} 
-                className="w-full flex items-center justify-center gap-1.5 py-2 px-3 bg-violet-600/20 hover:bg-violet-600/40 text-violet-300 text-xs font-bold rounded-lg transition-colors border border-violet-500/30"
-              >
-                <Plus className="w-3.5 h-3.5" /> Add Workspace
-              </button>
+              {userType !== 'basic' && (
+                <button 
+                  onClick={() => {
+                    const maxClients = userType === 'pro' ? 3 : Infinity;
+                    if (clients.length >= maxClients) {
+                      alert(`Planınız (${userType.toUpperCase()}) en fazla ${maxClients} çalışma alanı (müşteri) eklemenize izin veriyor.`);
+                      return;
+                    }
+                    const name = prompt("Enter new client / workspace name:");
+                    if(name) addClient(name);
+                  }} 
+                  className="w-full flex items-center justify-center gap-1.5 py-2 px-3 bg-violet-600/20 hover:bg-violet-600/40 text-violet-300 text-xs font-bold rounded-lg transition-colors border border-violet-500/30"
+                >
+                  <Plus className="w-3.5 h-3.5" /> Add Workspace
+                </button>
+              )}
             </div>
         </div>
       </div>
