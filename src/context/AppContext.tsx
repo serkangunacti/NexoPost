@@ -47,7 +47,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const newClient = { id: Date.now().toString(), name };
     setClients([...clients, newClient]);
     setActiveClient(newClient);
-    setUserType("agency"); 
   };
 
   return (

@@ -21,14 +21,8 @@ export default function AccountsPage() {
   ];
 
   const currentConnectedIds = connectedAccounts[activeClient.id] || [];
-  const connectedCount = currentConnectedIds.length;
-  const maxAccounts = userType === 'basic' ? 1 : userType === 'pro' ? 3 : Infinity;
 
   const handleToggle = (id: string) => {
-    if (!currentConnectedIds.includes(id) && connectedCount >= maxAccounts) {
-      alert(`Mevcut paketiniz (${userType.toUpperCase()}) en fazla ${maxAccounts} hesap bağlamanıza izin veriyor. Lütfen paketinizi yükseltin.`);
-      return;
-    }
     toggleAccount(activeClient.id, id);
   };
 
@@ -44,8 +38,8 @@ export default function AccountsPage() {
             </span>
           </p>
         </div>
-        <div className={`px-4 py-2.5 rounded-xl border font-bold text-sm ${connectedCount >= maxAccounts ? 'bg-amber-500/10 border-amber-500/30 text-amber-400' : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'}`}>
-          {connectedCount} / {maxAccounts === Infinity ? 'Unlimited' : maxAccounts} Accounts Connected
+        <div className="px-4 py-2.5 rounded-xl border font-bold text-sm bg-emerald-500/10 border-emerald-500/30 text-emerald-400">
+          Unlimited Networks Supported
           <span className="block text-xs font-semibold opacity-70 uppercase mt-0.5">{userType} Plan</span>
         </div>
       </header>

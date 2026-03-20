@@ -47,8 +47,7 @@ export default function Sidebar({ className }: SidebarProps) {
             <p className="font-semibold text-white truncate max-w-[150px]">{activeClient.name}</p>
           </div>
 
-          {userType === 'agency' && (
-            <div className="space-y-2 mt-4 pt-4 border-t border-white/5">
+          <div className="space-y-2 mt-4 pt-4 border-t border-white/5">
               <select 
                 value={activeClient.id}
                 onChange={e => setActiveClient(clients.find(c => c.id === e.target.value) || clients[0])}
@@ -58,15 +57,19 @@ export default function Sidebar({ className }: SidebarProps) {
               </select>
               <button 
                 onClick={() => {
-                  const name = prompt("Enter new client name:");
+                  const maxClients = userType === 'basic' ? 1 : userType === 'pro' ? 3 : Infinity;
+                  if (clients.length >= maxClients) {
+                    alert(`Planınız (${userType.toUpperCase()}) en fazla ${maxClients} çalışma alanı (müşteri) eklemenize izin veriyor.`);
+                    return;
+                  }
+                  const name = prompt("Enter new client / workspace name:");
                   if(name) addClient(name);
                 }} 
                 className="w-full flex items-center justify-center gap-1.5 py-2 px-3 bg-violet-600/20 hover:bg-violet-600/40 text-violet-300 text-xs font-bold rounded-lg transition-colors border border-violet-500/30"
               >
-                <Plus className="w-3.5 h-3.5" /> Add Client
+                <Plus className="w-3.5 h-3.5" /> Add Workspace
               </button>
             </div>
-          )}
         </div>
       </div>
 
