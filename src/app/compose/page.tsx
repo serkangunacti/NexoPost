@@ -1,22 +1,49 @@
 "use client";
 
 import { useState } from "react";
-import { Send, Calendar as CalendarIcon, Image as ImageIcon, Smile, Type, Clock } from "lucide-react";
+import { Send, Calendar as CalendarIcon, Image as ImageIcon, Smile, Type, Clock, Loader2 } from "lucide-react";
+import { db } from "@/lib/firebase";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 
 export default function ComposePage() {
   const [text, setText] = useState("");
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>(["twitter"]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const platforms = [
     { id: "twitter", name: "Twitter", icon: "𝕏", color: "hover:bg-neutral-800 bg-neutral-900", activeColor: "bg-neutral-800 ring-2 ring-white" },
     { id: "linkedin", name: "LinkedIn", icon: "in", color: "hover:bg-[#0A66C2]/80 bg-[#0A66C2]/40", activeColor: "bg-[#0A66C2] ring-2 ring-white" },
     { id: "facebook", name: "Facebook", icon: "f", color: "hover:bg-[#1877F2]/80 bg-[#1877F2]/40", activeColor: "bg-[#1877F2] ring-2 ring-white" },
+    { id: "instagram", name: "Instagram", icon: "IG", color: "hover:bg-gradient-to-tr hover:from-[#FD1D1D]/80 hover:to-[#833AB4]/80 bg-gradient-to-tr from-[#FD1D1D]/40 to-[#833AB4]/40", activeColor: "bg-gradient-to-tr from-[#FD1D1D] to-[#833AB4] ring-2 ring-white" },
   ];
 
   const handleToggle = (id: string) => {
     setSelectedPlatforms(prev => 
       prev.includes(id) ? prev.filter(p => p !== id) : [...prev, id]
     );
+  };
+
+  const handleSavePost = async (status: 'Scheduled' | 'Published' | 'Draft') => {
+    if (!text.trim() || selectedPlatforms.length === 0) return;
+    
+    setIsSubmitting(true);
+    try {
+      await addDoc(collection(db, "posts"), {
+        content: text,
+        platforms: selectedPlatforms,
+        status: status,
+        createdAt: serverTimestamp(),
+        date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+        time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
+      });
+      setText("");
+      alert(status === 'Published' ? "Post published successfully!" : "Post scheduled effectively!");
+    } catch (error) {
+      console.error("Error writing document: ", error);
+      alert("Error saving post to backend.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -32,7 +59,7 @@ export default function ComposePage() {
           <div className="glass p-6 rounded-[2rem] border border-white/5 relative overflow-hidden group">
              <div className="absolute inset-0 bg-gradient-to-r from-violet-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
             <h3 className="text-xs font-bold text-neutral-400 uppercase tracking-wider mb-5">1. Select Destination</h3>
-            <div className="flex gap-4 relative z-10">
+            <div className="flex gap-4 relative z-10 flex-wrap">
               {platforms.map(p => {
                 const isActive = selectedPlatforms.includes(p.id);
                 return (
@@ -62,19 +89,28 @@ export default function ComposePage() {
             <textarea 
               value={text}
               onChange={e => setText(e.target.value)}
+              disabled={isSubmitting}
               placeholder="What do you want to share with your audience today?"
-              className="flex-1 w-full bg-transparent p-8 text-xl text-white resize-none focus:outline-none placeholder:text-neutral-600 font-medium leading-relaxed"
+              className="flex-1 w-full bg-transparent p-8 text-xl text-white resize-none focus:outline-none placeholder:text-neutral-600 font-medium leading-relaxed disabled:opacity-50"
             />
           </div>
 
           {/* Action Buttons */}
           <div className="flex justify-end gap-4 pt-4">
-            <button className="glass py-4 px-8 rounded-full font-bold text-white hover:bg-white/10 transition-all border border-white/10 flex items-center gap-2.5 group">
-              <Clock className="w-5 h-5 text-sky-400 group-hover:rotate-12 transition-transform" />
-              Schedule Post
+            <button 
+              onClick={() => handleSavePost('Scheduled')}
+              disabled={isSubmitting || !text || selectedPlatforms.length === 0}
+              className="glass py-4 px-8 rounded-full font-bold text-white hover:bg-white/10 transition-all border border-white/10 flex items-center gap-2.5 group disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin text-sky-400" /> : <Clock className="w-5 h-5 text-sky-400 group-hover:rotate-12 transition-transform" />}
+              Schedule Draft
             </button>
-            <button className="bg-violet-600 py-4 px-10 rounded-full font-bold text-white hover:bg-violet-500 transition-all shadow-[0_0_20px_rgba(139,92,246,0.5)] hover:shadow-[0_0_35px_rgba(139,92,246,0.7)] flex items-center gap-2.5 group hover:scale-105 active:scale-95 border border-violet-400/50">
-              <Send className="w-5 h-5 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+            <button 
+              onClick={() => handleSavePost('Published')}
+              disabled={isSubmitting || !text || selectedPlatforms.length === 0}
+              className="bg-violet-600 py-4 px-10 rounded-full font-bold text-white hover:bg-violet-500 transition-all shadow-[0_0_20px_rgba(139,92,246,0.5)] hover:shadow-[0_0_35px_rgba(139,92,246,0.7)] flex items-center gap-2.5 group hover:scale-105 active:scale-95 border border-violet-400/50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />}
               Post Now
             </button>
           </div>
@@ -93,7 +129,7 @@ export default function ComposePage() {
                 <p className="text-neutral-500 text-sm font-medium">Select a platform to see how your post will look like.</p>
               </div>
             ) : (
-              <div className="space-y-6">
+              <div className="space-y-6 max-h-[700px] overflow-y-auto pr-2 pb-4">
                 {selectedPlatforms.map(id => {
                   const p = platforms.find(x => x.id === id);
                   return (
@@ -105,7 +141,7 @@ export default function ComposePage() {
                           <div className="text-xs text-neutral-400 font-medium">Just now · Public</div>
                         </div>
                       </div>
-                      <p className="text-white text-sm leading-relaxed whitespace-pre-wrap font-medium">
+                      <p className="text-white text-sm leading-relaxed whitespace-pre-wrap font-medium break-words">
                         {text || <span className="text-neutral-600">Your awesome content goes here...</span>}
                       </p>
                     </div>

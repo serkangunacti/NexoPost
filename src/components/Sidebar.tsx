@@ -19,8 +19,8 @@ export default function Sidebar() {
     <aside className="w-64 h-screen fixed left-0 top-0 glass border-r z-50 p-6 flex flex-col justify-between hidden md:flex">
       <div>
         <div className="flex items-center gap-3 mb-10 pl-2">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-violet-600 to-sky-500 shadow-[0_0_15px_rgba(139,92,246,0.5)] flex items-center justify-center font-bold text-white text-lg">
-            N
+          <div className="relative w-10 h-10 rounded-xl overflow-hidden shadow-[0_0_15px_rgba(139,92,246,0.5)] border border-white/10 shrink-0">
+            <img src="/logo.png" alt="NexoPost Logo" className="w-full h-full object-cover" />
           </div>
           <span className="text-xl font-bold tracking-tight text-white">NexoPost</span>
         </div>
