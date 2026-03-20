@@ -22,6 +22,12 @@
   },
   "pricing": {
     "title": "Simple Pricing",
+    "monthly": "Monthly",
+    "annually": "Annually",
+    "save": "Save 16%",
+    "trial": "Start your 15-day free trial on any plan.",
+    "mo": "/mo",
+    "yr": "/yr",
     "basic": "Basic",
     "basic_desc": "Perfect for creators.",
     "basic_price": "$9",

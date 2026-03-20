@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useLanguage } from "@/context/LanguageContext";
 import { ArrowRight, CheckCircle2, Zap, Layers, BarChart3, Users, Clock } from "lucide-react";
 import Link from "next/link";
@@ -8,6 +9,7 @@ import { FaLinkedin } from "react-icons/fa6";
 
 export default function LandingPage() {
   const { t } = useLanguage();
+  const [isAnnual, setIsAnnual] = useState(false);
 
   const socialIcons = [
     <SiX key="x" className="w-8 h-8 md:w-10 md:h-10 text-white hover:scale-110 transition-transform cursor-pointer" />,
@@ -94,9 +96,30 @@ export default function LandingPage() {
       {/* Pricing Section */}
       <section className="w-full py-32 px-6">
         <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-20">
-            <h2 className="text-4xl font-bold text-white mb-6">{t.pricing.title}</h2>
-            <div className="w-24 h-1.5 bg-gradient-to-r from-violet-500 to-sky-500 mx-auto rounded-full" />
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-white mb-4">{t.pricing.title}</h2>
+            <div className="w-24 h-1.5 bg-gradient-to-r from-violet-500 to-sky-500 mx-auto rounded-full mb-6" />
+            <p className="text-neutral-400 text-lg font-medium mb-10 max-w-xl mx-auto">{t.pricing.trial}</p>
+            
+            <div className="inline-flex items-center gap-2 p-1.5 glass rounded-full border border-white/10 relative shadow-2xl">
+              <button 
+                onClick={() => setIsAnnual(false)} 
+                className={`relative px-6 py-2.5 rounded-full text-sm font-bold transition-all duration-300 z-10 ${!isAnnual ? 'text-white' : 'text-neutral-400 hover:text-white'}`}
+              >
+                {!isAnnual && <div className="absolute inset-0 bg-violet-600 rounded-full -z-10 shadow-[0_0_15px_rgba(139,92,246,0.4)]" />}
+                {t.pricing.monthly}
+              </button>
+              <button 
+                onClick={() => setIsAnnual(true)} 
+                className={`relative px-6 py-2.5 rounded-full text-sm font-bold transition-all duration-300 z-10 flex items-center gap-2 ${isAnnual ? 'text-white' : 'text-neutral-400 hover:text-white'}`}
+              >
+                {isAnnual && <div className="absolute inset-0 bg-violet-600 rounded-full -z-10 shadow-[0_0_15px_rgba(139,92,246,0.4)]" />}
+                {t.pricing.annually}
+                <span className={`text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full font-black ml-1 transition-all ${isAnnual ? 'bg-white text-violet-600 shadow-md' : 'bg-violet-600/30 text-violet-300'}`}>
+                  {t.pricing.save}
+                </span>
+              </button>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
@@ -107,8 +130,8 @@ export default function LandingPage() {
               <p className="text-neutral-400 font-medium mb-8">{t.pricing.basic_desc}</p>
               
               <div className="mb-8 flex items-end gap-1">
-                <span className="text-5xl font-extrabold text-white">{t.pricing.basic_price}</span>
-                <span className="text-neutral-500 font-medium mb-1">/mo</span>
+                <span className="text-5xl font-extrabold text-white">${isAnnual ? "90" : "9"}</span>
+                <span className="text-neutral-500 font-medium mb-1">{isAnnual ? t.pricing.yr : t.pricing.mo}</span>
               </div>
               
               <ul className="space-y-4 mb-10 flex-1">
@@ -137,8 +160,8 @@ export default function LandingPage() {
               <p className="text-violet-300 font-medium mb-8">{t.pricing.pro_desc}</p>
               
               <div className="mb-8 flex items-end gap-1">
-                <span className="text-5xl font-extrabold text-white">{t.pricing.pro_price}</span>
-                <span className="text-neutral-500 font-medium mb-1">/mo</span>
+                <span className="text-5xl font-extrabold text-white">${isAnnual ? "190" : "19"}</span>
+                <span className="text-neutral-500 font-medium mb-1">{isAnnual ? t.pricing.yr : t.pricing.mo}</span>
               </div>
               
               <ul className="space-y-4 mb-10 flex-1">
@@ -167,8 +190,8 @@ export default function LandingPage() {
               <p className="text-neutral-400 font-medium mb-8">{t.pricing.agency_desc}</p>
               
               <div className="mb-8 flex items-end gap-1">
-                <span className="text-5xl font-extrabold text-white">{t.pricing.agency_price}</span>
-                <span className="text-neutral-500 font-medium mb-1">/mo</span>
+                <span className="text-5xl font-extrabold text-white">${isAnnual ? "490" : "49"}</span>
+                <span className="text-neutral-500 font-medium mb-1">{isAnnual ? t.pricing.yr : t.pricing.mo}</span>
               </div>
               
               <ul className="space-y-4 mb-10 flex-1">

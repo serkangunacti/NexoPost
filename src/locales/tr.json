@@ -22,6 +22,12 @@
   },
   "pricing": {
     "title": "Esnek Fiyatlandırma",
+    "monthly": "Aylık",
+    "annually": "Yıllık",
+    "save": "2 Ay Bizden",
+    "trial": "Dilediğiniz planda 15 günlük deneme sürümünüzü hemen başlatın.",
+    "mo": "/ay",
+    "yr": "/yıl",
     "basic": "Basic",
     "basic_desc": "İçerik üreticileri için ideal.",
     "basic_price": "$9",
