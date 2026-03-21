@@ -1,11 +1,17 @@
 "use client";
 
 import { useApp } from "@/context/AppContext";
-import { BarChart3, Lock, TrendingUp, Users, Eye, ArrowUpRight } from "lucide-react";
+import { BarChart3, Lock, TrendingUp, Users, Eye, ArrowUpRight, Link as LinkIcon } from "lucide-react";
 import { SiYoutube, SiTiktok, SiMeta } from "react-icons/si";
+import Link from "next/link";
 
 export default function AnalyticsPage() {
-  const { userType } = useApp();
+  const { userType, activeClient, connectedAccounts } = useApp();
+
+  const currentConnectedIds = connectedAccounts[activeClient.id] || [];
+  const isMetaConnected = currentConnectedIds.includes('facebook') || currentConnectedIds.includes('instagram');
+  const isTikTokConnected = currentConnectedIds.includes('tiktok');
+  const isYouTubeConnected = currentConnectedIds.includes('youtube');
 
   return (
     <div className="max-w-6xl mx-auto space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
@@ -63,85 +69,130 @@ export default function AnalyticsPage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             
             {/* Meta Analytics */}
-            <div className="glass p-8 rounded-[2rem] border border-white/5">
-              <div className="flex items-center justify-between mb-8">
+            <div className="glass p-8 rounded-[2rem] border border-white/5 relative overflow-hidden">
+              <div className="flex items-center justify-between mb-8 relative z-10">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center border border-white/20 shadow-lg">
                     <SiMeta className="w-6 h-6 text-[#0668E1]" />
                   </div>
                   <h3 className="text-xl font-bold text-white">Meta Suite</h3>
                 </div>
-                <button className="text-sm text-neutral-400 hover:text-white flex items-center gap-1 transition-colors"><ArrowUpRight className="w-4 h-4" /> Full Report</button>
+                {isMetaConnected ? (
+                  <button onClick={() => alert("Full Report module will be available soon in next update.")} className="text-sm text-neutral-400 hover:text-white flex items-center gap-1 transition-colors px-3 py-1 hover:bg-white/5 rounded-lg"><ArrowUpRight className="w-4 h-4" /> Full Report</button>
+                ) : (
+                  <Link href="/accounts" className="text-sm text-violet-400 hover:text-violet-300 flex items-center gap-1 transition-colors font-bold px-3 py-1 bg-violet-500/10 rounded-lg hover:bg-violet-500/20"><LinkIcon className="w-4 h-4" /> Connect Meta</Link>
+                )}
               </div>
-              <div className="h-48 w-full border-b border-white/10 flex items-end justify-between px-2 pt-10 gap-2">
-                {[40, 70, 45, 90, 60, 100, 50].map((h, i) => (
-                  <div key={i} className="w-full bg-gradient-to-t from-blue-600 to-sky-400 rounded-t-md hover:opacity-80 transition-opacity cursor-pointer group relative" style={{ height: `${h}%` }}>
-                    <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-white text-black text-xs font-bold py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                      {h}k
-                    </div>
+              
+              {isMetaConnected ? (
+                <>
+                  <div className="h-48 w-full border-b border-white/10 flex items-end justify-between px-2 pt-10 gap-2 relative z-10">
+                    {[40, 70, 45, 90, 60, 100, 50].map((h, i) => (
+                      <div key={i} className="w-full bg-gradient-to-t from-blue-600 to-sky-400 rounded-t-md hover:opacity-80 transition-opacity cursor-pointer group relative" style={{ height: `${h}%` }}>
+                        <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-white text-black text-xs font-bold py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                          {h}k
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-              <div className="flex justify-between px-2 mt-4 text-xs font-bold text-neutral-500 uppercase tracking-widest">
-                <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
-              </div>
+                  <div className="flex justify-between px-2 mt-4 text-xs font-bold text-neutral-500 uppercase tracking-widest relative z-10">
+                    <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+                  </div>
+                </>
+              ) : (
+                <div className="h-48 w-full flex flex-col items-center justify-center z-10 relative">
+                  <p className="text-neutral-500 mb-4 font-medium text-center px-4">Meta Hesabınız (Facebook/Instagram) bağlı değil. Veri grafiklerini görebilmek için sosyal medya hesabı bağlayın.</p>
+                  <Link href="/accounts" className="bg-white/5 hover:bg-white/10 text-white px-6 py-2 rounded-xl transition-all font-semibold flex items-center gap-2 border border-white/10">
+                     <LinkIcon className="w-4 h-4" /> Go to Accounts
+                  </Link>
+                </div>
+              )}
             </div>
 
             {/* TikTok Analytics */}
-            <div className="glass p-8 rounded-[2rem] border border-white/5">
-              <div className="flex items-center justify-between mb-8">
+            <div className="glass p-8 rounded-[2rem] border border-white/5 relative overflow-hidden">
+              <div className="flex items-center justify-between mb-8 relative z-10">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-black rounded-xl flex items-center justify-center border border-white/20 shadow-[0_0_15px_rgba(0,242,254,0.3)]">
                     <SiTiktok className="w-5 h-5 text-[#00f2fe] drop-shadow-[2px_2px_0_#fe0979]" />
                   </div>
                   <h3 className="text-xl font-bold text-white">TikTok For Business</h3>
                 </div>
-                <button className="text-sm text-neutral-400 hover:text-white flex items-center gap-1 transition-colors"><ArrowUpRight className="w-4 h-4" /> Full Report</button>
+                {isTikTokConnected ? (
+                  <button onClick={() => alert("Full Report module will be available soon in next update.")} className="text-sm text-neutral-400 hover:text-white flex items-center gap-1 transition-colors px-3 py-1 hover:bg-white/5 rounded-lg"><ArrowUpRight className="w-4 h-4" /> Full Report</button>
+                ) : (
+                  <Link href="/accounts" className="text-sm text-violet-400 hover:text-violet-300 flex items-center gap-1 transition-colors font-bold px-3 py-1 bg-violet-500/10 rounded-lg hover:bg-violet-500/20"><LinkIcon className="w-4 h-4" /> Connect TikTok</Link>
+                )}
               </div>
-              <div className="h-48 w-full border-b border-white/10 flex items-end justify-between px-2 pt-10 gap-2">
-                {[60, 40, 80, 50, 100, 70, 90].map((h, i) => (
-                  <div key={i} className="w-full bg-gradient-to-t from-[#fe0979] to-[#00f2fe] rounded-t-md hover:opacity-80 transition-opacity cursor-pointer group relative" style={{ height: `${h}%` }}>
-                    <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-white text-black text-xs font-bold py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                      {h}k
-                    </div>
+              
+              {isTikTokConnected ? (
+                <>
+                  <div className="h-48 w-full border-b border-white/10 flex items-end justify-between px-2 pt-10 gap-2 relative z-10">
+                    {[60, 40, 80, 50, 100, 70, 90].map((h, i) => (
+                      <div key={i} className="w-full bg-gradient-to-t from-[#fe0979] to-[#00f2fe] rounded-t-md hover:opacity-80 transition-opacity cursor-pointer group relative" style={{ height: `${h}%` }}>
+                        <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-white text-black text-xs font-bold py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                          {h}k
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-              <div className="flex justify-between px-2 mt-4 text-xs font-bold text-neutral-500 uppercase tracking-widest">
-                <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
-              </div>
+                  <div className="flex justify-between px-2 mt-4 text-xs font-bold text-neutral-500 uppercase tracking-widest relative z-10">
+                    <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+                  </div>
+                </>
+              ) : (
+                <div className="h-48 w-full flex flex-col items-center justify-center z-10 relative">
+                  <p className="text-neutral-500 mb-4 font-medium text-center px-4">TikTok Hesabınız bağlı değil. Şirket verilerini görebilmek için hesabı bağlayın.</p>
+                  <Link href="/accounts" className="bg-white/5 hover:bg-white/10 text-white px-6 py-2 rounded-xl transition-all font-semibold flex items-center gap-2 border border-white/10">
+                     <LinkIcon className="w-4 h-4" /> Go to Accounts
+                  </Link>
+                </div>
+              )}
             </div>
 
-            {/* YouTube Analytics (Agency Only) */}
+            {/* YouTube Analytics */}
             {userType === "agency" ? (
-              <div className="glass p-8 rounded-[2rem] border border-white/5 lg:col-span-2">
-                <div className="flex items-center justify-between mb-8">
+              <div className="glass p-8 rounded-[2rem] border border-white/5 lg:col-span-2 relative overflow-hidden">
+                <div className="flex items-center justify-between mb-8 relative z-10">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center border border-white/20 shadow-[0_0_15px_rgba(255,0,0,0.3)]">
                       <SiYoutube className="w-6 h-6 text-[#FF0000]" />
                     </div>
                     <h3 className="text-xl font-bold text-white">YouTube Studio Analytics</h3>
                   </div>
-                  <button className="text-sm text-neutral-400 hover:text-white flex items-center gap-1 transition-colors"><ArrowUpRight className="w-4 h-4" /> Full Report</button>
+                  {isYouTubeConnected ? (
+                    <button onClick={() => alert("Full Report module will be available soon in next update.")} className="text-sm text-neutral-400 hover:text-white flex items-center gap-1 transition-colors px-3 py-1 hover:bg-white/5 rounded-lg"><ArrowUpRight className="w-4 h-4" /> Full Report</button>
+                  ) : (
+                    <Link href="/accounts" className="text-sm text-violet-400 hover:text-violet-300 flex items-center gap-1 transition-colors font-bold px-3 py-1 bg-violet-500/10 rounded-lg hover:bg-violet-500/20"><LinkIcon className="w-4 h-4" /> Connect YouTube</Link>
+                  )}
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className="bg-black/30 border border-white/5 rounded-2xl p-5">
-                    <p className="text-neutral-400 text-sm font-semibold mb-2">Subscribers</p>
-                    <p className="text-2xl font-bold text-white">142.5k</p>
-                    <p className="text-xs text-emerald-400 mt-2 font-medium">+1,204 (28 days)</p>
+                {isYouTubeConnected ? (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative z-10">
+                    <div className="bg-black/30 border border-white/5 rounded-2xl p-5 hover:bg-white/5 transition-colors cursor-pointer">
+                      <p className="text-neutral-400 text-sm font-semibold mb-2">Subscribers</p>
+                      <p className="text-2xl font-bold text-white">142.5k</p>
+                      <p className="text-xs text-emerald-400 mt-2 font-medium">+1,204 (28 days)</p>
+                    </div>
+                    <div className="bg-black/30 border border-white/5 rounded-2xl p-5 hover:bg-white/5 transition-colors cursor-pointer">
+                      <p className="text-neutral-400 text-sm font-semibold mb-2">Watch Time</p>
+                      <p className="text-2xl font-bold text-white">840.2k hrs</p>
+                      <p className="text-xs text-emerald-400 mt-2 font-medium">+12% (28 days)</p>
+                    </div>
+                    <div className="bg-black/30 border border-white/5 rounded-2xl p-5 hover:bg-white/5 transition-colors cursor-pointer">
+                      <p className="text-neutral-400 text-sm font-semibold mb-2">Estimated Revenue</p>
+                      <p className="text-2xl font-bold text-white">$4,295</p>
+                      <p className="text-xs text-emerald-400 mt-2 font-medium">+$450 (28 days)</p>
+                    </div>
                   </div>
-                  <div className="bg-black/30 border border-white/5 rounded-2xl p-5">
-                    <p className="text-neutral-400 text-sm font-semibold mb-2">Watch Time</p>
-                    <p className="text-2xl font-bold text-white">840.2k hrs</p>
-                    <p className="text-xs text-emerald-400 mt-2 font-medium">+12% (28 days)</p>
+                ) : (
+                  <div className="w-full flex flex-col items-center justify-center z-10 relative py-10">
+                    <p className="text-neutral-500 mb-4 font-medium text-center px-4">YouTube hesabınız bağlı değil. Etkileşim istatistikleri ve kanal raporları için hesabı bağlayın.</p>
+                    <Link href="/accounts" className="bg-white/5 hover:bg-white/10 text-white px-6 py-2 rounded-xl transition-all font-semibold flex items-center gap-2 border border-white/10">
+                      <LinkIcon className="w-4 h-4" /> Go to Accounts
+                    </Link>
                   </div>
-                  <div className="bg-black/30 border border-white/5 rounded-2xl p-5">
-                    <p className="text-neutral-400 text-sm font-semibold mb-2">Estimated Revenue</p>
-                    <p className="text-2xl font-bold text-white">$4,295</p>
-                    <p className="text-xs text-emerald-400 mt-2 font-medium">+$450 (28 days)</p>
-                  </div>
-                </div>
+                )}
               </div>
             ) : (
               <div className="glass p-8 rounded-[2rem] border border-white/5 lg:col-span-2 relative overflow-hidden group">

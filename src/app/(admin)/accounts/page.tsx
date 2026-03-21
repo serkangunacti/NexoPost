@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Check, Link as LinkIcon, AlertCircle, Building2 } from "lucide-react";
-import { SiX, SiFacebook, SiInstagram, SiTiktok, SiBluesky, SiThreads, SiPinterest } from "react-icons/si";
+import { SiX, SiFacebook, SiInstagram, SiTiktok, SiBluesky, SiThreads, SiPinterest, SiYoutube } from "react-icons/si";
 import { FaLinkedin } from "react-icons/fa6";
 import { useApp } from "@/context/AppContext";
 
@@ -18,6 +18,7 @@ export default function AccountsPage() {
     { id: "threads", name: "Threads", icon: <SiThreads className="w-6 h-6" />, color: "bg-black border border-neutral-800" },
     { id: "bluesky", name: "Bluesky", icon: <SiBluesky className="w-6 h-6" />, color: "bg-[#0560FF]" },
     { id: "pinterest", name: "Pinterest", icon: <SiPinterest className="w-6 h-6" />, color: "bg-[#E60023]" },
+    { id: "youtube", name: "YouTube", icon: <SiYoutube className="w-6 h-6 text-[#FF0000]" />, color: "bg-white border border-neutral-200" },
   ];
 
   const currentConnectedIds = connectedAccounts[activeClient.id] || [];
