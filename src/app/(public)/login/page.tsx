@@ -10,7 +10,7 @@ import { useApp } from "@/context/AppContext";
 import { findPurchasedAccount } from "@/lib/purchasedAccounts";
 
 function LoginContent() {
-  const { lang, t } = useLanguage();
+  const { t } = useLanguage();
   const { loginWithPurchasedAccount } = useApp();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -83,32 +83,6 @@ function LoginContent() {
               </div>
             </div>
 
-            <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-4">
-                <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-neutral-500">
-                  {lang === "tr" ? "Çalışma Alanları" : "Workspaces"}
-                </p>
-                <p className="mt-2 text-lg font-bold text-white">
-                  {lang === "tr" ? "Çok markalı yapıya hazır" : "Multi-brand ready"}
-                </p>
-              </div>
-              <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-4">
-                <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-neutral-500">
-                  {lang === "tr" ? "Yayınlama" : "Publishing"}
-                </p>
-                <p className="mt-2 text-lg font-bold text-white">
-                  {lang === "tr" ? "Tüm ağlar tek akışta" : "All networks in one flow"}
-                </p>
-              </div>
-              <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-4">
-                <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-neutral-500">
-                  {lang === "tr" ? "Analitik" : "Analytics"}
-                </p>
-                <p className="mt-2 text-lg font-bold text-white">
-                  {lang === "tr" ? "Panelle senkron içgörü" : "Dashboard synced insight"}
-                </p>
-              </div>
-            </div>
           </div>
         </section>
 
