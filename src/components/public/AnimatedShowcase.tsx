@@ -266,7 +266,7 @@ export default function AnimatedShowcase() {
                      <div className="absolute inset-0 bg-white pt-8 z-40 animate-in slide-in-from-right-10 fade-in duration-500 flex flex-col">
                         <div className="flex items-center gap-3 p-3 border-b border-neutral-100 mt-1">
                            <img src="/logo.png" className="w-8 h-8 rounded-full border border-neutral-300 p-1 object-contain" />
-                           <div className="text-[13px] font-bold text-black">nexopost</div>
+                           <div className="text-[13px] font-bold text-black">nexopostcom</div>
                            <MoreHorizontal className="w-5 h-5 text-black ml-auto" />
                         </div>
                         <div className="w-full aspect-square bg-neutral-50 border-y border-neutral-100 flex items-center justify-center overflow-hidden">
@@ -280,7 +280,7 @@ export default function AnimatedShowcase() {
                               <Bookmark className="w-6 h-6 text-black ml-auto" />
                            </div>
                            <div className="text-[13px] text-black leading-snug">
-                              <span className="font-bold mr-2">nexopost</span>
+                              <span className="font-bold mr-2">nexopostcom</span>
                               {text}
                            </div>
                         </div>
