@@ -7,6 +7,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { SiX, SiFacebook, SiInstagram, SiTiktok, SiBluesky, SiThreads, SiPinterest, SiYoutube } from "react-icons/si";
 import { FaLinkedin } from "react-icons/fa6";
+import AnimatedShowcase from "@/components/public/AnimatedShowcase";
 
 export default function LandingPage() {
   const { t } = useLanguage();
@@ -64,6 +65,9 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+
+      {/* Animated App Showcase */}
+      <AnimatedShowcase />
 
       {/* Features Section */}
       <section className="w-full bg-white/[0.02] border-y border-white/5 py-32 px-6">
