@@ -3,6 +3,7 @@
 import { useLanguage } from "@/context/LanguageContext";
 import { Mail, MapPin, Send, ArrowLeft } from "lucide-react";
 import Link from "next/link";
+import { SiWhatsapp } from "react-icons/si";
 
 export default function ContactPage() {
   const { t } = useLanguage();
@@ -63,7 +64,7 @@ export default function ContactPage() {
             </form>
           </div>
 
-          <div className="relative z-10 lg:col-span-2 flex flex-col gap-10 lg:pl-12 lg:border-l border-white/5 pt-10 lg:pt-0 border-t lg:border-t-0 justify-center">
+          <div className="relative z-10 lg:col-span-2 flex flex-col gap-8 lg:pl-12 lg:border-l border-white/5 pt-10 lg:pt-0 border-t lg:border-t-0 justify-center">
             
             <div className="flex items-start gap-4 p-4 rounded-2xl hover:bg-white/5 transition-colors group cursor-pointer border border-transparent hover:border-white/5">
               <div className="w-12 h-12 bg-emerald-500/10 text-emerald-400 rounded-xl flex items-center justify-center shrink-0 border border-emerald-500/20 group-hover:scale-110 transition-transform shadow-lg shadow-emerald-500/5">
@@ -72,6 +73,16 @@ export default function ContactPage() {
               <div>
                 <p className="text-sm font-bold text-neutral-500 mb-1">Email</p>
                 <a href="mailto:info@nexopost.com" className="text-white font-bold text-lg hover:text-emerald-400 transition-colors">info@nexopost.com</a>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-4 p-4 rounded-2xl hover:bg-white/5 transition-colors group cursor-pointer border border-transparent hover:border-white/5">
+              <div className="w-12 h-12 bg-[#25D366]/10 text-[#25D366] rounded-xl flex items-center justify-center shrink-0 border border-[#25D366]/20 group-hover:scale-110 transition-transform shadow-lg shadow-[#25D366]/5">
+                <SiWhatsapp className="w-6 h-6" />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-neutral-500 mb-1">WhatsApp</p>
+                <a href="https://wa.me/905438716131" target="_blank" rel="noopener noreferrer" className="text-white font-bold text-lg hover:text-[#25D366] transition-colors">0543 871 61 31</a>
               </div>
             </div>
 
