@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Calendar as CalendarIcon, MoreVertical, Send, Eye, Loader2, Trash2 } from "lucide-react";
+import { Timestamp, collection, onSnapshot, query, orderBy, deleteDoc, doc, updateDoc } from "firebase/firestore";
+import { Calendar as CalendarIcon, Send, Loader2, Trash2 } from "lucide-react";
 import { db } from "@/lib/firebase";
-import { collection, onSnapshot, query, orderBy, deleteDoc, doc, updateDoc } from "firebase/firestore";
 import { SiX, SiFacebook, SiInstagram, SiTiktok, SiBluesky, SiThreads, SiPinterest } from "react-icons/si";
 import { FaLinkedin } from "react-icons/fa6";
 
@@ -14,25 +14,22 @@ interface Post {
   time: string;
   platforms: string[];
   status: string;
-  createdAt: any;
+  createdAt?: Timestamp | null;
 }
 
 export default function ScheduledPage() {
   const [posts, setPosts] = useState<Post[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => Boolean(db));
   const [activeTab, setActiveTab] = useState('Upcoming');
 
   useEffect(() => {
-    if (!db) {
-      setLoading(false);
-      return;
-    }
+    if (!db) return;
 
     const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const postsData: Post[] = [];
       snapshot.forEach((doc) => {
-        postsData.push({ id: doc.id, ...doc.data() } as Post);
+        postsData.push({ id: doc.id, ...(doc.data() as Omit<Post, "id">) });
       });
       setPosts(postsData);
       setLoading(false);

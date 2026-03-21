@@ -4,14 +4,24 @@ import { useEffect, useState } from "react";
 import { ArrowUpRight, BarChart3, Plus, Layers, Calendar, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { db } from "@/lib/firebase";
-import { collection, onSnapshot, query, orderBy, limit } from "firebase/firestore";
+import { Timestamp, collection, onSnapshot, query, orderBy } from "firebase/firestore";
 import { SiX, SiFacebook, SiInstagram, SiTiktok, SiBluesky, SiThreads, SiPinterest } from "react-icons/si";
 import { FaLinkedin } from "react-icons/fa6";
 
+interface DashboardPost {
+  id: string;
+  content: string;
+  date: string;
+  time: string;
+  platforms: string[];
+  status: string;
+  createdAt?: Timestamp | null;
+}
+
 export default function Home() {
   const [stats, setStats] = useState({ total: 0, published: 0, scheduled: 0 });
-  const [upcomingPosts, setUpcomingPosts] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [upcomingPosts, setUpcomingPosts] = useState<DashboardPost[]>([]);
+  const [loading, setLoading] = useState(() => Boolean(db));
 
   useEffect(() => {
     if (!db) {
@@ -24,15 +34,17 @@ export default function Home() {
       let total = 0;
       let published = 0;
       let scheduled = 0;
-      const upcoming: any[] = [];
+      const upcoming: DashboardPost[] = [];
 
-      snapshot.forEach(doc => {
+      snapshot.forEach((doc) => {
         const data = doc.data();
         total++;
         if (data.status === 'Published') published++;
         if (data.status === 'Scheduled' || data.status === 'Draft') {
           scheduled++;
-          if (upcoming.length < 3) upcoming.push({ id: doc.id, ...data });
+          if (upcoming.length < 3) {
+            upcoming.push({ id: doc.id, ...(data as Omit<DashboardPost, "id">) });
+          }
         }
       });
 
@@ -62,12 +74,12 @@ export default function Home() {
     <div className="max-w-6xl mx-auto space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20">
       <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
-          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight bg-gradient-to-r from-white via-neutral-200 to-neutral-500 bg-clip-text text-transparent pb-1">
-            Welcome back
-          </h1>
-          <p className="text-neutral-400 mt-2 text-lg font-medium">
-            Here's what's happening with your accounts today.
-          </p>
+            <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight bg-gradient-to-r from-white via-neutral-200 to-neutral-500 bg-clip-text text-transparent pb-1">
+              Welcome back
+            </h1>
+            <p className="text-neutral-400 mt-2 text-lg font-medium">
+            Here&apos;s what&apos;s happening with your accounts today.
+            </p>
         </div>
         <Link 
           href="/compose" 
@@ -127,7 +139,7 @@ export default function Home() {
             </div>
             <h3 className="text-2xl font-bold text-white mb-3 relative z-10">Your pipeline is empty</h3>
             <p className="text-neutral-400 max-w-md mx-auto mb-8 font-medium relative z-10">
-              You don't have any posts scheduled for the upcoming days. Design a new campaign to reach your audience across all channels.
+              You don&apos;t have any posts scheduled for the upcoming days. Design a new campaign to reach your audience across all channels.
             </p>
             <Link href="/compose" className="glass py-3 px-8 rounded-full font-semibold hover:bg-white/10 transition-all text-white text-sm relative z-10 hover:shadow-[0_0_15px_rgba(255,255,255,0.1)] border border-white/20">
               Craft a New Post

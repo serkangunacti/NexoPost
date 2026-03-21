@@ -1,7 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import { Check, Link as LinkIcon, AlertCircle, Building2 } from "lucide-react";
+import { Check, AlertCircle, Building2 } from "lucide-react";
 import { SiX, SiFacebook, SiInstagram, SiTiktok, SiBluesky, SiThreads, SiPinterest, SiYoutube } from "react-icons/si";
 import { FaLinkedin } from "react-icons/fa6";
 import { useApp } from "@/context/AppContext";

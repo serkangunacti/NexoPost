@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Send, Calendar as CalendarIcon, Image as ImageIcon, Smile, Type, Clock, Loader2, Wand2 } from "lucide-react";
+import { Send, Image as ImageIcon, Smile, Type, Clock, Loader2, Wand2 } from "lucide-react";
 import { db } from "@/lib/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { SiX, SiFacebook, SiInstagram, SiTiktok, SiBluesky, SiThreads, SiPinterest, SiYoutube } from "react-icons/si";

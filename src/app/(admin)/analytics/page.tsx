@@ -18,7 +18,7 @@ export default function AnalyticsPage() {
       
       <header className="mb-6 pl-2">
         <h1 className="text-4xl font-extrabold text-white mb-3 tracking-tight">Social Analytics</h1>
-        <p className="text-neutral-400 text-lg font-medium">Track your brand's cross-platform performance.</p>
+        <p className="text-neutral-400 text-lg font-medium">Track your brand&apos;s cross-platform performance.</p>
       </header>
 
       {userType === "basic" ? (
