@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { useApp } from "@/context/AppContext";
@@ -22,7 +22,8 @@ interface SidebarProps {
 
 export default function Sidebar({ className }: SidebarProps) {
   const pathname = usePathname();
-  const { userType, setUserType, activeClient, setActiveClient, clients, addClient } = useApp();
+  const router = useRouter();
+  const { userType, setUserType, activeClient, setActiveClient, clients, addClient, logout, userProfile } = useApp();
 
   const navLinks = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -48,6 +49,9 @@ export default function Sidebar({ className }: SidebarProps) {
             <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
             <p className="font-semibold text-white truncate max-w-[150px]">{activeClient.name}</p>
           </div>
+          {userProfile ? (
+            <p className="text-[11px] text-neutral-400 truncate">{userProfile.email}</p>
+          ) : null}
 
           <div className="space-y-2 mt-4 pt-4 border-t border-white/5">
               <select 
@@ -109,10 +113,16 @@ export default function Sidebar({ className }: SidebarProps) {
           <Settings className="w-5 h-5 transition-transform group-hover:rotate-45" />
           <span className="hidden md:block tracking-wide text-xs uppercase leading-tight">Switch Mode (Now:<br/><span className="text-violet-400 font-bold">{userType}</span>)</span>
         </button>
-        <Link href="/" className="flex items-center gap-4 px-4 py-3 rounded-2xl text-neutral-500 hover:text-red-400 hover:bg-red-500/10 transition-all font-semibold group cursor-pointer">
+        <button
+          onClick={() => {
+            logout();
+            router.push("/");
+          }}
+          className="flex items-center gap-4 px-4 py-3 rounded-2xl text-neutral-500 hover:text-red-400 hover:bg-red-500/10 transition-all font-semibold group cursor-pointer w-full text-left"
+        >
           <LogOut className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
           <span className="hidden md:block tracking-wide text-sm">Sign Out</span>
-        </Link>
+        </button>
       </div>
     </aside>
   );

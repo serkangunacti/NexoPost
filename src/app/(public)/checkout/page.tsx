@@ -1,19 +1,22 @@
 "use client";
 
 import { useState, Suspense } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useLanguage } from "@/context/LanguageContext";
 import { useApp } from "@/context/AppContext";
 import { CheckCircle2, CreditCard, Lock, Zap, ArrowRight, Star } from "lucide-react";
 
 function CheckoutContent() {
   const { t } = useLanguage();
-  const { setIsLoggedIn, setUserType } = useApp();
+  const { login } = useApp();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [selectedPlan, setSelectedPlan] = useState<"basic" | "pro" | "agency">("pro");
   const [isAnnual, setIsAnnual] = useState(false);
   const [step, setStep] = useState<"plan" | "payment" | "success">("plan");
   const [loading, setLoading] = useState(false);
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
 
   const plans = [
     {
@@ -56,19 +59,28 @@ function CheckoutContent() {
 
   const currentPlan = plans.find(p => p.id === selectedPlan)!;
   const price = isAnnual ? currentPlan.annualPrice : currentPlan.monthlyPrice;
+  const nextPath = searchParams.get("next") || "/dashboard";
 
   const handlePurchase = async () => {
+    if (!fullName.trim() || !email.trim()) {
+      alert("Please fill in your full name and email address.");
+      return;
+    }
+
     setLoading(true);
     // Simüle edilmiş ödeme işlemi
     await new Promise(r => setTimeout(r, 1800));
-    setIsLoggedIn(true);
-    setUserType(selectedPlan);
+    login({
+      email: email.trim(),
+      fullName: fullName.trim(),
+      userType: selectedPlan,
+    });
     setLoading(false);
     setStep("success");
   };
 
   const handleGoToDashboard = () => {
-    router.push("/dashboard");
+    router.push(nextPath);
   };
 
   if (step === "success") {
@@ -233,6 +245,8 @@ function CheckoutContent() {
                   <input
                     type="text"
                     placeholder={t.checkout.full_name_placeholder}
+                    value={fullName}
+                    onChange={(event) => setFullName(event.target.value)}
                     className="w-full bg-black/40 border border-white/10 rounded-xl px-5 py-3.5 text-white placeholder-neutral-600 font-medium focus:outline-none focus:border-violet-500/50 focus:bg-white/5 transition-all"
                   />
                 </div>
@@ -241,6 +255,8 @@ function CheckoutContent() {
                   <input
                     type="email"
                     placeholder="hello@nexopost.com"
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
                     className="w-full bg-black/40 border border-white/10 rounded-xl px-5 py-3.5 text-white placeholder-neutral-600 font-medium focus:outline-none focus:border-violet-500/50 focus:bg-white/5 transition-all"
                   />
                 </div>
