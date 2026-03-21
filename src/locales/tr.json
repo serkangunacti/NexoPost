@@ -73,6 +73,28 @@
     "terms": "Kullanım Koşulları",
     "contact": "Bize Ulaşın"
   },
+  "legal": {
+    "privacy_title": "Gizlilik Politikası ve KVKK Aydınlatma Metni",
+    "privacy_date": "Son Güncelleme: Mart 2026",
+    "privacy_content": [
+      { "tag": "h2", "text": "1. Veri Toplama ve Kullanımı" },
+      { "tag": "p", "text": "Bir Uptexx Bilgi Teknolojileri markası olan NexoPost, sosyal medya yönetim hizmeti sunabilmek adına kişisel verilerinizi ve sosyal ağ API token (bağlantı) izinlerinizi toplar." },
+      { "tag": "h2", "text": "2. 6698 Sayılı KVKK Uyarınca Haklarınız" },
+      { "tag": "p", "text": "Kişisel verilerinizin kimlere aktarıldığını öğrenebilir, silinmesini veya yok edilmesini talep edebilir ve tüm izinleri dilediğiniz zaman tek tuşla panelden geri çekebilirsiniz." },
+      { "tag": "h2", "text": "3. Sosyal Ağ Şifreleri ve Güvenlik" },
+      { "tag": "p", "text": "NexoPost sunucularında hiçbir sosyal ağ şifreniz barındırılmaz. İşlemler, sadece Meta, Google, TikTok tarafından şirketimize bağlanan resmi API uç noktaları üzerinden şifrelenmiş (encrypted) tokenler ile sağlanır." }
+    ],
+    "terms_title": "Kullanım Koşulları",
+    "terms_date": "Son Güncelleme: Mart 2026",
+    "terms_content": [
+      { "tag": "h2", "text": "1. Hizmetin Kabulü" },
+      { "tag": "p", "text": "NexoPost sistemlerini kullanarak (API veya Ön yüz), burada yazan ve platform kurallarını belirleyen maddeleri açıkça kabul etmiş sayılırsınız." },
+      { "tag": "h2", "text": "2. Adil Kullanım (Fair Use) ve Spam İlkeleri" },
+      { "tag": "p", "text": "Yazılım hiçbir şekilde spam amaçlı, yanıltıcı veya resmi sosyal ağ kurallarını (Facebook, X, YouTube vb) ihlal edecek biçimde kullanılamaz. Aykırı kullanımlarda hesap feshi hakkı NexoPost'ta saklıdır." },
+      { "tag": "h2", "text": "3. Ödemeler ve İadeler" },
+      { "tag": "p", "text": "Tüm kullanıcılar sistemleri 15 gün ücretsiz test etme hakkına sahiptir. Deneme süresinin ardından satın alınan dijital API erişim hizmetleri için ilgili kanunlar uyarınca cayma hakkı kapsamı dışında tutulabilir, uyuşmazlıklarda yetkili mahkemeler dikkate alınır." }
+    ]
+  },
   "cookies": {
     "text": "Sizlere daha iyi hizmet sunabilmek ve KVKK/GDPR kapsamında kullanıcı deneyiminizi geliştirmek için çerezler (cookies) kullanıyoruz.",
     "accept": "Kabul Et"

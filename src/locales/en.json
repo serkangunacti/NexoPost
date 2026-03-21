@@ -73,6 +73,28 @@
     "terms": "Terms of Service",
     "contact": "Contact Us"
   },
+  "legal": {
+    "privacy_title": "Privacy Policy & KVKK",
+    "privacy_date": "Last Updated: March 2026",
+    "privacy_content": [
+      { "tag": "h2", "text": "1. Data Collection & Usage" },
+      { "tag": "p", "text": "NexoPost, an Uptexx Information Technologies brand, collects personal data (name, email) and social media tokens to provide scheduling services. We comply with GDPR and local KVKK regulations." },
+      { "tag": "h2", "text": "2. Social Media Tokens" },
+      { "tag": "p", "text": "We use official APIs. Your social media passwords are never stored on our servers. Tokens are encrypted and used solely for publishing on your behalf." },
+      { "tag": "h2", "text": "3. KVKK Rights" },
+      { "tag": "p", "text": "Under the KVKK law, you have the right to request deletion of your data, learn how it's processed, and revoke access at any time through your dashboard." }
+    ],
+    "terms_title": "Terms of Service",
+    "terms_date": "Last Updated: March 2026",
+    "terms_content": [
+      { "tag": "h2", "text": "1. Acceptance of Terms" },
+      { "tag": "p", "text": "By accessing NexoPost, you agree to these terms. NexoPost acts as an intermediary tool for social media automation." },
+      { "tag": "h2", "text": "2. Fair Use & API Limits" },
+      { "tag": "p", "text": "Users must not use the platform for spam. Posting frequency is strictly bound by official Meta, TikTok, X, and YouTube API rate limits." },
+      { "tag": "h2", "text": "3. Subscriptions & Refunds" },
+      { "tag": "p", "text": "All subscription payments are handled securely. Due to the recurring nature of the SaaS API usage, refunds are not organically provided past the 15-day trial, but can be managed by contacting our support." }
+    ]
+  },
   "cookies": {
     "text": "We use cookies to ensure you get the best experience on our website according to privacy regulations (KVKK / GDPR).",
     "accept": "Accept cookies"

@@ -281,8 +281,8 @@ export default function LandingPage() {
               <a href="#" className="hover:text-[#E1306C] transition-colors hover:-translate-y-1"><SiInstagram className="w-5 h-5" /></a>
             </div>
             <div className="flex items-center gap-6 text-sm font-semibold text-neutral-500">
-              <a href="#" className="hover:text-white transition-colors">{t.footer.privacy}</a>
-              <a href="#" className="hover:text-white transition-colors">{t.footer.terms}</a>
+              <Link href="/privacy" className="hover:text-white transition-colors">{t.footer.privacy}</Link>
+              <Link href="/terms" className="hover:text-white transition-colors">{t.footer.terms}</Link>
               <Link href="/contact" className="hover:text-white transition-colors">{t.footer.contact}</Link>
             </div>
           </div>
