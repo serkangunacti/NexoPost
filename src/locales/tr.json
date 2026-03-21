@@ -7,6 +7,11 @@
     "login": "Giriş Yap / Panel",
     "agency": "Ajans Paketi"
   },
+  "blog_index": {
+    "title": "NexoPost Blog",
+    "subtitle": "Sosyal medya otomasyonunda ustalaşmak için en güncel içerikleri, stratejileri ve rehberleri keşfedin.",
+    "read_more": "Makaleyi Oku"
+  },
   "hero": {
     "title": "Erişiminizi Güçlendirin. Etkinizi Otomatikleştirin.",
     "subtitle": "Tüm sosyal medya hesaplarınızı tek bir nihai platformdan planlayın, analiz edin ve yönetin.",

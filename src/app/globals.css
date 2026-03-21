@@ -32,3 +32,48 @@ body {
   background: rgba(255, 255, 255, 0.08);
   border-color: rgba(255, 255, 255, 0.15);
 }
+
+/* Custom Typography for Blog Articles */
+.article-content h2 {
+  font-size: 1.875rem;
+  font-weight: 800;
+  color: #ffffff;
+  margin-top: 3.5rem;
+  margin-bottom: 1.5rem;
+  letter-spacing: -0.025em;
+}
+.article-content h3 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin-top: 2.5rem;
+  margin-bottom: 1.25rem;
+}
+.article-content p {
+  color: #d4d4d8;
+  line-height: 1.8;
+  margin-bottom: 1.75rem;
+  font-size: 1.125rem;
+}
+.article-content p strong {
+  color: #ffffff;
+}
+.article-content ul, .article-content ol {
+  color: #d4d4d8;
+  margin-bottom: 1.75rem;
+  padding-left: 1.25rem;
+  font-size: 1.125rem;
+}
+.article-content ul {
+  list-style-type: square;
+}
+.article-content ol {
+  list-style-type: decimal;
+}
+.article-content li {
+  margin-bottom: 0.75rem;
+  line-height: 1.7;
+}
+.article-content li strong {
+  color: #ffffff;
+}

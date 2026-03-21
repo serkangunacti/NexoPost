@@ -7,6 +7,11 @@
     "login": "Login / Dashboard",
     "agency": "Agency Suite"
   },
+  "blog_index": {
+    "title": "NexoPost Blog",
+    "subtitle": "Discover the latest insights, strategies, and guides to master social media automation.",
+    "read_more": "Read Article"
+  },
   "hero": {
     "title": "Empower Your Reach. Automate Your Impact.",
     "subtitle": "Schedule, analyze, and manage all your social media accounts from a single ultimate platform.",
