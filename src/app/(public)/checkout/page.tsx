@@ -142,14 +142,19 @@ function CheckoutContent() {
         {step === "plan" && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
             {/* Plan Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-4">
               {plans.map((plan) => {
                 const isSelected = selectedPlan === plan.id;
+                const btnColor = {
+                  sky: "bg-sky-500 hover:bg-sky-400 shadow-[0_0_20px_rgba(14,165,233,0.3)]",
+                  violet: "bg-violet-600 hover:bg-violet-500 shadow-[0_0_20px_rgba(139,92,246,0.3)]",
+                  fuchsia: "bg-fuchsia-600 hover:bg-fuchsia-500 shadow-[0_0_20px_rgba(217,70,239,0.3)]",
+                }[plan.color];
                 return (
-                  <button
+                  <div
                     key={plan.id}
                     onClick={() => setSelectedPlan(plan.id)}
-                    className={`relative text-left glass p-8 rounded-[2.5rem] border transition-all duration-300 shadow-lg flex flex-col ${
+                    className={`relative text-left glass p-8 rounded-[2.5rem] border transition-all duration-300 shadow-lg flex flex-col cursor-pointer ${
                       isSelected ? plan.activeAccent : "border-white/10 hover:border-white/20"
                     } ${plan.id === "pro" ? "md:-translate-y-3 z-10" : ""}`}
                   >
@@ -169,7 +174,7 @@ function CheckoutContent() {
                       <span className="text-4xl font-extrabold text-white">${isAnnual ? plan.annualPrice : plan.monthlyPrice}</span>
                       <span className="text-neutral-500 font-medium mb-1">{isAnnual ? "/yıl" : "/ay"}</span>
                     </div>
-                    <ul className="space-y-3 flex-1">
+                    <ul className="space-y-3 flex-1 mb-8">
                       {plan.perks.map((perk, i) => (
                         <li key={i} className="flex items-start gap-2.5 text-neutral-300 text-sm font-medium">
                           <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
@@ -177,20 +182,22 @@ function CheckoutContent() {
                         </li>
                       ))}
                     </ul>
-                  </button>
+                    {/* Per-plan CTA button */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedPlan(plan.id);
+                        setStep("payment");
+                      }}
+                      className={`w-full py-3.5 rounded-2xl text-white font-bold flex items-center justify-center gap-2 transition-all hover:scale-105 active:scale-95 ${btnColor}`}
+                    >
+                      <CreditCard className="w-4 h-4" />
+                      {plan.name} Planını Seç
+                      <ArrowRight className="w-4 h-4" />
+                    </button>
+                  </div>
                 );
               })}
-            </div>
-
-            <div className="flex justify-center">
-              <button
-                onClick={() => setStep("payment")}
-                className="bg-violet-600 hover:bg-violet-500 text-white font-bold py-4 px-14 rounded-full text-lg flex items-center gap-3 transition-all shadow-[0_0_30px_rgba(139,92,246,0.4)] hover:shadow-[0_0_40px_rgba(139,92,246,0.6)] hover:scale-105 border border-violet-400/50"
-              >
-                <CreditCard className="w-5 h-5" />
-                {currentPlan.name} Planı ile Devam Et
-                <ArrowRight className="w-5 h-5" />
-              </button>
             </div>
           </div>
         )}
