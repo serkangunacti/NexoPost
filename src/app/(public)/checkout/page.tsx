@@ -13,14 +13,33 @@ interface PurchaseResult {
   scheduled: boolean;
 }
 
+type CheckoutPlan = "basic" | "pro" | "agency";
+type CheckoutStep = "plan" | "payment" | "success";
+
+function parseSelectedPlan(value: string | null, fallback: CheckoutPlan): CheckoutPlan {
+  return value === "basic" || value === "pro" || value === "agency" ? value : fallback;
+}
+
+function parseBillingCycle(value: string | null, fallback: boolean): boolean {
+  if (value === "annual") return true;
+  if (value === "monthly") return false;
+  return fallback;
+}
+
+function parseStep(value: string | null): CheckoutStep {
+  return value === "payment" ? "payment" : "plan";
+}
+
 function CheckoutContent() {
   const { t } = useLanguage();
   const { startPlan, subscription, userProfile } = useApp();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [selectedPlan, setSelectedPlan] = useState<"basic" | "pro" | "agency">(subscription?.plan ?? "pro");
-  const [isAnnual, setIsAnnual] = useState(subscription?.billingCycle === "annual");
-  const [step, setStep] = useState<"plan" | "payment" | "success">("plan");
+  const initialPlan = parseSelectedPlan(searchParams.get("plan"), subscription?.plan ?? "pro");
+  const initialBillingCycle = parseBillingCycle(searchParams.get("billing"), subscription?.billingCycle === "annual");
+  const [selectedPlan, setSelectedPlan] = useState<CheckoutPlan>(initialPlan);
+  const [isAnnual, setIsAnnual] = useState(initialBillingCycle);
+  const [step, setStep] = useState<CheckoutStep>(parseStep(searchParams.get("step")));
   const [loading, setLoading] = useState(false);
   const [fullName, setFullName] = useState(userProfile?.fullName ?? "");
   const [email, setEmail] = useState(userProfile?.email ?? "");

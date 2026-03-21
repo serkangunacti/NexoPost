@@ -13,6 +13,8 @@ export default function LandingPage() {
   const { t } = useLanguage();
   const [isAnnual, setIsAnnual] = useState(false);
   const ctaHref = useCtaHref();
+  const buildCheckoutHref = (plan: "basic" | "pro" | "agency") =>
+    `/checkout?plan=${plan}&billing=${isAnnual ? "annual" : "monthly"}&step=payment`;
 
   const socialIcons = [
     <SiX key="x" className="w-6 h-6 md:w-8 md:h-8 text-white hover:scale-110 transition-transform cursor-pointer" />,
@@ -197,7 +199,7 @@ export default function LandingPage() {
                 </li>
               </ul>
               
-              <Link href={ctaHref} className="w-full py-4 rounded-2xl glass font-bold text-white text-center hover:bg-white/10 transition-colors border-white/20 shadow-lg">
+              <Link href={buildCheckoutHref("basic")} className="w-full py-4 rounded-2xl glass font-bold text-white text-center hover:bg-white/10 transition-colors border-white/20 shadow-lg">
                 {t.pricing.choose}
               </Link>
             </div>
@@ -247,7 +249,7 @@ export default function LandingPage() {
                 </li>
               </ul>
               
-              <Link href={ctaHref} className="w-full py-4 rounded-2xl bg-violet-600 hover:bg-violet-500 font-bold text-white text-center transition-colors shadow-[0_0_20px_rgba(139,92,246,0.3)]">
+              <Link href={buildCheckoutHref("pro")} className="w-full py-4 rounded-2xl bg-violet-600 hover:bg-violet-500 font-bold text-white text-center transition-colors shadow-[0_0_20px_rgba(139,92,246,0.3)]">
                 {t.pricing.choose}
               </Link>
             </div>
@@ -293,7 +295,7 @@ export default function LandingPage() {
                 </li>
               </ul>
               
-              <Link href={ctaHref} className="w-full py-4 rounded-2xl glass font-bold text-white text-center hover:bg-white/10 transition-colors border-white/20 shadow-lg">
+              <Link href={buildCheckoutHref("agency")} className="w-full py-4 rounded-2xl glass font-bold text-white text-center hover:bg-white/10 transition-colors border-white/20 shadow-lg">
                 {t.pricing.choose}
               </Link>
             </div>
