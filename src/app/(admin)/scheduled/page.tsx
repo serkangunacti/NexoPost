@@ -23,6 +23,11 @@ export default function ScheduledPage() {
   const [activeTab, setActiveTab] = useState('Upcoming');
 
   useEffect(() => {
+    if (!db) {
+      setLoading(false);
+      return;
+    }
+
     const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const postsData: Post[] = [];
@@ -37,12 +42,16 @@ export default function ScheduledPage() {
   }, []);
 
   const handleDelete = async (id: string) => {
+    if (!db) return;
+
     if(confirm("Are you sure you want to delete this post?")) {
       await deleteDoc(doc(db, "posts", id));
     }
   };
 
   const handlePublishDraft = async (id: string) => {
+    if (!db) return;
+
     if(confirm("Publish this draft now?")) {
       await updateDoc(doc(db, "posts", id), { status: "Published" });
     }

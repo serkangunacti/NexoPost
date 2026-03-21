@@ -33,6 +33,10 @@ export default function ComposePage() {
 
   const handleSavePost = async (status: 'Scheduled' | 'Published' | 'Draft') => {
     if (!text.trim() || selectedPlatforms.length === 0) return;
+    if (!db) {
+      alert("Firebase configuration is missing.");
+      return;
+    }
     
     setIsSubmitting(true);
     try {
