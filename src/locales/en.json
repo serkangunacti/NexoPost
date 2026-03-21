@@ -10,7 +10,8 @@
   "blog_index": {
     "title": "NexoPost Blog",
     "subtitle": "Discover the latest insights, strategies, and guides to master social media automation.",
-    "read_more": "Read Article"
+    "read_more": "Read Article",
+    "read_time": "min read"
   },
   "hero": {
     "title": "Empower Your Reach. Automate Your Impact.",

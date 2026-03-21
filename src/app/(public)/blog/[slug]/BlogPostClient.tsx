@@ -4,10 +4,9 @@ import { BlogPost } from "@/data/blog";
 import { useLanguage } from "@/context/LanguageContext";
 import { Calendar, Clock, ArrowLeft } from "lucide-react";
 import Link from "next/link";
-import Image from "next/image";
 
 export default function BlogPostClient({ post }: { post: BlogPost }) {
-  const { lang } = useLanguage();
+  const { lang, t } = useLanguage();
   const content = lang === "tr" ? post.tr : post.en;
   
   return (
@@ -30,7 +29,7 @@ export default function BlogPostClient({ post }: { post: BlogPost }) {
             </span>
             <span className="flex items-center gap-1.5 bg-white/5 py-1.5 px-3 rounded-full border border-white/5">
               <Clock className="w-4 h-4 text-sky-400" />
-              {post.readTime}
+              {post.readTime} {t.blog_index.read_time}
             </span>
           </div>
           
@@ -45,12 +44,11 @@ export default function BlogPostClient({ post }: { post: BlogPost }) {
         
         {/* Real Featured Image */}
         <div className="w-full h-64 md:h-96 rounded-3xl mb-16 relative overflow-hidden glass border border-white/10 shadow-2xl">
-          <Image 
+          <img 
             src={post.coverImage} 
             alt={content.title} 
-            fill 
-            unoptimized
-            className="object-cover"
+            className="w-full h-full object-cover"
+            loading="lazy"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0f] to-transparent opacity-60" />
         </div>

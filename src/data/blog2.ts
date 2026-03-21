@@ -5,7 +5,7 @@ export const postsPart2: BlogPost[] = [
     id: "post-6",
     slug: "how-consistent-posting-skyrockets-engagement",
     date: "2026-03-10",
-    readTime: "6 min read",
+    readTime: 6,
     coverImage: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1000&auto=format&fit=crop",
     en: {
       title: "How Consistent Posting Skyrockets Your Engagement Rate",
@@ -42,7 +42,7 @@ export const postsPart2: BlogPost[] = [
     id: "post-7",
     slug: "simplifying-client-reporting-white-label",
     date: "2026-03-08",
-    readTime: "5 min read",
+    readTime: 5,
     coverImage: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=1000&auto=format&fit=crop",
     en: {
       title: "Simplifying Client Reporting with White-Label Dashboards",
@@ -79,7 +79,7 @@ export const postsPart2: BlogPost[] = [
     id: "post-8",
     slug: "best-times-to-post-x-instagram-linkedin",
     date: "2026-03-05",
-    readTime: "7 min read",
+    readTime: 7,
     coverImage: "https://images.unsplash.com/photo-1507206130118-b5907f817163?q=80&w=1000&auto=format&fit=crop",
     en: {
       title: "The Best Times to Post on X, Instagram, and LinkedIn",
@@ -122,7 +122,7 @@ export const postsPart2: BlogPost[] = [
     id: "post-9",
     slug: "how-evergreen-content-drives-traffic-autopilot",
     date: "2026-03-03",
-    readTime: "6 min read",
+    readTime: 6,
     coverImage: "https://images.unsplash.com/photo-1499951360447-b19be8fe80f5?q=80&w=1000&auto=format&fit=crop",
     en: {
       title: "How Evergreen Content Can Drive Traffic on Autopilot",
@@ -159,7 +159,7 @@ export const postsPart2: BlogPost[] = [
     id: "post-10",
     slug: "transitioning-manual-to-centralized-social-tool",
     date: "2026-03-01",
-    readTime: "9 min read",
+    readTime: 9,
     coverImage: "https://images.unsplash.com/photo-1531403009284-440f080d1e12?q=80&w=1000&auto=format&fit=crop",
     en: {
       title: "Transitioning from Manual Posting to a Centralized Social Tool",

@@ -2,7 +2,7 @@ export type BlogPost = {
   id: string;
   slug: string;
   date: string;
-  readTime: string;
+  readTime: number;
   coverImage: string;
   en: {
     title: string;

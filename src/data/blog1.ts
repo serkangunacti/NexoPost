@@ -5,8 +5,8 @@ export const postsPart1: BlogPost[] = [
     id: "post-1",
     slug: "ultimate-guide-social-media-automation-2026",
     date: "2026-03-21",
-    readTime: "6 min read",
-    coverImage: "https://images.unsplash.com/photo-1611162617474-5b21e879e113?q=80&w=1000&auto=format&fit=crop",
+    readTime: 6,
+    coverImage: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000&auto=format&fit=crop",
     en: {
       title: "The Ultimate Guide to Social Media Automation in 2026",
       excerpt: "Discover the cutting-edge strategies and tools to fully automate your social presence effortlessly across all networks.",
@@ -56,7 +56,7 @@ export const postsPart1: BlogPost[] = [
     id: "post-2",
     slug: "how-to-manage-multiple-brands-from-single-dashboard",
     date: "2026-03-20",
-    readTime: "5 min read",
+    readTime: 5,
     coverImage: "https://images.unsplash.com/photo-1432888117246-4138e0bbf4de?q=80&w=1000&auto=format&fit=crop",
     en: {
       title: "How to Manage Multiple Brands from a Single Dashboard",
@@ -93,7 +93,7 @@ export const postsPart1: BlogPost[] = [
     id: "post-3",
     slug: "importance-of-cross-platform-sync-for-agencies",
     date: "2026-03-18",
-    readTime: "7 min read",
+    readTime: 7,
     coverImage: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000&auto=format&fit=crop",
     en: {
       title: "The Importance of Cross-Platform Sync for Digital Agencies",
@@ -130,7 +130,7 @@ export const postsPart1: BlogPost[] = [
     id: "post-4",
     slug: "why-auto-scaling-media-is-the-future",
     date: "2026-03-15",
-    readTime: "4 min read",
+    readTime: 4,
     coverImage: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?q=80&w=1000&auto=format&fit=crop",
     en: {
       title: "Why Auto-Scaling Media is the Future of Social Posting",
@@ -165,7 +165,7 @@ export const postsPart1: BlogPost[] = [
     id: "post-5",
     slug: "top-5-metrics-meta-tiktok-analytics",
     date: "2026-03-12",
-    readTime: "8 min read",
+    readTime: 8,
     coverImage: "https://images.unsplash.com/photo-1556155092-490a1ba16284?q=80&w=1000&auto=format&fit=crop",
     en: {
       title: "Top 5 Metrics to Track in Meta and TikTok Analytics",

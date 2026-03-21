@@ -10,7 +10,8 @@
   "blog_index": {
     "title": "NexoPost Blog",
     "subtitle": "Sosyal medya otomasyonunda ustalaşmak için en güncel içerikleri, stratejileri ve rehberleri keşfedin.",
-    "read_more": "Makaleyi Oku"
+    "read_more": "Makaleyi Oku",
+    "read_time": "dak okuma"
   },
   "hero": {
     "title": "Erişiminizi Güçlendirin. Etkinizi Otomatikleştirin.",

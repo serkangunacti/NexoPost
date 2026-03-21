@@ -11,9 +11,9 @@ export async function generateStaticParams() {
 }
 
 // Dynamically generate SEO metadata based on the slug
-export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
-  // Await params object if Next.js version requires it, though usually direct access is fine.
-  const post = getBlogPost(params.slug);
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> | { slug: string } }): Promise<Metadata> {
+  const resolvedParams = await Promise.resolve(params);
+  const post = getBlogPost(resolvedParams.slug);
   if (!post) {
     return { title: 'Post Not Found | NexoPost' };
   }
@@ -30,8 +30,9 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   };
 }
 
-export default function SingleBlogPage({ params }: { params: { slug: string } }) {
-  const post = getBlogPost(params.slug);
+export default async function SingleBlogPage({ params }: { params: Promise<{ slug: string }> | { slug: string } }) {
+  const resolvedParams = await Promise.resolve(params);
+  const post = getBlogPost(resolvedParams.slug);
   
   if (!post) {
     notFound();
