@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useLanguage } from "@/context/LanguageContext";
 import { Globe, User, ArrowRight } from "lucide-react";
-import { SiX, SiFacebook, SiInstagram } from "react-icons/si";
+import { SiX, SiFacebook, SiInstagram, SiTiktok } from "react-icons/si";
 import { FaLinkedin } from "react-icons/fa6";
 
 export default function PublicNavbar() {
@@ -14,33 +14,37 @@ export default function PublicNavbar() {
     <nav className="w-full fixed top-0 left-0 z-50 border-b border-white/5 bg-[#0a0a0f]/80 backdrop-blur-md">
       <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
         
-        {/* Logo */}
-        <Link href="/" className="flex items-center gap-3 group">
-          <div className="w-10 h-10 rounded-xl bg-violet-600/20 flex items-center justify-center border border-violet-500/30 group-hover:scale-105 transition-transform overflow-hidden relative shadow-[0_0_15px_rgba(139,92,246,0.3)]">
-            <Image src="/logo.png" alt="NexoPost Logo" fill className="object-cover" />
-          </div>
-          <span className="text-xl font-extrabold tracking-tight text-white flex items-center gap-1.5">
-            Nexo<span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-sky-400">Post</span>
-          </span>
-        </Link>
+        {/* Left Section: Logo & Navigation */}
+        <div className="flex items-center gap-12">
+          {/* Logo */}
+          <Link href="/" className="flex items-center gap-3 group">
+            <div className="w-10 h-10 rounded-xl bg-violet-600/20 flex items-center justify-center border border-violet-500/30 group-hover:scale-105 transition-transform overflow-hidden relative shadow-[0_0_15px_rgba(139,92,246,0.3)]">
+              <Image src="/logo.png" alt="NexoPost Logo" fill className="object-cover" />
+            </div>
+            <span className="text-xl font-extrabold tracking-tight text-white flex items-center gap-1.5">
+              Nexo<span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-sky-400">Post</span>
+            </span>
+          </Link>
 
-        {/* Navigation Links */}
-        <div className="hidden md:flex items-center gap-8 absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-          <Link href="/#features" className="text-sm font-semibold text-neutral-300 hover:text-white transition-colors">{t.nav.features}</Link>
-          <Link href="/#pricing" className="text-sm font-semibold text-neutral-300 hover:text-white transition-colors">{t.nav.pricing}</Link>
-          <Link href="/blog" className="text-sm font-semibold text-neutral-300 hover:text-white transition-colors">{t.nav.blog}</Link>
-          <Link href="/contact" className="text-sm font-semibold text-neutral-300 hover:text-white transition-colors">{t.nav.contact}</Link>
+          {/* Navigation Links */}
+          <div className="hidden lg:flex items-center gap-8">
+            <Link href="/#features" className="text-sm font-semibold text-neutral-300 hover:text-white transition-colors">{t.nav.features}</Link>
+            <Link href="/#pricing" className="text-sm font-semibold text-neutral-300 hover:text-white transition-colors">{t.nav.pricing}</Link>
+            <Link href="/blog" className="text-sm font-semibold text-neutral-300 hover:text-white transition-colors">{t.nav.blog}</Link>
+            <Link href="/contact" className="text-sm font-semibold text-neutral-300 hover:text-white transition-colors">{t.nav.contact}</Link>
+          </div>
         </div>
 
         {/* Right side controls */}
         <div className="flex items-center gap-4">
           
           {/* Social Icons (Header) */}
-          <div className="hidden lg:flex items-center gap-4 text-neutral-400 mr-2">
+          <div className="hidden xl:flex items-center gap-4 text-neutral-400 mr-2">
             <a href="#" className="hover:text-white transition-colors"><SiX className="w-4 h-4" /></a>
-            <a href="#" className="hover:text-white transition-colors"><FaLinkedin className="w-4 h-4" /></a>
-            <a href="#" className="hover:text-white transition-colors"><SiFacebook className="w-4 h-4" /></a>
-            <a href="#" className="hover:text-white transition-colors"><SiInstagram className="w-4 h-4" /></a>
+            <a href="#" className="hover:text-[#0A66C2] transition-colors"><FaLinkedin className="w-4 h-4" /></a>
+            <a href="#" className="hover:text-[#1877F2] transition-colors"><SiFacebook className="w-4 h-4" /></a>
+            <a href="#" className="hover:text-[#E1306C] transition-colors"><SiInstagram className="w-4 h-4" /></a>
+            <a href="#" className="hover:text-white transition-colors"><SiTiktok className="w-4 h-4" /></a>
           </div>
 
           {/* Language Selector */}
