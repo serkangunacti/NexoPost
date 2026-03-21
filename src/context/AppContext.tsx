@@ -21,7 +21,7 @@ interface AppContextType {
   toggleAccount: (clientId: string, platformId: string) => void;
 }
 
-const defaultClient = { id: "default_user", name: "My Personal Account" };
+const defaultClient: Client = { id: "default_user", name: "My Personal Account" };
 
 const defaultContextValue: AppContextType = {
   userType: "basic",
@@ -36,6 +36,7 @@ const defaultContextValue: AppContextType = {
   toggleAccount: () => {},
 };
 
+// Context never undefined — default value provided
 const AppContext = createContext<AppContextType>(defaultContextValue);
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
@@ -43,16 +44,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
   const [clients, setClients] = useState<Client[]>([defaultClient]);
   const [activeClient, setActiveClient] = useState<Client>(defaultClient);
-  
   const [connectedAccounts, setConnectedAccounts] = useState<Record<string, string[]>>({
-    "default_user": ["twitter", "facebook"]
+    "default_user": ["twitter", "facebook"],
   });
 
   const toggleAccount = (clientId: string, platformId: string) => {
-    setConnectedAccounts(prev => {
+    setConnectedAccounts((prev) => {
       const current = prev[clientId] || [];
       if (current.includes(platformId)) {
-        return { ...prev, [clientId]: current.filter(id => id !== platformId) };
+        return { ...prev, [clientId]: current.filter((id) => id !== platformId) };
       } else {
         return { ...prev, [clientId]: [...current, platformId] };
       }
@@ -60,18 +60,31 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   };
 
   const addClient = (name: string) => {
-    const newClient = { id: Date.now().toString(), name };
-    setClients([...clients, newClient]);
+    const newClient: Client = { id: Date.now().toString(), name };
+    setClients((prev) => [...prev, newClient]);
     setActiveClient(newClient);
   };
 
   return (
-    <AppContext.Provider value={{ userType, setUserType, isLoggedIn, setIsLoggedIn, activeClient, setActiveClient, clients, addClient, connectedAccounts, toggleAccount }}>
+    <AppContext.Provider
+      value={{
+        userType,
+        setUserType,
+        isLoggedIn,
+        setIsLoggedIn,
+        activeClient,
+        setActiveClient,
+        clients,
+        addClient,
+        connectedAccounts,
+        toggleAccount,
+      }}
+    >
       {children}
     </AppContext.Provider>
   );
 }
 
-export function useApp() {
+export function useApp(): AppContextType {
   return useContext(AppContext);
 }
