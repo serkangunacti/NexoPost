@@ -11,6 +11,14 @@ export default function BlogPostClient({ post }: { post: BlogPost }) {
   
   const [progress, setProgress] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
+  const [activePost, setActivePost] = useState<BlogPost>(post);
+
+  const currentIndex = allBlogs.findIndex(p => p.id === post.id);
+  const postsToRender = [
+    allBlogs[currentIndex],
+    ...allBlogs.slice(currentIndex + 1),
+    ...allBlogs.slice(0, currentIndex)
+  ];
 
   useEffect(() => {
     const handleScroll = () => {
@@ -23,6 +31,12 @@ export default function BlogPostClient({ post }: { post: BlogPost }) {
         const rect = article.getBoundingClientRect();
 
         if (rect.top <= readOffset && rect.bottom > readOffset) {
+          const postId = article.getAttribute("data-post-id");
+          const currentlyReading = postsToRender.find(p => p.id === postId);
+          if (currentlyReading) {
+            setActivePost(currentlyReading);
+          }
+
           const totalScrollable = article.offsetHeight - window.innerHeight + readOffset;
           const currentReadingProgress = readOffset - rect.top;
           
@@ -39,18 +53,22 @@ export default function BlogPostClient({ post }: { post: BlogPost }) {
     window.addEventListener("scroll", handleScroll, { passive: true });
     handleScroll(); // Trigger once on mount
     return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+  }, [postsToRender]);
 
-  const currentIndex = allBlogs.findIndex(p => p.id === post.id);
-  const postsToRender = [
-    allBlogs[currentIndex],
-    ...allBlogs.slice(currentIndex + 1),
-    ...allBlogs.slice(0, currentIndex)
-  ];
+  // Update Document Title & URL dynamically based on active reading post and language
+  useEffect(() => {
+    const c = lang === "tr" ? activePost.tr : activePost.en;
+    document.title = `${c.title} | NexoPost`;
+    
+    // Gracefully update URL to match the current article without triggering a page reload
+    if (window.location.pathname !== `/blog/${activePost.slug}`) {
+      window.history.replaceState(null, "", `/blog/${activePost.slug}`);
+    }
+  }, [activePost, lang]);
 
-  // Exclude current post from sidebar by default, but allow searching from all
+  // Exclude current search/active post from sidebar by default
   const filteredSidebar = allBlogs.filter(p => {
-    if (!searchQuery && p.id === post.id) return false;
+    if (!searchQuery && p.id === activePost.id) return false;
     const c = lang === "tr" ? p.tr : p.en;
     return c.title.toLowerCase().includes(searchQuery.toLowerCase());
   });
