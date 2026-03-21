@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useLanguage } from "@/context/LanguageContext";
-import { ArrowRight, CheckCircle2, Zap, Layers, BarChart3, Users, Clock, Mail, MapPin } from "lucide-react";
+import { ArrowRight, CheckCircle2, Zap, Layers, Users, Clock } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { SiX, SiFacebook, SiInstagram, SiTiktok, SiBluesky, SiThreads, SiPinterest } from "react-icons/si";
@@ -251,33 +251,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Contact Section */}
-      <section className="w-full bg-[#07070a] border-t border-white/5 py-24 px-6 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-violet-600/10 rounded-full blur-[120px] pointer-events-none" />
-        <div className="max-w-4xl mx-auto flex flex-col md:flex-row items-center gap-12 relative z-10 glass p-10 md:p-16 rounded-[3rem] border border-white/10 shadow-2xl">
-          <div className="flex-1 text-center md:text-left">
-            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">{t.contact.title}</h2>
-            <p className="text-neutral-400 text-lg mb-8 leading-relaxed max-w-md">{t.contact.desc}</p>
-            <div className="space-y-4 text-neutral-300">
-              <div className="flex items-start gap-3 justify-center md:justify-start">
-                <MapPin className="w-6 h-6 text-violet-400 shrink-0 mt-1" />
-                <div className="text-left">
-                  <span className="block font-bold text-white mb-1">{t.contact.address_title}</span>
-                  <span className="text-sm leading-relaxed block max-w-sm">{t.contact.address}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div className="w-full md:w-auto flex flex-col items-center gap-4">
-            <a href="mailto:info@nexopost.com" className="w-full md:w-auto bg-white text-black hover:bg-neutral-200 px-8 py-4 rounded-2xl font-bold text-lg transition-all flex items-center justify-center gap-3 shadow-[0_0_20px_rgba(255,255,255,0.2)] hover:scale-105 active:scale-95">
-              <Mail className="w-6 h-6" />
-              {t.contact.button}
-            </a>
-            <span className="text-neutral-500 font-semibold mt-1">info@nexopost.com</span>
-          </div>
-        </div>
-      </section>
-
       {/* Footer */}
       <footer className="w-full border-t border-white/5 bg-[#050508] py-16 px-6">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-8">
@@ -309,7 +282,7 @@ export default function LandingPage() {
             <div className="flex items-center gap-6 text-sm font-semibold text-neutral-500">
               <a href="#" className="hover:text-white transition-colors">{t.footer.privacy}</a>
               <a href="#" className="hover:text-white transition-colors">{t.footer.terms}</a>
-              <a href="mailto:info@nexopost.com" className="hover:text-white transition-colors">info@nexopost.com</a>
+              <Link href="/contact" className="hover:text-white transition-colors">{t.footer.contact}</Link>
             </div>
           </div>
         </div>

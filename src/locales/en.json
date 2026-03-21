@@ -55,17 +55,23 @@
     "choose": "Choose Plan"
   },
   "contact": {
-    "title": "Get In Touch",
-    "desc": "Have questions or want to collaborate? Send us an email directly, and we will get back to you.",
-    "button": "Send Email to info@nexopost.com",
+    "title": "Contact Us",
+    "desc": "Have questions or want to collaborate? Fill out the form below or send us an email directly.",
+    "button": "Send Message",
     "address_title": "Headquarters:",
-    "address": "Fatih Sultan Mehmet Mah. Depoyolu Sk. No:16 Ic Kapi no:58, One Block Plaza 34774 Umraniye/Istanbul"
+    "address": "Fatih Sultan Mehmet Mah. Depoyolu Sk. No:16 Ic Kapi no:58, One Block Plaza 34774 Umraniye/Istanbul",
+    "form_name": "Full Name",
+    "form_email": "Email Address",
+    "form_message": "Your Message",
+    "form_submit": "Send Message",
+    "info": "Contact Info"
   },
   "footer": {
     "copyright": "NexoPost is a brand of Uptexx Information Technologies.",
     "uptexx": "Uptexx Information Technologies",
     "privacy": "Privacy & KVKK",
-    "terms": "Terms of Service"
+    "terms": "Terms of Service",
+    "contact": "Contact Us"
   },
   "cookies": {
     "text": "We use cookies to ensure you get the best experience on our website according to privacy regulations (KVKK / GDPR).",

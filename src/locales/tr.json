@@ -56,16 +56,22 @@
   },
   "contact": {
     "title": "Bize Ulaşın",
-    "desc": "Sorularınız mı var veya işbirliği mi yapmak istiyorsunuz? Bize direkt mail atabilirsiniz; ekibimiz size en kısa sürede dönüş yapacaktır.",
-    "button": "info@nexopost.com Adresine E-posta Gönder",
+    "desc": "Sorularınız mı var veya işbirliği mi yapmak istiyorsunuz? Aşağıdaki formu doldurun veya bize direkt e-posta atın.",
+    "button": "Mesaj Gönder",
     "address_title": "Merkez Ofis:",
-    "address": "Fatih Sultan Mehmet Mah. Depoyolu Sk. No:16 İç Kapı no:58, One Block Plaza 34774 Ümraniye/İstanbul"
+    "address": "Fatih Sultan Mehmet Mah. Depoyolu Sk. No:16 İç Kapı no:58, One Block Plaza 34774 Ümraniye/İstanbul",
+    "form_name": "Ad Soyad",
+    "form_email": "E-posta Adresi",
+    "form_message": "Mesajınız",
+    "form_submit": "Mesajı Gönder",
+    "info": "İletişim Bilgileri"
   },
   "footer": {
     "copyright": "NexoPost bir Uptexx Bilgi Teknolojileri markasıdır.",
     "uptexx": "Uptexx Bilgi Teknolojileri",
     "privacy": "Gizlilik & KVKK Metni",
-    "terms": "Kullanım Koşulları"
+    "terms": "Kullanım Koşulları",
+    "contact": "Bize Ulaşın"
   },
   "cookies": {
     "text": "Sizlere daha iyi hizmet sunabilmek ve KVKK/GDPR kapsamında kullanıcı deneyiminizi geliştirmek için çerezler (cookies) kullanıyoruz.",
