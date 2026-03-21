@@ -73,13 +73,14 @@ function LoginContent() {
             <div className="mt-8 rounded-[2.25rem] border border-white/10 bg-black/30 p-6 md:p-8 shadow-inner">
               <div className="relative flex min-h-[420px] flex-col items-center justify-center overflow-hidden rounded-[1.9rem] border border-white/10 bg-[radial-gradient(circle_at_top,rgba(139,92,246,0.18),transparent_38%),linear-gradient(180deg,#09090f,#050508)] px-8 py-12 text-center">
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_right,rgba(56,189,248,0.14),transparent_24%)] pointer-events-none" />
-                <div className="relative z-10 flex h-32 w-32 items-center justify-center rounded-[2rem] border border-violet-500/30 bg-violet-500/10 shadow-[0_0_40px_rgba(139,92,246,0.18)]">
+                <div className="absolute inset-0 bg-[radial-gradient(circle,rgba(139,92,246,0.12),transparent_55%)] pointer-events-none" />
+                <div className="relative z-10 flex h-52 w-52 md:h-64 md:w-64 items-center justify-center rounded-[2.5rem] border border-violet-500/30 bg-white/[0.03] shadow-[0_0_60px_rgba(139,92,246,0.2)] backdrop-blur-sm">
                   <Image
                     src="/logo.png"
                     alt="NexoPost Logo"
-                    width={84}
-                    height={84}
-                    className="object-contain"
+                    width={180}
+                    height={180}
+                    className="h-32 w-32 md:h-44 md:w-44 object-contain drop-shadow-[0_0_25px_rgba(255,255,255,0.12)]"
                   />
                 </div>
                 <p className="relative z-10 mt-10 max-w-xl text-3xl font-extrabold tracking-tight text-white md:text-4xl">
