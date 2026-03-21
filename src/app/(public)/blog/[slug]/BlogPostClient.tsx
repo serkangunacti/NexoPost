@@ -169,8 +169,8 @@ export default function BlogPostClient({ post }: { post: BlogPost }) {
           </div>
 
           {/* Sidebar: Related Posts & Search */}
-          <aside className="w-full lg:w-1/3 mt-16 lg:mt-0">
-            <div className="sticky top-28 bg-white/[0.02] border border-white/5 rounded-3xl p-6 shadow-2xl">
+          <aside className="w-full lg:w-1/3 mt-16 lg:mt-0 lg:self-start">
+            <div className="bg-white/[0.02] border border-white/5 rounded-3xl p-6 shadow-2xl">
               
               <div className="mb-6 relative">
                 <input 
