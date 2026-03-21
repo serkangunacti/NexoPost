@@ -36,10 +36,10 @@ export default function BlogListClient() {
                 {/* Real Image Cover */}
                 <div className="h-56 w-full relative bg-neutral-900 border-b border-white/5 overflow-hidden">
                   <img 
+                    key={post.coverImage}
                     src={post.coverImage} 
                     alt={content.title} 
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 opacity-90 group-hover:opacity-100"
-                    loading="lazy"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0f] to-transparent opacity-80" />
                 </div>
