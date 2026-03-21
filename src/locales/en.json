@@ -9,7 +9,8 @@
     "title": "Empower Your Reach. Automate Your Impact.",
     "subtitle": "Schedule, analyze, and manage all your social media accounts from a single ultimate platform.",
     "cta": "Get Started",
-    "slogan": "Premium service for premium brands."
+    "slogan": "Premium service for premium brands.",
+    "no_limits": "No Platform Limits"
   },
   "features": {
     "title": "Unleash the Power of Automation",
@@ -55,6 +56,9 @@
     "agency_perk4": "White-Label Custom Reports",
     "agency_perk5": "Unlimited Analytics History",
     "agency_perk6": "AI Auto-Scale Media",
+    "basic_perk7": "Post to All Supported Platforms",
+    "pro_perk7": "Post to All Supported Platforms",
+    "agency_perk7": "Post to All Supported Platforms",
     "choose": "Choose Plan"
   },
   "contact": {

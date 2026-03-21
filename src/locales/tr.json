@@ -9,7 +9,8 @@
     "title": "Erişiminizi Güçlendirin. Etkinizi Otomatikleştirin.",
     "subtitle": "Tüm sosyal medya hesaplarınızı tek bir nihai platformdan planlayın, analiz edin ve yönetin.",
     "cta": "Hemen Başla",
-    "slogan": "İşi uzmanına bırakın. Kaliteli markalar için en premium hizmet."
+    "slogan": "İşi uzmanına bırakın. Kaliteli markalar için en premium hizmet.",
+    "no_limits": "Platform Kısıtlaması Yok. Tüm Ağlarda Paylaşın."
   },
   "features": {
     "title": "Otomasyonun Gücünü Serbest Bırakın",
@@ -55,6 +56,9 @@
     "agency_perk4": "White-Label Müşteri Raporları",
     "agency_perk5": "Sınırsız Veri ve Analitik",
     "agency_perk6": "AI Akıllı Medya Formatlama",
+    "basic_perk7": "Tüm Platformlardan Özgürce Paylaşım",
+    "pro_perk7": "Tüm Platformlardan Özgürce Paylaşım",
+    "agency_perk7": "Tüm Platformlardan Özgürce Paylaşım",
     "choose": "Planı Seç"
   },
   "contact": {
