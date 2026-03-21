@@ -51,28 +51,66 @@ function LoginContent() {
 
   return (
     <div className="min-h-screen w-full px-6 py-28 relative overflow-hidden">
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-[520px] bg-violet-600/10 blur-[140px] rounded-full pointer-events-none opacity-70" />
-      <div className="absolute bottom-0 right-0 w-[28rem] h-[28rem] bg-sky-500/10 blur-[130px] rounded-full pointer-events-none" />
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-5xl h-[560px] bg-[radial-gradient(circle_at_top,rgba(99,102,241,0.24),transparent_60%)] pointer-events-none" />
+      <div className="absolute -top-24 right-0 w-[30rem] h-[30rem] bg-sky-500/10 blur-[150px] rounded-full pointer-events-none" />
+      <div className="absolute bottom-0 left-0 w-[24rem] h-[24rem] bg-violet-600/10 blur-[130px] rounded-full pointer-events-none" />
 
-      <div className="max-w-5xl mx-auto relative z-10 grid grid-cols-1 lg:grid-cols-[1.05fr_0.95fr] gap-8 items-stretch">
-        <section className="glass border border-white/10 rounded-[3rem] p-8 md:p-12 shadow-2xl">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-violet-500/30 bg-violet-500/10 text-violet-300 text-sm font-semibold mb-8">
-            <ShieldCheck className="w-4 h-4" />
-            Secure Account Access
-          </div>
+      <div className="max-w-6xl mx-auto relative z-10 grid grid-cols-1 xl:grid-cols-[1.15fr_0.85fr] gap-8 items-stretch">
+        <section className="relative overflow-hidden rounded-[2.75rem] border border-white/10 bg-[linear-gradient(145deg,rgba(18,18,28,0.95),rgba(7,7,12,0.92))] p-7 md:p-9 shadow-[0_30px_100px_rgba(0,0,0,0.45)]">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(56,189,248,0.12),transparent_28%),radial-gradient(circle_at_bottom_left,rgba(139,92,246,0.16),transparent_32%)] pointer-events-none" />
 
-          <h1 className="text-4xl md:text-5xl font-extrabold text-white tracking-tight mb-5">
-            {t.login_page.title}
-          </h1>
-          <div className="mt-8 overflow-hidden rounded-[2.25rem] border border-white/10 bg-black/20">
-            <div className="pointer-events-none origin-top-left scale-[0.72] sm:scale-[0.82] lg:scale-[0.72] xl:scale-[0.8] w-[139%] sm:w-[122%] lg:w-[139%] xl:w-[125%] -mb-20 sm:-mb-12 lg:-mb-20 xl:-mb-10 -ml-10 sm:-ml-8 lg:-ml-10 xl:-ml-8">
-              <AnimatedShowcase />
+          <div className="relative z-10">
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-bold uppercase tracking-[0.3em] text-neutral-300">
+              NexoPost Live Preview
+            </div>
+            <h1 className="mt-6 max-w-2xl text-4xl md:text-5xl font-extrabold tracking-tight text-white">
+              {t.login_page.title}
+            </h1>
+            <p className="mt-4 max-w-2xl text-base md:text-lg leading-relaxed text-neutral-400">
+              {t.login_page.subtitle}
+            </p>
+
+            <div className="mt-8 rounded-[2.25rem] border border-white/10 bg-black/30 p-3 shadow-inner">
+              <div className="overflow-hidden rounded-[1.9rem] border border-white/10 bg-[#040407]">
+                <div className="pointer-events-none origin-top-left scale-[0.66] sm:scale-[0.76] lg:scale-[0.72] xl:scale-[0.78] w-[151%] sm:w-[132%] lg:w-[139%] xl:w-[128%] -mb-24 sm:-mb-16 lg:-mb-20 xl:-mb-14 -ml-12 sm:-ml-10 lg:-ml-10 xl:-ml-8">
+                  <AnimatedShowcase />
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-4">
+                <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-neutral-500">Workspaces</p>
+                <p className="mt-2 text-lg font-bold text-white">Multi-brand ready</p>
+              </div>
+              <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-4">
+                <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-neutral-500">Publishing</p>
+                <p className="mt-2 text-lg font-bold text-white">All networks in one flow</p>
+              </div>
+              <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-4">
+                <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-neutral-500">Analytics</p>
+                <p className="mt-2 text-lg font-bold text-white">Dashboard synced insight</p>
+              </div>
             </div>
           </div>
         </section>
 
-        <section className="glass border border-white/10 rounded-[3rem] p-8 md:p-10 shadow-2xl">
+        <section className="relative overflow-hidden rounded-[2.75rem] border border-white/10 bg-[linear-gradient(180deg,rgba(14,14,22,0.96),rgba(9,9,14,0.94))] p-8 md:p-10 shadow-[0_30px_100px_rgba(0,0,0,0.45)]">
+          <div className="absolute inset-x-0 top-0 h-32 bg-[radial-gradient(circle_at_top,rgba(139,92,246,0.16),transparent_70%)] pointer-events-none" />
           <form onSubmit={handleSubmit} className="space-y-6">
+            <div>
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-violet-500/30 bg-violet-500/10 text-violet-300 text-sm font-semibold">
+                <ShieldCheck className="w-4 h-4" />
+                Secure Account Access
+              </div>
+              <h2 className="mt-6 text-3xl md:text-[2rem] font-extrabold tracking-tight text-white">
+                {t.login_page.title}
+              </h2>
+              <p className="mt-3 text-neutral-400 leading-relaxed">
+                Sign in with the credentials assigned to your purchased package.
+              </p>
+            </div>
+
             <div>
               <label className="block text-sm font-semibold text-neutral-400 mb-2">
                 {t.login_page.identifier}
@@ -120,11 +158,15 @@ function LoginContent() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-violet-600 hover:bg-violet-500 disabled:opacity-60 text-white font-bold py-4 rounded-2xl flex items-center justify-center gap-3 transition-all shadow-[0_0_20px_rgba(139,92,246,0.3)] hover:scale-105 active:scale-95"
+              className="w-full bg-violet-600 hover:bg-violet-500 disabled:opacity-60 text-white font-bold py-4 rounded-2xl flex items-center justify-center gap-3 transition-all shadow-[0_0_20px_rgba(139,92,246,0.3)] hover:translate-y-[-1px] active:scale-[0.99]"
             >
               {loading ? t.login_page.processing : t.login_page.submit}
               {!loading ? <ArrowRight className="w-5 h-5" /> : null}
             </button>
+
+            <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-4 text-sm text-neutral-400">
+              Purchased users should log in here. New users can still start from checkout and choose a plan.
+            </div>
 
             <p className="text-center text-sm text-neutral-500">
               {t.login_page.hint}{" "}
