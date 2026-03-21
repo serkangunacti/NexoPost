@@ -70,7 +70,7 @@ export default function Sidebar({ className }: SidebarProps) {
                       return;
                     }
                     const name = prompt("Enter new client / workspace name:");
-                    if(name) addClient(name);
+                    if(name?.trim()) addClient(name.trim());
                   }} 
                   className="w-full flex items-center justify-center gap-1.5 py-2 px-3 bg-violet-600/20 hover:bg-violet-600/40 text-violet-300 text-xs font-bold rounded-lg transition-colors border border-violet-500/30"
                 >

@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowUpRight, BarChart3, Plus, Layers, Calendar, Loader2 } from "lucide-react";
+import { ArrowUpRight, BarChart3, Plus, Layers, Calendar, Loader2, TrendingUp, Users, Eye } from "lucide-react";
 import Link from "next/link";
 import { useApp } from "@/context/AppContext";
+import { getAnalyticsOverview } from "@/lib/adminAnalytics";
 import { db } from "@/lib/firebase";
 import { getSubscriptionSnapshot } from "@/lib/subscription";
 import { Timestamp, collection, onSnapshot, query, orderBy } from "firebase/firestore";
@@ -21,11 +22,13 @@ interface DashboardPost {
 }
 
 export default function Home() {
-  const { subscription } = useApp();
+  const { activeClient, connectedAccounts, subscription, userType } = useApp();
   const [stats, setStats] = useState({ total: 0, published: 0, scheduled: 0 });
   const [upcomingPosts, setUpcomingPosts] = useState<DashboardPost[]>([]);
   const [loading, setLoading] = useState(() => Boolean(db));
   const subscriptionSnapshot = getSubscriptionSnapshot(subscription);
+  const currentConnectedIds = connectedAccounts[activeClient.id] || [];
+  const analyticsOverview = getAnalyticsOverview(userType, currentConnectedIds);
 
   useEffect(() => {
     if (!db) {
@@ -119,6 +122,64 @@ export default function Home() {
             </div>
           </div>
         ))}
+      </section>
+
+      <section>
+        <div className="flex items-center justify-between mb-6 gap-4">
+          <div>
+            <h2 className="text-2xl font-bold text-white">Analytics Snapshot</h2>
+            <p className="text-neutral-400 mt-2">
+              Dashboard now mirrors the headline performance metrics from your analytics page for {activeClient.name}.
+            </p>
+          </div>
+          <Link href="/analytics" className="text-sm font-semibold text-violet-400 hover:text-violet-300 transition-colors flex items-center gap-1 group">
+            Open analytics
+            <ArrowUpRight className="w-4 h-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+          </Link>
+        </div>
+
+        {userType === "basic" ? (
+          <div className="glass rounded-[2rem] border border-white/5 p-8 md:p-10">
+            <div className="max-w-2xl">
+              <p className="text-sm uppercase tracking-[0.25em] text-violet-300 font-bold mb-3">Upgrade Insight</p>
+              <h3 className="text-2xl font-bold text-white mb-3">Advanced analytics are available on Pro and Agency plans.</h3>
+              <p className="text-neutral-400 mb-6">
+                Audience growth, impression lift and engagement summaries will appear here once your workspace is upgraded.
+              </p>
+              <Link
+                href="/checkout"
+                className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl bg-violet-600 hover:bg-violet-500 text-white font-bold transition-colors"
+              >
+                Upgrade Plan <ArrowUpRight className="w-4 h-4" />
+              </Link>
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {analyticsOverview.map((metric) => {
+              const Icon = metric.key === "audience" ? Users : metric.key === "impressions" ? Eye : BarChart3;
+              return (
+                <div key={metric.key} className="glass p-6 rounded-3xl relative overflow-hidden group hover:-translate-y-1 transition-transform duration-300">
+                  <div className={`absolute inset-0 bg-gradient-to-br ${metric.accent} opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16 transition-transform duration-500 group-hover:scale-[2]" />
+                  <div className="flex justify-between items-start mb-6 relative z-10">
+                    <div className="p-3.5 bg-white/5 rounded-xl border border-white/5 shadow-inner">
+                      <Icon className={`w-6 h-6 ${metric.iconAccent}`} />
+                    </div>
+                    <span className="text-xs font-bold text-emerald-400 bg-emerald-400/10 px-3 py-1.5 rounded-full ring-1 ring-emerald-400/20 shadow-[0_0_10px_rgba(52,211,153,0.1)] flex items-center gap-1">
+                      <TrendingUp className="w-3.5 h-3.5" />
+                      {metric.trend}
+                    </span>
+                  </div>
+                  <div className="relative z-10">
+                    <h3 className="text-3xl font-bold text-white mb-2">{metric.value}</h3>
+                    <p className="text-neutral-400 font-medium text-sm tracking-wide uppercase">{metric.title}</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </section>
 
       <section>

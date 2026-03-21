@@ -1,12 +1,23 @@
 "use client";
 
-import { Check, AlertCircle, Building2 } from "lucide-react";
+import { useState } from "react";
+import { Check, AlertCircle, Building2, Pencil, Trash2 } from "lucide-react";
 import { SiX, SiFacebook, SiInstagram, SiTiktok, SiBluesky, SiThreads, SiPinterest, SiYoutube } from "react-icons/si";
 import { FaLinkedin } from "react-icons/fa6";
 import { useApp } from "@/context/AppContext";
 
 export default function AccountsPage() {
-  const { userType, activeClient, connectedAccounts, toggleAccount } = useApp();
+  const {
+    userType,
+    activeClient,
+    clients,
+    connectedAccounts,
+    removeClient,
+    renameClient,
+    toggleAccount,
+  } = useApp();
+  const [editingClientId, setEditingClientId] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState("");
   
   const defaultPlatforms = [
     { id: "twitter", name: "Twitter/X", icon: <SiX className="w-6 h-6" />, color: "bg-neutral-900 border border-neutral-700" },
@@ -26,6 +37,35 @@ export default function AccountsPage() {
     toggleAccount(activeClient.id, id);
   };
 
+  const startEditing = (clientId: string, name: string) => {
+    setEditingClientId(clientId);
+    setEditingName(name);
+  };
+
+  const handleRename = () => {
+    if (!editingClientId || !editingName.trim()) {
+      return;
+    }
+
+    renameClient(editingClientId, editingName);
+    setEditingClientId(null);
+    setEditingName("");
+  };
+
+  const handleDelete = (clientId: string, clientName: string) => {
+    if (clients.length === 1) {
+      return;
+    }
+
+    if (window.confirm(`Delete "${clientName}" workspace? Connected accounts in this workspace will also be removed.`)) {
+      removeClient(clientId);
+      if (editingClientId === clientId) {
+        setEditingClientId(null);
+        setEditingName("");
+      }
+    }
+  };
+
   return (
     <div className="max-w-5xl mx-auto space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
       <header className="mb-6 pl-2 flex flex-col md:flex-row md:items-start justify-between gap-4">
@@ -43,6 +83,97 @@ export default function AccountsPage() {
           <span className="block text-xs font-semibold opacity-70 uppercase mt-0.5">{userType} Plan</span>
         </div>
       </header>
+
+      {userType !== "basic" ? (
+        <section className="glass rounded-[2rem] border border-white/5 p-6 md:p-8 shadow-2xl">
+          <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
+            <div>
+              <h2 className="text-2xl font-bold text-white">Workspace Manager</h2>
+              <p className="text-neutral-400 mt-2 max-w-2xl">
+                Agency and Pro users can rename or remove client workspaces. Deleting a workspace removes its connected accounts from this admin panel.
+              </p>
+            </div>
+            <div className="px-4 py-2 rounded-xl border border-white/10 bg-black/20 text-sm text-neutral-300">
+              {clients.length} active workspace{clients.length === 1 ? "" : "s"}
+            </div>
+          </div>
+
+          <div className="mt-6 space-y-3">
+            {clients.map((client) => {
+              const isEditing = editingClientId === client.id;
+              const isActive = activeClient.id === client.id;
+              return (
+                <div
+                  key={client.id}
+                  className={`rounded-2xl border p-4 md:p-5 transition-all ${
+                    isActive ? "border-violet-500/30 bg-violet-500/10" : "border-white/10 bg-black/20"
+                  }`}
+                >
+                  <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                    <div className="min-w-0">
+                      <p className="text-xs uppercase tracking-[0.25em] text-neutral-500 font-bold mb-2">
+                        {isActive ? "Active Workspace" : "Client Workspace"}
+                      </p>
+                      {isEditing ? (
+                        <input
+                          type="text"
+                          value={editingName}
+                          onChange={(event) => setEditingName(event.target.value)}
+                          className="w-full md:w-80 bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-violet-500/50 transition-colors"
+                        />
+                      ) : (
+                        <p className="text-xl font-bold text-white truncate">{client.name}</p>
+                      )}
+                      <p className="text-sm text-neutral-400 mt-2">
+                        {(connectedAccounts[client.id] || []).length} connected account
+                        {(connectedAccounts[client.id] || []).length === 1 ? "" : "s"}
+                      </p>
+                    </div>
+
+                    <div className="flex flex-wrap gap-3">
+                      {isEditing ? (
+                        <>
+                          <button
+                            onClick={handleRename}
+                            className="px-4 py-2.5 rounded-xl bg-violet-600 text-white font-bold hover:bg-violet-500 transition-colors"
+                          >
+                            Save
+                          </button>
+                          <button
+                            onClick={() => {
+                              setEditingClientId(null);
+                              setEditingName("");
+                            }}
+                            className="px-4 py-2.5 rounded-xl border border-white/10 text-neutral-300 hover:bg-white/5 transition-colors"
+                          >
+                            Cancel
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => startEditing(client.id, client.name)}
+                            className="px-4 py-2.5 rounded-xl border border-white/10 text-neutral-200 hover:bg-white/5 transition-colors flex items-center gap-2"
+                          >
+                            <Pencil className="w-4 h-4" /> Edit
+                          </button>
+                          <button
+                            onClick={() => handleDelete(client.id, client.name)}
+                            disabled={clients.length === 1}
+                            className="px-4 py-2.5 rounded-xl border border-red-500/20 text-red-300 hover:bg-red-500/10 transition-colors flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+                          >
+                            <Trash2 className="w-4 h-4" /> Delete
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      ) : null}
 
       <div className="glass rounded-[2rem] p-8 md:p-12 border border-white/5 relative overflow-hidden shadow-2xl">
         <div className="absolute -top-40 -right-40 w-96 h-96 bg-violet-500/10 rounded-full blur-[100px] pointer-events-none" />

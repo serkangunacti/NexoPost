@@ -60,6 +60,8 @@ interface AppContextType {
   setActiveClient: (client: Client) => void;
   clients: Client[];
   addClient: (name: string) => void;
+  removeClient: (clientId: string) => void;
+  renameClient: (clientId: string, name: string) => void;
   connectedAccounts: Record<string, string[]>;
   toggleAccount: (clientId: string, platformId: string) => void;
 }
@@ -209,6 +211,8 @@ const defaultContextValue: AppContextType = {
   setActiveClient: () => {},
   clients: [defaultClient],
   addClient: () => {},
+  removeClient: () => {},
+  renameClient: () => {},
   connectedAccounts: { "default_user": ["twitter", "facebook"] },
   toggleAccount: () => {},
 };
@@ -379,6 +383,42 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
+  const renameClient = (clientId: string, name: string) => {
+    const trimmedName = name.trim();
+    if (!trimmedName) {
+      return;
+    }
+
+    writeSession({
+      ...session,
+      clients: session.clients.map((client) =>
+        client.id === clientId ? { ...client, name: trimmedName } : client
+      ),
+    });
+  };
+
+  const removeClient = (clientId: string) => {
+    if (session.clients.length === 1) {
+      return;
+    }
+
+    const nextClients = session.clients.filter((client) => client.id !== clientId);
+    if (nextClients.length === session.clients.length) {
+      return;
+    }
+
+    const nextConnectedAccounts = { ...session.connectedAccounts };
+    delete nextConnectedAccounts[clientId];
+
+    writeSession({
+      ...session,
+      activeClientId:
+        session.activeClientId === clientId ? nextClients[0].id : session.activeClientId,
+      clients: nextClients,
+      connectedAccounts: nextConnectedAccounts,
+    });
+  };
+
   const setActiveClient = (client: Client) => {
     writeSession({
       ...session,
@@ -404,6 +444,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         setActiveClient,
         clients: session.clients,
         addClient,
+        removeClient,
+        renameClient,
         connectedAccounts: session.connectedAccounts,
         toggleAccount,
       }}
