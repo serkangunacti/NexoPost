@@ -71,10 +71,11 @@ function LoginContent() {
             </p>
 
             <div className="mt-8 rounded-[2.25rem] border border-white/10 bg-black/30 p-3 shadow-inner">
-              <div className="overflow-hidden rounded-[1.9rem] border border-white/10 bg-[#040407]">
-                <div className="pointer-events-none origin-top-left scale-[0.66] sm:scale-[0.76] lg:scale-[0.72] xl:scale-[0.78] w-[151%] sm:w-[132%] lg:w-[139%] xl:w-[128%] -mb-24 sm:-mb-16 lg:-mb-20 xl:-mb-14 -ml-12 sm:-ml-10 lg:-ml-10 xl:-ml-8">
+              <div className="relative h-[420px] overflow-hidden rounded-[1.9rem] border border-white/10 bg-[#040407]">
+                <div className="pointer-events-none absolute left-1/2 top-0 w-[1180px] -translate-x-1/2 origin-top scale-[0.78] sm:scale-[0.86]">
                   <AnimatedShowcase />
                 </div>
+                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[#040407] to-transparent" />
               </div>
             </div>
 
@@ -106,9 +107,6 @@ function LoginContent() {
               <h2 className="mt-6 text-3xl md:text-[2rem] font-extrabold tracking-tight text-white">
                 {t.login_page.title}
               </h2>
-              <p className="mt-3 text-neutral-400 leading-relaxed">
-                Sign in with the credentials assigned to your purchased package.
-              </p>
             </div>
 
             <div>
@@ -163,10 +161,6 @@ function LoginContent() {
               {loading ? t.login_page.processing : t.login_page.submit}
               {!loading ? <ArrowRight className="w-5 h-5" /> : null}
             </button>
-
-            <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-4 text-sm text-neutral-400">
-              Purchased users should log in here. New users can still start from checkout and choose a plan.
-            </div>
 
             <p className="text-center text-sm text-neutral-500">
               {t.login_page.hint}{" "}
