@@ -33,7 +33,7 @@ export default function LandingPage() {
       <section className="relative w-full overflow-hidden flex flex-col items-center justify-center min-h-[85vh] text-center px-6">
         <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay pointer-events-none" />
         
-        <div className="max-w-4xl mx-auto relative z-10 flex flex-col items-center mt-[-5vh]">
+        <div className="max-w-4xl mx-auto relative z-10 flex flex-col items-center pt-8 md:pt-4">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-violet-500/30 bg-violet-500/10 text-violet-300 text-sm font-semibold mb-8 shadow-[0_0_20px_rgba(139,92,246,0.2)]">
             <Zap className="w-4 h-4 text-violet-400" />
             {t.hero.slogan}
