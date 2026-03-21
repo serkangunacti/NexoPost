@@ -54,13 +54,13 @@ export default function ContactPage() {
                   className="w-full bg-black/40 border border-white/10 rounded-xl px-5 py-3.5 text-white placeholder-neutral-600 font-medium focus:outline-none focus:border-violet-500/50 focus:bg-white/5 transition-all resize-none"
                 ></textarea>
               </div>
-              <button 
-                type="submit" 
-                className="w-full bg-violet-600 hover:bg-violet-500 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition-all shadow-[0_0_15px_rgba(139,92,246,0.3)] mt-2 hover:scale-105 active:scale-95"
+              <a 
+                href="mailto:info@nexopost.com"
+                className="w-full bg-violet-600 hover:bg-violet-500 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition-all shadow-[0_0_15px_rgba(139,92,246,0.3)] mt-2 hover:scale-105 active:scale-95 cursor-pointer"
               >
                 <Send className="w-5 h-5" />
                 {t.contact.form_submit}
-              </button>
+              </a>
             </form>
           </div>
 
