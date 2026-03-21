@@ -24,12 +24,17 @@ import { blogsPart3 } from "./blog3";
 import { blogsPart4 } from "./blog4";
 import { blogsPart5 } from "./blog5";
 
-export const allBlogs: BlogPost[] = [
+const rawBlogs: BlogPost[] = [
   ...postsPart1,
   ...postsPart2,
   ...blogsPart3,
   ...blogsPart4,
   ...blogsPart5
+];
+
+export const allBlogs: BlogPost[] = [
+  rawBlogs.find((b) => b.id === "post-19")!,
+  ...rawBlogs.filter((b) => b.id !== "post-19")
 ];
 
 // Utility function to get a specific blog post

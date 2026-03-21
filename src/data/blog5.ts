@@ -55,7 +55,7 @@ export const blogsPart5: BlogPost[] = [
     slug: "most-used-social-media-applications-in-focus",
     date: "2026-04-04",
     readTime: 5,
-    coverImage: "https://images.unsplash.com/photo-1611162617474-5b21e879e113?q=80&w=1000&auto=format&fit=crop",
+    coverImage: "https://images.unsplash.com/photo-1600880292203-757bb62b4baf?q=80&w=1000&auto=format&fit=crop",
     en: {
       title: "The Big Players: Exploring the Most Used Social Media Applications",
       excerpt: "Where is user attention flowing today? A breakdown of the dominant apps shaping the global internet traffic and how you should utilize them.",
