@@ -2,15 +2,15 @@
 
 import { FormEvent, Suspense, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowRight, Lock, ShieldCheck, User } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 import { useApp } from "@/context/AppContext";
 import { findPurchasedAccount } from "@/lib/purchasedAccounts";
-import AnimatedShowcase from "@/components/public/AnimatedShowcase";
 
 function LoginContent() {
-  const { t } = useLanguage();
+  const { lang, t } = useLanguage();
   const { loginWithPurchasedAccount } = useApp();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -70,12 +70,33 @@ function LoginContent() {
               {t.login_page.subtitle}
             </p>
 
-            <div className="mt-8 rounded-[2.25rem] border border-white/10 bg-black/30 p-3 shadow-inner">
-              <div className="relative h-[420px] overflow-hidden rounded-[1.9rem] border border-white/10 bg-[#040407]">
-                <div className="pointer-events-none absolute left-1/2 top-0 w-[1180px] -translate-x-1/2 origin-top scale-[0.78] sm:scale-[0.86]">
-                  <AnimatedShowcase />
+            <div className="mt-8 rounded-[2.25rem] border border-white/10 bg-black/30 p-6 md:p-8 shadow-inner">
+              <div className="relative flex min-h-[420px] flex-col items-center justify-center overflow-hidden rounded-[1.9rem] border border-white/10 bg-[radial-gradient(circle_at_top,rgba(139,92,246,0.18),transparent_38%),linear-gradient(180deg,#09090f,#050508)] px-8 py-12 text-center">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_right,rgba(56,189,248,0.14),transparent_24%)] pointer-events-none" />
+                <div className="relative z-10 flex h-32 w-32 items-center justify-center rounded-[2rem] border border-violet-500/30 bg-violet-500/10 shadow-[0_0_40px_rgba(139,92,246,0.18)]">
+                  <Image
+                    src="/logo.png"
+                    alt="NexoPost Logo"
+                    width={84}
+                    height={84}
+                    className="object-contain"
+                  />
                 </div>
-                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[#040407] to-transparent" />
+                <p className="relative z-10 mt-10 max-w-xl text-3xl font-extrabold tracking-tight text-white md:text-4xl">
+                  {lang === "tr" ? (
+                    <>
+                      İhtiyacınız olan her şey.
+                      <br />
+                      İhtiyacınız olmayan hiçbir şey.
+                    </>
+                  ) : (
+                    <>
+                      Everything you need.
+                      <br />
+                      Nothing you don&apos;t.
+                    </>
+                  )}
+                </p>
               </div>
             </div>
 
