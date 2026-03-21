@@ -8,6 +8,7 @@ import Link from "next/link";
 import { SiX, SiFacebook, SiInstagram, SiTiktok, SiBluesky, SiThreads, SiPinterest, SiYoutube } from "react-icons/si";
 import { FaLinkedin } from "react-icons/fa6";
 import AnimatedShowcase from "@/components/public/AnimatedShowcase";
+import SpaceBackground from "@/components/public/SpaceBackground";
 
 export default function LandingPage() {
   const { t } = useLanguage();
@@ -33,6 +34,7 @@ export default function LandingPage() {
       
       {/* Hero Section */}
       <section className="relative w-full overflow-hidden flex flex-col items-center justify-center min-h-[85vh] text-center px-6">
+        <SpaceBackground />
         <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay pointer-events-none" />
         
         <div className="max-w-4xl mx-auto relative z-10 flex flex-col items-center pt-8 md:pt-4">
@@ -86,47 +88,47 @@ export default function LandingPage() {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <Link href="/features?tab=sync" className="block glass p-10 rounded-3xl border border-white/5 relative group hover:-translate-y-2 transition-transform duration-500">
+            <Link href="/features?tab=sync#feature-tabs" className="block glass p-10 rounded-3xl border border-white/5 relative group hover:-translate-y-2 transition-transform duration-500">
               <div className="absolute inset-0 bg-gradient-to-b from-sky-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-3xl" />
               <Layers className="w-12 h-12 text-sky-400 mb-6 relative z-10 group-hover:scale-110 transition-transform duration-500" />
               <h3 className="text-2xl font-bold text-white mb-4 relative z-10 group-hover:text-sky-300 transition-colors">{t.features.f1_title}</h3>
               <p className="text-neutral-400 leading-relaxed font-medium relative z-10">{t.features.f1_desc}</p>
             </Link>
             
-            <Link href="/features?tab=multi" className="block glass p-10 rounded-3xl border border-white/5 relative group hover:-translate-y-2 transition-transform duration-500">
+            <Link href="/features?tab=multi#feature-tabs" className="block glass p-10 rounded-3xl border border-white/5 relative group hover:-translate-y-2 transition-transform duration-500">
               <div className="absolute inset-0 bg-gradient-to-b from-violet-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-3xl" />
               <Users className="w-12 h-12 text-violet-400 mb-6 relative z-10 group-hover:scale-110 transition-transform duration-500" />
               <h3 className="text-2xl font-bold text-white mb-4 relative z-10 group-hover:text-violet-300 transition-colors">{t.features.f2_title}</h3>
               <p className="text-neutral-400 leading-relaxed font-medium relative z-10">{t.features.f2_desc}</p>
             </Link>
             
-            <Link href="/features?tab=schedule" className="block glass p-10 rounded-3xl border border-white/5 relative group hover:-translate-y-2 transition-transform duration-500">
+            <Link href="/features?tab=schedule#feature-tabs" className="block glass p-10 rounded-3xl border border-white/5 relative group hover:-translate-y-2 transition-transform duration-500">
               <div className="absolute inset-0 bg-gradient-to-b from-emerald-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-3xl" />
               <Clock className="w-12 h-12 text-emerald-400 mb-6 relative z-10 group-hover:scale-110 transition-transform duration-500" />
               <h3 className="text-2xl font-bold text-white mb-4 relative z-10 group-hover:text-emerald-300 transition-colors">{t.features.f3_title}</h3>
               <p className="text-neutral-400 leading-relaxed font-medium relative z-10">{t.features.f3_desc}</p>
             </Link>
 
-            <div className="block glass p-10 rounded-3xl border border-white/5 relative group hover:-translate-y-2 transition-transform duration-500 cursor-default">
+            <Link href="/features?tab=analytics#feature-tabs" className="block glass p-10 rounded-3xl border border-white/5 relative group hover:-translate-y-2 transition-transform duration-500">
               <div className="absolute inset-0 bg-gradient-to-b from-fuchsia-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-3xl" />
               <BarChart3 className="w-12 h-12 text-fuchsia-400 mb-6 relative z-10 group-hover:scale-110 transition-transform duration-500" />
               <h3 className="text-2xl font-bold text-white mb-4 relative z-10 group-hover:text-fuchsia-300 transition-colors">{t.features.f4_title}</h3>
               <p className="text-neutral-400 leading-relaxed font-medium relative z-10">{t.features.f4_desc}</p>
-            </div>
+            </Link>
 
-            <div className="block glass p-10 rounded-3xl border border-white/5 relative group hover:-translate-y-2 transition-transform duration-500 cursor-default">
+            <Link href="/features?tab=ai#feature-tabs" className="block glass p-10 rounded-3xl border border-white/5 relative group hover:-translate-y-2 transition-transform duration-500">
               <div className="absolute inset-0 bg-gradient-to-b from-amber-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-3xl" />
               <Sparkles className="w-12 h-12 text-amber-400 mb-6 relative z-10 group-hover:scale-110 transition-transform duration-500" />
               <h3 className="text-2xl font-bold text-white mb-4 relative z-10 group-hover:text-amber-300 transition-colors">{t.features.f5_title}</h3>
               <p className="text-neutral-400 leading-relaxed font-medium relative z-10">{t.features.f5_desc}</p>
-            </div>
+            </Link>
 
-            <div className="block glass p-10 rounded-3xl border border-white/5 relative group hover:-translate-y-2 transition-transform duration-500 cursor-default">
+            <Link href="/features?tab=inbox#feature-tabs" className="block glass p-10 rounded-3xl border border-white/5 relative group hover:-translate-y-2 transition-transform duration-500">
               <div className="absolute inset-0 bg-gradient-to-b from-rose-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-3xl" />
               <MessageSquare className="w-12 h-12 text-rose-400 mb-6 relative z-10 group-hover:scale-110 transition-transform duration-500" />
               <h3 className="text-2xl font-bold text-white mb-4 relative z-10 group-hover:text-rose-300 transition-colors">{t.features.f6_title}</h3>
               <p className="text-neutral-400 leading-relaxed font-medium relative z-10">{t.features.f6_desc}</p>
-            </div>
+            </Link>
           </div>
         </div>
       </section>

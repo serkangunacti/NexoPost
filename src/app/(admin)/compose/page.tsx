@@ -10,7 +10,7 @@ import { SiX, SiFacebook, SiInstagram, SiTiktok, SiBluesky, SiThreads, SiPintere
 import { FaLinkedin } from "react-icons/fa6";
 
 export default function ComposePage() {
-  const { subscription } = useApp();
+  const { subscription, activeClient } = useApp();
   const [text, setText] = useState("");
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>(["twitter"]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -70,7 +70,8 @@ export default function ComposePage() {
   return (
     <div className="max-w-6xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
       <header className="mb-8 pr-4">
-        <h1 className="text-4xl font-extrabold text-white mb-3 tracking-tight">Craft New Post</h1>
+        <p className="text-xs font-bold uppercase tracking-widest text-violet-400 mb-2">Active Client</p>
+        <h1 className="text-4xl font-extrabold text-white mb-3 tracking-tight">{activeClient.name || "No Client Selected"}</h1>
         <p className="text-neutral-400 text-lg font-medium">Write once, publish everywhere. Select your platforms and start typing.</p>
         {!subscriptionSnapshot.canPublish ? (
           <div className="mt-4 inline-flex items-center gap-2 rounded-2xl border border-amber-400/30 bg-amber-500/10 px-4 py-3 text-sm font-semibold text-amber-200">

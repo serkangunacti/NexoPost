@@ -112,7 +112,7 @@ export const blogsPart3: BlogPost[] = [
     slug: "time-spent-on-social-media-latest-statistics",
     date: "2026-03-26",
     readTime: 5,
-    coverImage: "https://images.unsplash.com/photo-1501167733075-c546452f1e2f?q=80&w=1000&auto=format&fit=crop",
+    coverImage: "https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?q=80&w=1000&auto=format&fit=crop",
     en: {
       title: "Screen Time Realities: How Much Time is Actually Spent on Social Media?",
       excerpt: "Deep dive into the stunning statistics defining digital consumption habits and what it implies for marketers.",

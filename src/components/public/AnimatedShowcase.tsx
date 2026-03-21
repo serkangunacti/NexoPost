@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLanguage } from "@/context/LanguageContext";
 import { SiX, SiFacebook, SiInstagram, SiTiktok } from "react-icons/si";
 import { FaLinkedin } from "react-icons/fa6";
@@ -8,12 +8,30 @@ import { Calendar, CheckCircle2, PenLine, Send, Camera, MessageCircle, Repeat2, 
 
 export default function AnimatedShowcase() {
   const { t } = useLanguage();
-  const [step, setStep] = useState(0);
+  const [step, setStep] = useState(-1);
   const [text, setText] = useState("");
+  const sectionRef = useRef<HTMLElement>(null);
   
   const fullText = t.showcase.full_text;
 
   useEffect(() => {
+    const el = sectionRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setStep(0);
+          setText("");
+        }
+      },
+      { threshold: 0.3 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (step === -1) return;
     let timeout: NodeJS.Timeout;
 
     if (step === 0) {
@@ -61,7 +79,7 @@ export default function AnimatedShowcase() {
   }, [step, fullText]);
 
   return (
-    <section className="w-full px-6 py-12 mb-20">
+    <section ref={sectionRef} className="w-full px-6 py-12 mb-20">
       <div className="w-full max-w-[1100px] mx-auto relative cursor-default">
         {/* Background glow */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-[80%] bg-violet-600/10 blur-[120px] rounded-full pointer-events-none" />

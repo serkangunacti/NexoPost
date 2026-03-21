@@ -20,7 +20,7 @@ export default function PublicNavbar() {
         {/* Left Section: Logo & Navigation */}
         <div className="flex items-center gap-12">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-3 group">
+          <Link href="/" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} className="flex items-center gap-3 group">
             <div className="w-10 h-10 rounded-xl bg-violet-600/20 flex items-center justify-center border border-violet-500/30 group-hover:scale-105 transition-transform overflow-hidden relative shadow-[0_0_15px_rgba(139,92,246,0.3)]">
               <Image src="/logo.png" alt="NexoPost Logo" fill className="object-cover" />
             </div>

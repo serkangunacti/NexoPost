@@ -88,7 +88,7 @@ export default function AnalyticsPage() {
                 </>
               ) : (
                 <div className="h-48 w-full flex flex-col items-center justify-center z-10 relative">
-                  <p className="text-neutral-500 mb-4 font-medium text-center px-4">Meta Hesabınız (Facebook/Instagram) bağlı değil. Veri grafiklerini görebilmek için sosyal medya hesabı bağlayın.</p>
+                  <p className="text-neutral-500 mb-4 font-medium text-center px-4">Your Meta account (Facebook/Instagram) is not connected. Link a social account to view data charts.</p>
                   <Link href="/accounts" className="bg-white/5 hover:bg-white/10 text-white px-6 py-2 rounded-xl transition-all font-semibold flex items-center gap-2 border border-white/10">
                      <LinkIcon className="w-4 h-4" /> Go to Accounts
                   </Link>
@@ -129,7 +129,7 @@ export default function AnalyticsPage() {
                 </>
               ) : (
                 <div className="h-48 w-full flex flex-col items-center justify-center z-10 relative">
-                  <p className="text-neutral-500 mb-4 font-medium text-center px-4">TikTok Hesabınız bağlı değil. Şirket verilerini görebilmek için hesabı bağlayın.</p>
+                  <p className="text-neutral-500 mb-4 font-medium text-center px-4">Your TikTok account is not connected. Link your account to view business data.</p>
                   <Link href="/accounts" className="bg-white/5 hover:bg-white/10 text-white px-6 py-2 rounded-xl transition-all font-semibold flex items-center gap-2 border border-white/10">
                      <LinkIcon className="w-4 h-4" /> Go to Accounts
                   </Link>
@@ -174,7 +174,7 @@ export default function AnalyticsPage() {
                   </div>
                 ) : (
                   <div className="w-full flex flex-col items-center justify-center z-10 relative py-10">
-                    <p className="text-neutral-500 mb-4 font-medium text-center px-4">YouTube hesabınız bağlı değil. Etkileşim istatistikleri ve kanal raporları için hesabı bağlayın.</p>
+                    <p className="text-neutral-500 mb-4 font-medium text-center px-4">Your YouTube account is not connected. Link your account to view engagement stats and channel reports.</p>
                     <Link href="/accounts" className="bg-white/5 hover:bg-white/10 text-white px-6 py-2 rounded-xl transition-all font-semibold flex items-center gap-2 border border-white/10">
                       <LinkIcon className="w-4 h-4" /> Go to Accounts
                     </Link>

@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Repeat2, LayoutDashboard, Timer, CheckCircle2, Workflow, ArrowRight, BarChart3, Sparkles, MessageSquare } from "lucide-react";
 import Link from "next/link";
@@ -29,6 +29,13 @@ function FeaturesContent() {
   const ctaHref = useCtaHref();
   const tabParam = searchParams.get("tab");
   const activeTab: TabId = isTabId(tabParam) ? tabParam : "sync";
+
+  useEffect(() => {
+    if (tabParam) {
+      const el = document.getElementById("feature-tabs");
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, []);
 
   const tabs = [
     {
@@ -107,7 +114,7 @@ function FeaturesContent() {
         </div>
 
         {/* Tab Selector & Content Container */}
-        <div className="flex flex-col lg:flex-row shadow-2xl rounded-[3rem] border border-white/5 glass overflow-hidden animate-in fade-in zoom-in-95 duration-700 delay-150 relative">
+        <div id="feature-tabs" className="flex flex-col lg:flex-row shadow-2xl rounded-[3rem] border border-white/5 glass overflow-hidden animate-in fade-in zoom-in-95 duration-700 delay-150 relative">
           
           {/* Side Nav for desktop (Top nav for mobile) */}
           <div className="flex flex-row lg:flex-col lg:w-1/3 border-b lg:border-b-0 lg:border-r border-white/5 p-4 md:p-6 gap-2 bg-black/40 lg:bg-transparent overflow-x-auto lg:overflow-visible">

@@ -18,8 +18,10 @@ interface Client {
 }
 
 interface UserProfile {
+  companyName: string;
   email: string;
   fullName: string;
+  phone: string;
   sessionId: string;
   signedInAt: string;
 }
@@ -56,10 +58,13 @@ interface AppContextType {
   startPlan: (input: {
     activationMode?: ActivationMode;
     billingCycle: BillingCycle;
+    companyName?: string;
     email: string;
     fullName: string;
+    phone?: string;
     plan: UserType;
   }) => StartPlanResult;
+  updateUserProfile: (updates: { fullName?: string; companyName?: string; phone?: string; email?: string }) => void;
   activeClient: Client;
   setActiveClient: (client: Client) => void;
   clients: Client[];
@@ -70,13 +75,14 @@ interface AppContextType {
   toggleAccount: (clientId: string, platformId: string) => void;
 }
 
-const defaultClient: Client = { id: "default_user", name: "My Personal Account" };
+// Sentinel: used as fallback when no client workspaces exist
+const defaultClient: Client = { id: "", name: "" };
 const APP_SESSION_STORAGE_KEY = "nexopost-app-session";
 
 const defaultSession: AppSession = {
-  activeClientId: defaultClient.id,
-  clients: [defaultClient],
-  connectedAccounts: { "default_user": ["twitter", "facebook"] },
+  activeClientId: "",
+  clients: [],
+  connectedAccounts: {},
   isLoggedIn: false,
   pendingChange: null,
   subscription: null,
@@ -85,6 +91,7 @@ const defaultSession: AppSession = {
 };
 
 let currentSessionSnapshot: AppSession = defaultSession;
+let sessionSnapshotInitialized = false;
 const sessionListeners = new Set<() => void>();
 
 function getIsClientSnapshot() {
@@ -109,10 +116,15 @@ function readStoredSession(): AppSession {
     if (!raw) return defaultSession;
 
     const parsed = JSON.parse(raw) as Partial<AppSession>;
-    const clients = parsed.clients?.length ? parsed.clients : defaultSession.clients;
+
+    // Migrate: remove legacy auto-created "self" workspace (id: "default_user")
+    // so the logged-in user no longer appears as their own client.
+    const rawClients = parsed.clients ?? [];
+    const clients = rawClients.filter((c) => c.id !== "default_user");
+
     const activeClientId = clients.some((client) => client.id === parsed.activeClientId)
       ? parsed.activeClientId!
-      : clients[0].id;
+      : clients[0]?.id ?? "";
 
     return {
       activeClientId,
@@ -157,7 +169,10 @@ function resolveSessionDates(session: AppSession): AppSession {
 }
 
 function getClientSessionSnapshot() {
-  currentSessionSnapshot = resolveSessionDates(readStoredSession());
+  if (!sessionSnapshotInitialized) {
+    currentSessionSnapshot = resolveSessionDates(readStoredSession());
+    sessionSnapshotInitialized = true;
+  }
   return currentSessionSnapshot;
 }
 
@@ -212,13 +227,14 @@ const defaultContextValue: AppContextType = {
   loginWithPurchasedAccount: () => {},
   logout: () => {},
   startPlan: () => ({ effectiveAt: "", phase: "paid", scheduled: false }),
+  updateUserProfile: () => {},
   activeClient: defaultClient,
   setActiveClient: () => {},
   clients: [defaultClient],
   addClient: () => {},
   removeClient: () => {},
   renameClient: () => {},
-  connectedAccounts: { "default_user": ["twitter", "facebook"] },
+  connectedAccounts: {},
   toggleAccount: () => {},
 };
 
@@ -260,9 +276,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
-  const buildUserProfile = (input: { email: string; fullName: string }, existingProfile: UserProfile | null): UserProfile => ({
+  const buildUserProfile = (
+    input: { email: string; fullName: string; companyName?: string; phone?: string },
+    existingProfile: UserProfile | null
+  ): UserProfile => ({
+    companyName: input.companyName ?? existingProfile?.companyName ?? "",
     email: input.email,
     fullName: input.fullName,
+    phone: input.phone ?? existingProfile?.phone ?? "",
     sessionId:
       existingProfile?.sessionId ??
       (typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}`),
@@ -279,11 +300,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   };
 
   const loginWithPurchasedAccount = (account: PurchasedAccount) => {
-    const workspaces = account.workspaces?.length ? account.workspaces : [defaultClient];
-    const activeClientId = workspaces[0]?.id ?? defaultClient.id;
-    const connectedAccounts = account.connectedAccounts ?? {
-      [activeClientId]: ["twitter", "facebook"],
-    };
+    const workspaces = account.workspaces ?? [];
+    const activeClientId = workspaces[0]?.id ?? "";
+    const connectedAccounts = account.connectedAccounts ?? {};
 
     writeSession({
       activeClientId,
@@ -300,17 +319,26 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
+  const updateUserProfile = (updates: { fullName?: string; companyName?: string; phone?: string; email?: string }) => {
+    if (!session.userProfile) return;
+    writeSession({ ...session, userProfile: { ...session.userProfile, ...updates } });
+  };
+
   const startPlan = ({
     activationMode = "auto",
     billingCycle,
+    companyName = "",
     email,
     fullName,
+    phone = "",
     plan,
   }: {
     activationMode?: ActivationMode;
     billingCycle: BillingCycle;
+    companyName?: string;
     email: string;
     fullName: string;
+    phone?: string;
     plan: UserType;
   }): StartPlanResult => {
     const now = new Date();
@@ -335,7 +363,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           effectiveAt,
           plan,
         },
-        userProfile: buildUserProfile({ email, fullName }, session.userProfile),
+        userProfile: buildUserProfile({ email, fullName, companyName, phone }, session.userProfile),
       });
 
       return {
@@ -361,12 +389,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
     writeSession({
       ...session,
-      activeClientId: session.activeClientId || defaultClient.id,
-      clients: session.clients.length ? session.clients : [defaultClient],
-      connectedAccounts:
-        Object.keys(session.connectedAccounts).length > 0
-          ? session.connectedAccounts
-          : defaultSession.connectedAccounts,
+      activeClientId: session.activeClientId,
+      clients: session.clients,
+      connectedAccounts: session.connectedAccounts,
       isLoggedIn: true,
       pendingChange: null,
       subscription: {
@@ -377,7 +402,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         plan,
         startedAt: startAt.toISOString(),
       },
-      userProfile: buildUserProfile({ email, fullName }, session.userProfile),
+      userProfile: buildUserProfile({ email, fullName, companyName, phone }, session.userProfile),
       userType: plan,
     });
 
@@ -480,6 +505,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         activeClient,
         setActiveClient,
         clients: session.clients,
+        updateUserProfile,
         addClient,
         removeClient,
         renameClient,

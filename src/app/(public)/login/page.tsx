@@ -22,7 +22,8 @@ function LoginContent() {
   const [registerName, setRegisterName] = useState("");
   const [registerEmail, setRegisterEmail] = useState("");
   const [registerPassword, setRegisterPassword] = useState("");
-  const [workspaceName, setWorkspaceName] = useState("");
+  const [companyName, setCompanyName] = useState("");
+  const [phone, setPhone] = useState("");
   const [cardNumber, setCardNumber] = useState("");
   const [expiry, setExpiry] = useState("");
   const [cvv, setCvv] = useState("");
@@ -74,18 +75,21 @@ function LoginContent() {
     }
 
     setLoading(true);
-    await new Promise((resolve) => setTimeout(resolve, 600));
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 600));
 
-    const account = findPurchasedAccount(trimmedIdentifier, trimmedPassword);
-    if (!account) {
+      const account = findPurchasedAccount(trimmedIdentifier, trimmedPassword);
+      if (!account) {
+        setError(t.login_page.invalid);
+        return;
+      }
+
+      loginWithPurchasedAccount(account);
+      setSuccess(t.login_page.success);
+      router.push(nextPath);
+    } finally {
       setLoading(false);
-      setError(t.login_page.invalid);
-      return;
     }
-
-    loginWithPurchasedAccount(account);
-    setSuccess(t.login_page.success);
-    router.push(nextPath);
   };
 
   const handleRegistration = async (event: FormEvent<HTMLFormElement>) => {
@@ -97,7 +101,8 @@ function LoginContent() {
       registerName.trim() &&
       registerEmail.trim() &&
       registerPassword.trim() &&
-      workspaceName.trim();
+      companyName.trim() &&
+      phone.trim();
     const paymentFieldsValid = cardNumber.trim() && expiry.trim() && cvv.trim();
 
     if (!baseFieldsValid) {
@@ -106,23 +111,29 @@ function LoginContent() {
     }
 
     if (registrationMode === "paid" && !paymentFieldsValid) {
-      setError(t.login_page.buy_requires_payment);
+      setError("Please fill in your payment details.");
       return;
     }
 
     setLoading(true);
-    await new Promise((resolve) => setTimeout(resolve, 800));
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 800));
 
-    const result = startPlan({
-      activationMode: registrationMode,
-      billingCycle: "monthly",
-      email: registerEmail.trim(),
-      fullName: registerName.trim(),
-      plan: trialPlan,
-    });
+      const result = startPlan({
+        activationMode: registrationMode,
+        billingCycle: "monthly",
+        companyName: companyName.trim(),
+        email: registerEmail.trim(),
+        fullName: registerName.trim(),
+        phone: phone.trim(),
+        plan: trialPlan,
+      });
 
-    setSuccess(result.phase === "trial" ? t.login_page.register_success_trial : t.login_page.register_success_paid);
-    router.push(nextPath);
+      setSuccess(result.phase === "trial" ? t.login_page.register_success_trial : t.login_page.register_success_paid);
+      router.push(nextPath);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -317,13 +328,26 @@ function LoginContent() {
 
                 <div>
                   <label className="block text-sm font-semibold text-neutral-400 mb-2">
-                    {t.login_page.register_workspace}
+                    Firma Adı <span className="text-red-400">*</span>
                   </label>
                   <input
                     type="text"
-                    value={workspaceName}
-                    onChange={(event) => setWorkspaceName(event.target.value)}
-                    placeholder={t.login_page.register_workspace_placeholder}
+                    value={companyName}
+                    onChange={(event) => setCompanyName(event.target.value)}
+                    placeholder="Şirket / Ajans adınız"
+                    className="w-full bg-black/40 border border-white/10 rounded-xl px-5 py-3.5 text-white placeholder-neutral-600 font-medium focus:outline-none focus:border-violet-500/50 focus:bg-white/5 transition-all"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-neutral-400 mb-2">
+                    Telefon Numarası <span className="text-red-400">*</span>
+                  </label>
+                  <input
+                    type="tel"
+                    value={phone}
+                    onChange={(event) => setPhone(event.target.value)}
+                    placeholder="+90 5xx xxx xx xx"
                     className="w-full bg-black/40 border border-white/10 rounded-xl px-5 py-3.5 text-white placeholder-neutral-600 font-medium focus:outline-none focus:border-violet-500/50 focus:bg-white/5 transition-all"
                   />
                 </div>

@@ -98,6 +98,12 @@ export default function AccountsPage() {
             </div>
           </div>
 
+          {clients.length === 0 ? (
+            <div className="mt-6 py-10 text-center border border-dashed border-white/10 rounded-2xl">
+              <p className="text-neutral-500 font-medium text-sm">No clients added yet.</p>
+              <p className="text-neutral-600 text-xs mt-1">Use the &quot;Add First Client&quot; button in the sidebar.</p>
+            </div>
+          ) : (
           <div className="mt-6 space-y-3">
             {clients.map((client) => {
               const isEditing = editingClientId === client.id;
@@ -172,9 +178,16 @@ export default function AccountsPage() {
               );
             })}
           </div>
+          )}
         </section>
       ) : null}
 
+      {clients.length === 0 ? (
+        <div className="glass rounded-[2rem] p-12 border border-dashed border-white/10 flex flex-col items-center justify-center text-center gap-4">
+          <Building2 className="w-10 h-10 text-neutral-600" />
+          <p className="text-neutral-500 font-medium">Add a client first to connect social accounts.</p>
+        </div>
+      ) : (
       <div className="glass rounded-[2rem] p-8 md:p-12 border border-white/5 relative overflow-hidden shadow-2xl">
         <div className="absolute -top-40 -right-40 w-96 h-96 bg-violet-500/10 rounded-full blur-[100px] pointer-events-none" />
 
@@ -221,6 +234,7 @@ export default function AccountsPage() {
           })}
         </div>
       </div>
+      )}
     </div>
   );
 }

@@ -81,11 +81,12 @@ export default function Home() {
     <div className="max-w-6xl mx-auto space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20">
       <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
+            <p className="text-xs font-bold uppercase tracking-widest text-violet-400 mb-2">Workspace</p>
             <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight bg-gradient-to-r from-white via-neutral-200 to-neutral-500 bg-clip-text text-transparent pb-1">
-              Welcome back
+              {activeClient.name || "Welcome"}
             </h1>
             <p className="text-neutral-400 mt-2 text-lg font-medium">
-            Here&apos;s what&apos;s happening with your accounts today.
+              Here&apos;s what&apos;s happening with your accounts today.
             </p>
         </div>
         <Link 
