@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { SiX, SiFacebook, SiInstagram } from "react-icons/si";
+import { SiX, SiFacebook, SiInstagram, SiTiktok } from "react-icons/si";
 import { FaLinkedin } from "react-icons/fa6";
-import { Calendar, CheckCircle2, PenLine, Send, Camera, MessageCircle, Repeat2, Heart, BarChart2, Share, ThumbsUp, MessageSquare, Repeat } from "lucide-react";
+import { Calendar, CheckCircle2, PenLine, Send, Camera, MessageCircle, Repeat2, Heart, BarChart2, Share, ThumbsUp, MessageSquare, Repeat, Bookmark, Music } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 
 export default function AnimatedShowcase() {
@@ -18,14 +18,17 @@ export default function AnimatedShowcase() {
     let timeout: NodeJS.Timeout;
 
     if (step === 0) {
-      // Start clicking platforms
       setText("");
-      timeout = setTimeout(() => setStep(1), 1000); // Select X
+      timeout = setTimeout(() => setStep(1), 600); // Select X
     } else if (step === 1) {
-      timeout = setTimeout(() => setStep(2), 800); // Select LinkedIn
+      timeout = setTimeout(() => setStep(2), 400); // Select LinkedIn
     } else if (step === 2) {
-      timeout = setTimeout(() => setStep(3), 800); // Start typing
+      timeout = setTimeout(() => setStep(3), 400); // Select Facebook
     } else if (step === 3) {
+      timeout = setTimeout(() => setStep(4), 400); // Select Instagram
+    } else if (step === 4) {
+      timeout = setTimeout(() => setStep(5), 400); // Select TikTok
+    } else if (step === 5) {
       // Typing effect
       let i = 0;
       const interval = setInterval(() => {
@@ -33,24 +36,28 @@ export default function AnimatedShowcase() {
         i++;
         if (i === fullText.length) {
           clearInterval(interval);
-          timeout = setTimeout(() => setStep(4), 1000); // Done typing, move to image
+          timeout = setTimeout(() => setStep(6), 600); // Done typing, move to image
         }
-      }, 50);
+      }, 40);
       return () => clearInterval(interval);
-    } else if (step === 4) {
-      // Attach image
-      timeout = setTimeout(() => setStep(5), 1000); // Click schedule
-    } else if (step === 5) {
-      // Scheduling spinner
-      timeout = setTimeout(() => setStep(6), 1500); // Success overlay
     } else if (step === 6) {
-      // Done - Success overlay, wait then move to X preview
-      timeout = setTimeout(() => setStep(7), 2000); // X Preview
+      // Attach image
+      timeout = setTimeout(() => setStep(7), 800); // Click schedule
     } else if (step === 7) {
-      // X preview duration
-      timeout = setTimeout(() => setStep(8), 3500); // LinkedIn preview
+      // Scheduling spinner
+      timeout = setTimeout(() => setStep(8), 1200); // Success overlay
     } else if (step === 8) {
-      // LinkedIn preview duration
+      // Done - Success overlay, wait then move to X preview
+      timeout = setTimeout(() => setStep(9), 1500); // X Preview
+    } else if (step === 9) {
+      timeout = setTimeout(() => setStep(10), 3000); // LinkedIn preview
+    } else if (step === 10) {
+      timeout = setTimeout(() => setStep(11), 3000); // Facebook preview
+    } else if (step === 11) {
+      timeout = setTimeout(() => setStep(12), 3000); // Instagram preview
+    } else if (step === 12) {
+      timeout = setTimeout(() => setStep(13), 3000); // TikTok preview
+    } else if (step === 13) {
       timeout = setTimeout(() => setStep(0), 3500); // Reset
     }
 
@@ -90,8 +97,9 @@ export default function AnimatedShowcase() {
                 {[
                   { id: 'x', icon: <SiX className="w-6 h-6" />, color: 'bg-white text-black', defaultActive: step >= 1 },
                   { id: 'linkedin', icon: <FaLinkedin className="w-6 h-6" />, color: 'bg-[#0A66C2] text-white', defaultActive: step >= 2 },
-                  { id: 'facebook', icon: <SiFacebook className="w-6 h-6" />, color: 'bg-[#1877F2] text-white', defaultActive: false },
-                  { id: 'instagram', icon: <SiInstagram className="w-6 h-6" />, color: 'bg-gradient-to-tr from-[#fd5949] to-[#d6249f] text-white', defaultActive: false },
+                  { id: 'facebook', icon: <SiFacebook className="w-6 h-6" />, color: 'bg-[#1877F2] text-white', defaultActive: step >= 3 },
+                  { id: 'instagram', icon: <SiInstagram className="w-6 h-6" />, color: 'bg-gradient-to-tr from-[#fd5949] to-[#d6249f] text-white', defaultActive: step >= 4 },
+                  { id: 'tiktok', icon: <SiTiktok className="w-6 h-6" />, color: 'bg-black text-white shadow-[2px_2px_0_#fe0979,-2px_-2px_0_#00f2fe]', defaultActive: step >= 5 },
                 ].map((platform) => (
                   <div 
                     key={platform.id}
@@ -110,11 +118,11 @@ export default function AnimatedShowcase() {
               <div className="w-full bg-white/[0.02] border border-white/5 rounded-2xl p-6 mb-6 min-h-[160px] relative">
                 <p className="text-neutral-200 text-lg leading-relaxed whitespace-pre-wrap">
                   {text}
-                  {step >= 2 && step <= 4 && (
+                  {step >= 5 && step <= 7 && (
                     <span className="inline-block w-1.5 h-5 bg-violet-400 ml-1 animate-pulse align-middle" />
                   )}
                 </p>
-                {text === "" && step < 3 && (
+                {text === "" && step < 5 && (
                   <p className="text-neutral-600 text-lg absolute top-6 left-6">What do you want to share?</p>
                 )}
               </div>
@@ -122,10 +130,10 @@ export default function AnimatedShowcase() {
               {/* Attachments & Actions */}
               <div className="flex flex-col sm:flex-row items-center justify-between mt-8 gap-6">
                 <div className="flex items-center gap-4 w-full sm:w-auto">
-                  <div className={`p-3.5 rounded-xl border transition-all duration-500 flex items-center justify-center ${step >= 4 ? 'bg-indigo-500/20 border-indigo-500/40 text-indigo-400 shadow-lg shadow-indigo-500/10' : 'bg-white/5 border-white/10 text-neutral-400'}`}>
+                  <div className={`p-3.5 rounded-xl border transition-all duration-500 flex items-center justify-center ${step >= 6 ? 'bg-indigo-500/20 border-indigo-500/40 text-indigo-400 shadow-lg shadow-indigo-500/10' : 'bg-white/5 border-white/10 text-neutral-400'}`}>
                     <Camera className="w-6 h-6" />
                   </div>
-                  {step >= 4 && (
+                  {step >= 6 && (
                     <div className="px-4 py-2 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-sm font-bold animate-in fade-in slide-in-from-left-4 flex items-center gap-2">
                        nexopost-logo.png
                     </div>
@@ -137,10 +145,10 @@ export default function AnimatedShowcase() {
                     <Calendar className="w-6 h-6" />
                   </div>
                   <div className={`px-8 py-4 w-full sm:w-auto rounded-2xl font-bold text-white transition-all duration-300 flex items-center justify-center gap-3 shadow-lg ${
-                    step === 5 ? 'bg-violet-600/70 cursor-wait shadow-violet-500/20' :
-                    step >= 6 ? 'bg-emerald-500 shadow-emerald-500/20' : 'bg-violet-600 hover:bg-violet-500 shadow-violet-500/30'
+                    step === 7 ? 'bg-violet-600/70 cursor-wait shadow-violet-500/20' :
+                    step >= 8 ? 'bg-emerald-500 shadow-emerald-500/20' : 'bg-violet-600 hover:bg-violet-500 shadow-violet-500/30'
                   }`}>
-                    {step === 5 ? 'Generating...' : step >= 6 ? <><CheckCircle2 className="w-6 h-6"/> Queued</> : <><Send className="w-6 h-6"/> Publish Now</>}
+                    {step === 7 ? 'Generating...' : step >= 8 ? <><CheckCircle2 className="w-6 h-6"/> Queued</> : <><Send className="w-6 h-6"/> Publish Now</>}
                   </div>
                 </div>
               </div>
@@ -159,9 +167,9 @@ export default function AnimatedShowcase() {
                 {/* Notch */}
                 <div className="absolute top-0 inset-x-0 h-6 bg-[#1a1a1e] w-36 mx-auto rounded-b-2xl z-20" />
                 
-                {step === 7 ? (
+                {step === 9 ? (
                   // X Preview
-                  <div className="animate-in zoom-in-95 fade-in duration-500 mt-6 bg-black rounded-2xl border border-neutral-800 p-4 font-sans relative z-10 mx-[-4px]">
+                  <div key="x-preview" className="animate-in slide-in-from-bottom-12 fade-in zoom-in-95 duration-700 mt-6 bg-black rounded-2xl border border-neutral-800 p-4 font-sans relative z-10 mx-[-4px] shadow-2xl">
                      <div className="flex items-center gap-3 mb-3">
                        <img src="/logo.png" alt="NexoPost X" className="w-10 h-10 rounded-full bg-white/10 p-1.5 object-contain" />
                        <div>
@@ -174,17 +182,17 @@ export default function AnimatedShowcase() {
                      <div className="w-full aspect-video rounded-2xl border border-neutral-800 relative overflow-hidden bg-white/5 flex items-center justify-center mb-3">
                         <img src="/logo.png" alt="Attachment" className="w-24 h-24 object-contain drop-shadow-2xl opacity-90" />
                      </div>
-                     <div className="flex items-center justify-between text-neutral-500 px-1">
-                        <MessageCircle className="w-[18px] h-[18px]" />
-                        <Repeat2 className="w-[18px] h-[18px]" />
-                        <Heart className="w-[18px] h-[18px]" />
-                        <BarChart2 className="w-[18px] h-[18px]" />
-                        <Share className="w-[18px] h-[18px]" />
+                     <div className="flex items-center justify-between text-neutral-500 px-1 hover:cursor-pointer">
+                        <MessageCircle className="w-[18px] h-[18px] hover:text-blue-500 transition-colors" />
+                        <Repeat2 className="w-[18px] h-[18px] hover:text-green-500 transition-colors" />
+                        <Heart className="w-[18px] h-[18px] hover:text-red-500 transition-colors" />
+                        <BarChart2 className="w-[18px] h-[18px] hover:text-blue-500 transition-colors" />
+                        <Share className="w-[18px] h-[18px] hover:text-blue-500 transition-colors" />
                      </div>
                   </div>
-                ) : step === 8 ? (
+                ) : step === 10 ? (
                   // LinkedIn Preview
-                  <div className="animate-in zoom-in-95 fade-in duration-500 mt-6 bg-white rounded-2xl border border-neutral-200 p-4 font-sans relative z-10 shadow-lg mx-[-4px]">
+                  <div key="linkedin-preview" className="animate-in slide-in-from-right-16 fade-in zoom-in-95 duration-500 mt-6 bg-white rounded-2xl border border-neutral-200 p-4 font-sans relative z-10 shadow-xl mx-[-4px]">
                      <div className="flex items-start gap-3 mb-3">
                        <img src="/logo.png" alt="NexoPost LinkedIn" className="w-12 h-12 rounded-md bg-neutral-100 p-2 object-contain" />
                        <div className="flex-1">
@@ -198,15 +206,91 @@ export default function AnimatedShowcase() {
                         <img src="/logo.png" alt="Attachment" className="w-24 h-24 object-contain drop-shadow-lg opacity-90" />
                      </div>
                      <div className="border-t border-neutral-200 pt-3 flex items-center justify-between text-neutral-500 px-1 font-medium text-xs">
-                        <div className="flex flex-col items-center gap-1 hover:text-[#0A66C2] transition-colors"><ThumbsUp className="w-[18px] h-[18px]" /> <span>Like</span></div>
-                        <div className="flex flex-col items-center gap-1 hover:text-[#0A66C2] transition-colors"><MessageSquare className="w-[18px] h-[18px]" /> <span>Comment</span></div>
-                        <div className="flex flex-col items-center gap-1 hover:text-[#0A66C2] transition-colors"><Repeat className="w-[18px] h-[18px]" /> <span>Repost</span></div>
-                        <div className="flex flex-col items-center gap-1 hover:text-[#0A66C2] transition-colors"><Send className="w-[18px] h-[18px]" /> <span>Send</span></div>
+                        <div className="flex flex-col items-center gap-1 hover:text-[#0A66C2] transition-colors cursor-pointer"><ThumbsUp className="w-[18px] h-[18px]" /> <span>Like</span></div>
+                        <div className="flex flex-col items-center gap-1 hover:text-[#0A66C2] transition-colors cursor-pointer"><MessageSquare className="w-[18px] h-[18px]" /> <span>Comment</span></div>
+                        <div className="flex flex-col items-center gap-1 hover:text-[#0A66C2] transition-colors cursor-pointer"><Repeat className="w-[18px] h-[18px]" /> <span>Repost</span></div>
+                        <div className="flex flex-col items-center gap-1 hover:text-[#0A66C2] transition-colors cursor-pointer"><Send className="w-[18px] h-[18px]" /> <span>Send</span></div>
+                     </div>
+                  </div>
+                ) : step === 11 ? (
+                  // Facebook Preview
+                  <div key="fb-preview" className="animate-in slide-in-from-bottom-8 fade-in zoom-in-95 duration-500 mt-6 bg-white rounded-2xl border border-neutral-200 p-3 font-sans relative z-10 shadow-xl mx-[-4px]">
+                     <div className="flex items-center gap-3 mb-2">
+                       <img src="/logo.png" alt="NexoPost Facebook" className="w-10 h-10 rounded-full border border-neutral-200 bg-white p-1 object-contain" />
+                       <div>
+                         <div className="text-[14px] font-bold text-[#050505] leading-tight">NexoPost</div>
+                         <div className="text-[13px] text-[#65676B] flex items-center gap-1">Just now • <span className="text-[10px]">🌍</span></div>
+                       </div>
+                       <div className="ml-auto flex items-center gap-4 text-[#65676B]">
+                         <span className="text-lg leading-none font-bold pb-2">...</span>
+                       </div>
+                     </div>
+                     <p className="text-[15px] text-[#050505] mb-3 leading-snug font-normal">{text}</p>
+                     <div className="w-full aspect-square border-y border-neutral-200 relative overflow-hidden bg-[#F0F2F5] flex items-center justify-center mb-3 mx-[-12px] w-[calc(100%+24px)]">
+                        <img src="/logo.png" alt="Attachment" className="w-32 h-32 object-contain drop-shadow-xl opacity-90" />
+                     </div>
+                     <div className="border-y border-neutral-200 py-1.5 flex items-center justify-around text-[#65676B] font-semibold text-[14px]">
+                        <div className="flex items-center gap-2 hover:bg-neutral-100 py-1.5 px-3 rounded-md cursor-pointer transition-colors"><ThumbsUp className="w-5 h-5" /> Like</div>
+                        <div className="flex items-center gap-2 hover:bg-neutral-100 py-1.5 px-3 rounded-md cursor-pointer transition-colors"><MessageSquare className="w-5 h-5" /> Comment</div>
+                        <div className="flex items-center gap-2 hover:bg-neutral-100 py-1.5 px-3 rounded-md cursor-pointer transition-colors"><Share className="w-5 h-5" /> Share</div>
+                     </div>
+                  </div>
+                ) : step === 12 ? (
+                  // Instagram Preview
+                  <div key="ig-preview" className="animate-in slide-in-from-right-16 fade-in duration-600 mt-6 bg-white rounded-2xl border border-neutral-200 font-sans relative z-10 shadow-2xl mx-[-4px] overflow-hidden">
+                     <div className="flex items-center gap-3 px-3 py-3">
+                       <img src="/logo.png" alt="NexoPost IG" className="w-8 h-8 rounded-full border border-neutral-200 bg-white p-1 object-contain" />
+                       <div className="text-[14px] font-semibold text-black">nexopost</div>
+                       <div className="ml-auto text-black font-bold text-lg leading-none pb-2">...</div>
+                     </div>
+                     <div className="w-full aspect-square relative bg-neutral-100 flex items-center justify-center border-y border-neutral-100">
+                        <img src="/logo.png" alt="Attachment" className="w-32 h-32 object-contain drop-shadow-2xl" />
+                     </div>
+                     <div className="p-3">
+                       <div className="flex items-center gap-4 mb-3 text-black">
+                         <Heart className="w-6 h-6 hover:text-red-500 cursor-pointer transition-colors" />
+                         <MessageCircle className="w-6 h-6 hover:text-neutral-500 cursor-pointer transition-colors" />
+                         <Send className="w-6 h-6 hover:text-neutral-500 cursor-pointer transition-colors" />
+                         <Bookmark className="w-6 h-6 ml-auto hover:text-neutral-500 cursor-pointer transition-colors" />
+                       </div>
+                       <div className="text-[14px] text-black leading-snug">
+                         <span className="font-semibold mr-2">nexopost</span>
+                         <span className="font-normal">{text}</span>
+                       </div>
+                     </div>
+                  </div>
+                ) : step === 13 ? (
+                  // TikTok Preview
+                  <div key="tt-preview" className="animate-in slide-in-from-bottom-12 fade-in zoom-in-[0.98] duration-700 mt-6 bg-black rounded-2xl border border-neutral-800 font-sans relative z-10 shadow-2xl mx-[-4px] overflow-hidden h-80 flex items-center justify-center">
+                     <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-black/40 z-10" />
+                     
+                     {/* Media Background Content */}
+                     <img src="/logo.png" alt="Attachment" className="w-32 h-32 object-contain drop-shadow-[0_0_30px_rgba(255,255,255,0.4)] relative z-0" />
+                     
+                     {/* Overlay Interactions */}
+                     <div className="absolute right-2 bottom-4 z-20 flex flex-col items-center gap-4 text-white">
+                        <div className="flex flex-col items-center gap-1 group cursor-pointer"><div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center backdrop-blur-md group-hover:bg-white/20"><Heart className="w-6 h-6 fill-white" /></div><span className="text-xs font-semibold">12K</span></div>
+                        <div className="flex flex-col items-center gap-1 group cursor-pointer"><div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center backdrop-blur-md group-hover:bg-white/20"><MessageCircle className="w-6 h-6 fill-white" /></div><span className="text-xs font-semibold">430</span></div>
+                        <div className="flex flex-col items-center gap-1 group cursor-pointer"><div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center backdrop-blur-md group-hover:bg-white/20"><Bookmark className="w-6 h-6 fill-white" /></div><span className="text-xs font-semibold">Saved</span></div>
+                        <div className="flex flex-col items-center gap-1 group cursor-pointer"><div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center backdrop-blur-md group-hover:bg-white/20"><div className="w-6 h-6 rounded-full bg-white/30" /></div><span className="text-xs font-semibold">Share</span></div>
+                     </div>
+
+                     {/* Overlay Bottom Text */}
+                     <div className="absolute left-3 bottom-3 right-16 z-20 text-white">
+                        <div className="flex items-center gap-2 mb-2">
+                           <img src="/logo.png" className="w-8 h-8 rounded-full border border-white/20 bg-black/50 p-1" />
+                           <span className="font-bold text-[15px]">@nexopost</span>
+                        </div>
+                        <p className="text-[13px] line-clamp-2 leading-snug mb-2 font-medium drop-shadow-md">{text}</p>
+                        <div className="flex items-center gap-2 text-xs font-medium">
+                           <Music className="w-4 h-4" />
+                           <span className="marquee">Original Audio - NexoPost</span>
+                        </div>
                      </div>
                   </div>
                 ) : (
                   // Generic Preview
-                  <>
+                  <div key="generic-preview" className="animate-in fade-in duration-300">
                     <div className="mt-8 flex items-center gap-3 mb-5">
                       <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-violet-500 to-sky-500 shadow-inner" />
                       <div>
@@ -219,17 +303,17 @@ export default function AnimatedShowcase() {
                       <p className="text-sm text-neutral-300 break-words leading-relaxed">{text || <span className="text-neutral-800">Preview text here...</span>}</p>
                     </div>
 
-                    {step >= 4 && (
+                    {step >= 6 && (
                       <div className="w-full h-40 bg-white/5 rounded-2xl animate-in zoom-in duration-300 flex flex-col items-center justify-center border border-white/10 relative overflow-hidden group">
                         <img src="/logo.png" alt="Attached Media" className="w-16 h-16 object-contain opacity-80 drop-shadow-[0_0_15px_rgba(255,255,255,0.2)] group-hover:scale-110 transition-transform duration-500" />
                       </div>
                     )}
-                  </>
+                  </div>
                 )}
               </div>
 
               {/* Success Overlay */}
-              {step === 6 && (
+              {step === 8 && (
                 <div className="absolute inset-0 bg-black/60 backdrop-blur-md flex flex-col items-center justify-center animate-in fade-in duration-500 z-30">
                   <div className="w-20 h-20 bg-emerald-500/20 border border-emerald-500/30 rounded-2xl flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(16,185,129,0.3)]">
                     <CheckCircle2 className="w-10 h-10 text-emerald-400" />
