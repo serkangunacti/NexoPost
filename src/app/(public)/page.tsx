@@ -164,6 +164,10 @@ export default function LandingPage() {
                   <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
                   {t.pricing.basic_perk5}
                 </li>
+                <li className="flex items-center gap-3 text-neutral-300 font-medium tracking-wide">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+                  {t.pricing.basic_perk6}
+                </li>
               </ul>
               
               <Link href="/dashboard" className="w-full py-4 rounded-2xl glass font-bold text-white text-center hover:bg-white/10 transition-colors border-white/20 shadow-lg">
@@ -206,6 +210,10 @@ export default function LandingPage() {
                   <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
                   {t.pricing.pro_perk5}
                 </li>
+                <li className="flex items-center gap-3 text-neutral-300 font-medium tracking-wide">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+                  {t.pricing.pro_perk6}
+                </li>
               </ul>
               
               <Link href="/dashboard" className="w-full py-4 rounded-2xl bg-violet-600 hover:bg-violet-500 font-bold text-white text-center transition-colors shadow-[0_0_20px_rgba(139,92,246,0.3)]">
@@ -243,6 +251,10 @@ export default function LandingPage() {
                 <li className="flex items-center gap-3 text-neutral-300 font-medium tracking-wide">
                   <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
                   {t.pricing.agency_perk5}
+                </li>
+                <li className="flex items-center gap-3 text-neutral-300 font-medium tracking-wide">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+                  {t.pricing.agency_perk6}
                 </li>
               </ul>
               

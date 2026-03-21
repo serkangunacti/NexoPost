@@ -36,6 +36,7 @@
     "basic_perk3": "Temel Performans Raporları",
     "basic_perk4": "Standart E-posta Desteği",
     "basic_perk5": "7 Günlük Veri Geçmişi",
+    "basic_perk6": "AI Akıllı Medya Formatlama",
     "pro": "Pro",
     "pro_desc": "Büyüyen sosyal medya devleri için.",
     "pro_price": "$19",
@@ -44,6 +45,7 @@
     "pro_perk3": "Meta ve TikTok Analitikleri",
     "pro_perk4": "Gelişmiş Etkileşim Raporları",
     "pro_perk5": "30 Günlük Veri Geçmişi",
+    "pro_perk6": "AI Akıllı Medya Formatlama",
     "agency": "Ajans",
     "agency_desc": "Ajanslar için sınırları kaldırın.",
     "agency_price": "$49",
@@ -52,6 +54,7 @@
     "agency_perk3": "YouTube, Meta ve TikTok Analitikleri",
     "agency_perk4": "White-Label Müşteri Raporları",
     "agency_perk5": "Sınırsız Veri ve Analitik",
+    "agency_perk6": "AI Akıllı Medya Formatlama",
     "choose": "Planı Seç"
   },
   "contact": {
