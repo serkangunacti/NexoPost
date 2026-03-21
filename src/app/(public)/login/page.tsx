@@ -86,9 +86,9 @@ function LoginContent() {
           </div>
         </section>
 
-        <section className="relative overflow-hidden rounded-[2.75rem] border border-white/10 bg-[linear-gradient(180deg,rgba(14,14,22,0.96),rgba(9,9,14,0.94))] p-7 md:p-9 shadow-[0_30px_100px_rgba(0,0,0,0.45)] xl:mt-0">
+        <section className="relative min-h-[620px] overflow-hidden rounded-[2.75rem] border border-white/10 bg-[linear-gradient(180deg,rgba(14,14,22,0.96),rgba(9,9,14,0.94))] p-7 md:p-9 shadow-[0_30px_100px_rgba(0,0,0,0.45)] xl:mt-0">
           <div className="absolute inset-x-0 top-0 h-32 bg-[radial-gradient(circle_at_top,rgba(139,92,246,0.16),transparent_70%)] pointer-events-none" />
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="mx-auto max-w-[420px] space-y-6">
             <div>
               <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-bold uppercase tracking-[0.3em] text-neutral-300">
                 <ShieldCheck className="w-4 h-4" />
