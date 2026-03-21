@@ -11,6 +11,8 @@ interface Client {
 interface AppContextType {
   userType: UserType;
   setUserType: (type: UserType) => void;
+  isLoggedIn: boolean;
+  setIsLoggedIn: (status: boolean) => void;
   activeClient: Client;
   setActiveClient: (client: Client) => void;
   clients: Client[];
@@ -25,6 +27,7 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [userType, setUserType] = useState<UserType>("basic");
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
   const [clients, setClients] = useState<Client[]>([defaultClient]);
   const [activeClient, setActiveClient] = useState<Client>(defaultClient);
   
@@ -50,7 +53,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AppContext.Provider value={{ userType, setUserType, activeClient, setActiveClient, clients, addClient, connectedAccounts, toggleAccount }}>
+    <AppContext.Provider value={{ userType, setUserType, isLoggedIn, setIsLoggedIn, activeClient, setActiveClient, clients, addClient, connectedAccounts, toggleAccount }}>
       {children}
     </AppContext.Provider>
   );
@@ -58,6 +61,20 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
 export function useApp() {
   const context = useContext(AppContext);
-  if (!context) throw new Error("useApp must be used inside AppProvider");
+  if (!context) {
+    // SSR/prerender fallback — context henüz yok
+    return {
+      userType: "basic" as UserType,
+      setUserType: (_: UserType) => {},
+      isLoggedIn: false,
+      setIsLoggedIn: (_: boolean) => {},
+      activeClient: { id: "default_user", name: "My Personal Account" },
+      setActiveClient: (_: { id: string; name: string }) => {},
+      clients: [],
+      addClient: (_: string) => {},
+      connectedAccounts: {} as Record<string, string[]>,
+      toggleAccount: (_c: string, _p: string) => {},
+    } as AppContextType;
+  }
   return context;
 }

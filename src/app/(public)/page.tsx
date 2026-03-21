@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useLanguage } from "@/context/LanguageContext";
+import { useCtaHref } from "@/hooks/useCtaHref";
 import { ArrowRight, CheckCircle2, Zap, Layers, Users, Clock, BarChart3, Sparkles, MessageSquare } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -12,6 +13,7 @@ import AnimatedShowcase from "@/components/public/AnimatedShowcase";
 export default function LandingPage() {
   const { t } = useLanguage();
   const [isAnnual, setIsAnnual] = useState(false);
+  const ctaHref = useCtaHref();
 
   const socialIcons = [
     <SiX key="x" className="w-6 h-6 md:w-8 md:h-8 text-white hover:scale-110 transition-transform cursor-pointer" />,
@@ -52,7 +54,7 @@ export default function LandingPage() {
           
           <div className="flex flex-col sm:flex-row items-center gap-5 w-full sm:w-auto">
             <Link 
-              href="/dashboard"
+              href={ctaHref}
               className="w-full sm:w-auto bg-violet-600 py-4 px-10 rounded-full font-bold text-white text-lg hover:bg-violet-500 transition-all shadow-[0_0_30px_rgba(139,92,246,0.5)] hover:shadow-[0_0_40px_rgba(139,92,246,0.7)] flex items-center justify-center gap-3 border border-violet-400/50 hover:scale-105"
             >
               {t.hero.cta}
@@ -196,7 +198,7 @@ export default function LandingPage() {
                 </li>
               </ul>
               
-              <Link href="/dashboard" className="w-full py-4 rounded-2xl glass font-bold text-white text-center hover:bg-white/10 transition-colors border-white/20 shadow-lg">
+              <Link href={ctaHref} className="w-full py-4 rounded-2xl glass font-bold text-white text-center hover:bg-white/10 transition-colors border-white/20 shadow-lg">
                 {t.pricing.choose}
               </Link>
             </div>
@@ -246,7 +248,7 @@ export default function LandingPage() {
                 </li>
               </ul>
               
-              <Link href="/dashboard" className="w-full py-4 rounded-2xl bg-violet-600 hover:bg-violet-500 font-bold text-white text-center transition-colors shadow-[0_0_20px_rgba(139,92,246,0.3)]">
+              <Link href={ctaHref} className="w-full py-4 rounded-2xl bg-violet-600 hover:bg-violet-500 font-bold text-white text-center transition-colors shadow-[0_0_20px_rgba(139,92,246,0.3)]">
                 {t.pricing.choose}
               </Link>
             </div>
@@ -292,7 +294,7 @@ export default function LandingPage() {
                 </li>
               </ul>
               
-              <Link href="/dashboard" className="w-full py-4 rounded-2xl glass font-bold text-white text-center hover:bg-white/10 transition-colors border-white/20 shadow-lg">
+              <Link href={ctaHref} className="w-full py-4 rounded-2xl glass font-bold text-white text-center hover:bg-white/10 transition-colors border-white/20 shadow-lg">
                 {t.pricing.choose}
               </Link>
             </div>

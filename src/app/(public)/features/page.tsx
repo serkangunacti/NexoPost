@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { Repeat2, LayoutDashboard, Timer, CheckCircle2, Workflow, ArrowRight, Zap, Target, BarChart, Smartphone, BarChart3, Sparkles, MessageSquare } from "lucide-react";
 import Link from "next/link";
 import { useLanguage } from "@/context/LanguageContext";
+import { useCtaHref } from "@/hooks/useCtaHref";
 
 export default function FeaturesPage() {
   return (
@@ -17,6 +18,7 @@ export default function FeaturesPage() {
 function FeaturesContent() {
   const searchParams = useSearchParams();
   const { t } = useLanguage();
+  const ctaHref = useCtaHref();
   const [activeTab, setActiveTab] = useState<"sync" | "multi" | "schedule" | "analytics" | "ai" | "inbox">("sync");
 
   // Load the initial tab from URL param if available
@@ -194,7 +196,7 @@ function FeaturesContent() {
                  ))}
                </div>
 
-               <Link href="/dashboard" className="inline-flex items-center gap-2 text-white font-bold bg-white/10 hover:bg-white/20 border border-white/10 rounded-full px-8 py-4 transition-all hover:scale-105 active:scale-95 group">
+               <Link href={ctaHref} className="inline-flex items-center gap-2 text-white font-bold bg-white/10 hover:bg-white/20 border border-white/10 rounded-full px-8 py-4 transition-all hover:scale-105 active:scale-95 group">
                  {t.features_page.cta} <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                </Link>
              </div>
