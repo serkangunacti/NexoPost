@@ -5,7 +5,7 @@ import { useLanguage } from "@/context/LanguageContext";
 import { ArrowRight, CheckCircle2, Zap, Layers, Users, Clock } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
-import { SiX, SiFacebook, SiInstagram, SiTiktok, SiBluesky, SiThreads, SiPinterest } from "react-icons/si";
+import { SiX, SiFacebook, SiInstagram, SiTiktok, SiBluesky, SiThreads, SiPinterest, SiYoutube } from "react-icons/si";
 import { FaLinkedin } from "react-icons/fa6";
 import CookieBanner from "@/components/public/CookieBanner";
 
@@ -19,6 +19,7 @@ export default function LandingPage() {
     <SiFacebook key="fb" className="w-6 h-6 md:w-8 md:h-8 text-[#1877F2] hover:scale-110 transition-transform cursor-pointer drop-shadow-lg" />,
     <SiInstagram key="ig" className="w-6 h-6 md:w-8 md:h-8 text-[#E1306C] hover:scale-110 transition-transform cursor-pointer drop-shadow-lg" />,
     <SiTiktok key="tt" className="w-6 h-6 md:w-8 md:h-8 text-[#00f2fe] drop-shadow-[2px_2px_0_#fe0979] hover:scale-110 transition-transform cursor-pointer" />,
+    <SiYoutube key="yt" className="w-6 h-6 md:w-8 md:h-8 text-[#FF0000] hover:scale-110 transition-transform cursor-pointer drop-shadow-lg" />,
     <SiThreads key="thr" className="w-6 h-6 md:w-8 md:h-8 text-white hover:scale-110 transition-transform cursor-pointer drop-shadow-lg" />,
     <SiBluesky key="sky" className="w-6 h-6 md:w-8 md:h-8 text-[#0560FF] hover:scale-110 transition-transform cursor-pointer drop-shadow-lg" />,
     <SiPinterest key="pin" className="w-6 h-6 md:w-8 md:h-8 text-[#E60023] hover:scale-110 transition-transform cursor-pointer drop-shadow-lg" />
