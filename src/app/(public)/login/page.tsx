@@ -171,7 +171,7 @@ function LoginContent() {
                     </p>
                     <div className="relative z-10 mt-8 w-full max-w-md rounded-[1.5rem] border border-white/10 bg-black/20 p-5 text-left">
                       <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-neutral-500">
-                        {t.login_page.selected_price}
+                        Selected Plan Price
                       </p>
                       <p className="mt-2 text-2xl font-extrabold text-white">${selectedPlanPrice} USD</p>
                       <p className="mt-4 text-xs font-bold uppercase tracking-[0.24em] text-violet-300">
