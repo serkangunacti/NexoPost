@@ -23,7 +23,20 @@ interface AppContextType {
 
 const defaultClient = { id: "default_user", name: "My Personal Account" };
 
-const AppContext = createContext<AppContextType | undefined>(undefined);
+const defaultContextValue: AppContextType = {
+  userType: "basic",
+  setUserType: () => {},
+  isLoggedIn: false,
+  setIsLoggedIn: () => {},
+  activeClient: defaultClient,
+  setActiveClient: () => {},
+  clients: [defaultClient],
+  addClient: () => {},
+  connectedAccounts: { "default_user": ["twitter", "facebook"] },
+  toggleAccount: () => {},
+};
+
+const AppContext = createContext<AppContextType>(defaultContextValue);
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [userType, setUserType] = useState<UserType>("basic");
@@ -60,21 +73,5 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 }
 
 export function useApp() {
-  const context = useContext(AppContext);
-  if (!context) {
-    // SSR/prerender fallback — context henüz yok
-    return {
-      userType: "basic" as UserType,
-      setUserType: (_: UserType) => {},
-      isLoggedIn: false,
-      setIsLoggedIn: (_: boolean) => {},
-      activeClient: { id: "default_user", name: "My Personal Account" },
-      setActiveClient: (_: { id: string; name: string }) => {},
-      clients: [],
-      addClient: (_: string) => {},
-      connectedAccounts: {} as Record<string, string[]>,
-      toggleAccount: (_c: string, _p: string) => {},
-    } as AppContextType;
-  }
-  return context;
+  return useContext(AppContext);
 }
