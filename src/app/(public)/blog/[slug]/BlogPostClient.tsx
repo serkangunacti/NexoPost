@@ -14,12 +14,30 @@ export default function BlogPostClient({ post }: { post: BlogPost }) {
 
   useEffect(() => {
     const handleScroll = () => {
-      const scrollHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
-      if (scrollHeight <= 0) return;
-      const scrolled = (document.documentElement.scrollTop / scrollHeight) * 100;
-      setProgress(scrolled);
+      const articles = document.querySelectorAll("article[data-post-id]");
+      let activeProgress = 0;
+      const readOffset = 250; // Distance from the top of viewport to consider as reading boundary
+
+      for (let i = 0; i < articles.length; i++) {
+        const article = articles[i] as HTMLElement;
+        const rect = article.getBoundingClientRect();
+
+        if (rect.top <= readOffset && rect.bottom > readOffset) {
+          const totalScrollable = article.offsetHeight - window.innerHeight + readOffset;
+          const currentReadingProgress = readOffset - rect.top;
+          
+          if (totalScrollable <= 0) {
+            activeProgress = 100;
+          } else {
+            activeProgress = Math.min(100, Math.max(0, (currentReadingProgress / totalScrollable) * 100));
+          }
+          break; // Stop at the currently read article
+        }
+      }
+      setProgress(activeProgress);
     };
-    window.addEventListener("scroll", handleScroll);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    handleScroll(); // Trigger once on mount
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
@@ -65,7 +83,7 @@ export default function BlogPostClient({ post }: { post: BlogPost }) {
               const isFirst = index === 0;
               
               return (
-                <article key={p.id} className={!isFirst ? "mt-32 pt-24 border-t-2 border-dashed border-white/10" : ""}>
+                <article key={p.id} data-post-id={p.id} className={!isFirst ? "mt-32 pt-24 border-t-2 border-dashed border-white/10" : ""}>
                   {/* Header */}
                   <header className="mb-12">
                     <div className="flex flex-wrap items-center gap-4 text-sm font-semibold text-neutral-400 mb-6 uppercase tracking-wider">
