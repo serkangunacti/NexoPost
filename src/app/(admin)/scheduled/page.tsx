@@ -3,7 +3,9 @@
 import { useEffect, useState } from "react";
 import { Timestamp, collection, onSnapshot, query, orderBy, deleteDoc, doc, updateDoc } from "firebase/firestore";
 import { Calendar as CalendarIcon, Send, Loader2, Trash2 } from "lucide-react";
+import { useApp } from "@/context/AppContext";
 import { db } from "@/lib/firebase";
+import { getSubscriptionSnapshot } from "@/lib/subscription";
 import { SiX, SiFacebook, SiInstagram, SiTiktok, SiBluesky, SiThreads, SiPinterest } from "react-icons/si";
 import { FaLinkedin } from "react-icons/fa6";
 
@@ -18,9 +20,11 @@ interface Post {
 }
 
 export default function ScheduledPage() {
+  const { subscription } = useApp();
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(() => Boolean(db));
   const [activeTab, setActiveTab] = useState('Upcoming');
+  const subscriptionSnapshot = getSubscriptionSnapshot(subscription);
 
   useEffect(() => {
     if (!db) return;
@@ -48,6 +52,10 @@ export default function ScheduledPage() {
 
   const handlePublishDraft = async (id: string) => {
     if (!db) return;
+    if (!subscriptionSnapshot.canPublish) {
+      alert("Your package has expired. Renew your subscription to publish queued content.");
+      return;
+    }
 
     if(confirm("Publish this draft now?")) {
       await updateDoc(doc(db, "posts", id), { status: "Published" });
@@ -147,7 +155,7 @@ export default function ScheduledPage() {
                     <Trash2 className="w-5 h-5" />
                   </button>
                   {post.status === 'Draft' || post.status === 'Scheduled' ? (
-                     <button onClick={() => handlePublishDraft(post.id)} title="Publish Now" className="w-12 h-12 rounded-xl bg-violet-600 hover:bg-violet-500 border border-violet-500/50 flex items-center justify-center text-white transition-all shadow-[0_0_15px_rgba(139,92,246,0.3)] hover:shadow-[0_0_20px_rgba(139,92,246,0.5)]">
+                     <button onClick={() => handlePublishDraft(post.id)} disabled={!subscriptionSnapshot.canPublish} title={subscriptionSnapshot.canPublish ? "Publish Now" : "Renew package to publish"} className="w-12 h-12 rounded-xl bg-violet-600 hover:bg-violet-500 border border-violet-500/50 flex items-center justify-center text-white transition-all shadow-[0_0_15px_rgba(139,92,246,0.3)] hover:shadow-[0_0_20px_rgba(139,92,246,0.5)] disabled:cursor-not-allowed disabled:opacity-40">
                      <Send className="w-4 h-4 ml-0.5" />
                    </button>
                   ) : null}

@@ -2,16 +2,20 @@
 
 import { useState } from "react";
 import { Send, Image as ImageIcon, Smile, Type, Clock, Loader2, Wand2 } from "lucide-react";
+import { useApp } from "@/context/AppContext";
 import { db } from "@/lib/firebase";
+import { getSubscriptionSnapshot } from "@/lib/subscription";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { SiX, SiFacebook, SiInstagram, SiTiktok, SiBluesky, SiThreads, SiPinterest, SiYoutube } from "react-icons/si";
 import { FaLinkedin } from "react-icons/fa6";
 
 export default function ComposePage() {
+  const { subscription } = useApp();
   const [text, setText] = useState("");
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>(["twitter"]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [autoOptimize, setAutoOptimize] = useState(true);
+  const subscriptionSnapshot = getSubscriptionSnapshot(subscription);
 
   const platforms = [
     { id: "twitter", name: "Twitter", icon: <SiX className="w-6 h-6" />, color: "hover:bg-neutral-800 bg-neutral-900 border border-neutral-700", activeColor: "bg-black ring-2 ring-white text-white" },
@@ -33,6 +37,10 @@ export default function ComposePage() {
 
   const handleSavePost = async (status: 'Scheduled' | 'Published' | 'Draft') => {
     if (!text.trim() || selectedPlatforms.length === 0) return;
+    if ((status === "Scheduled" || status === "Published") && !subscriptionSnapshot.canPublish) {
+      alert("Your package has expired. Renew your subscription to schedule or publish new posts.");
+      return;
+    }
     if (!db) {
       alert("Firebase configuration is missing.");
       return;
@@ -64,6 +72,11 @@ export default function ComposePage() {
       <header className="mb-8 pr-4">
         <h1 className="text-4xl font-extrabold text-white mb-3 tracking-tight">Craft New Post</h1>
         <p className="text-neutral-400 text-lg font-medium">Write once, publish everywhere. Select your platforms and start typing.</p>
+        {!subscriptionSnapshot.canPublish ? (
+          <div className="mt-4 inline-flex items-center gap-2 rounded-2xl border border-amber-400/30 bg-amber-500/10 px-4 py-3 text-sm font-semibold text-amber-200">
+            Your package is expired. You can still draft content, but scheduling and publishing are locked until renewal.
+          </div>
+        ) : null}
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -139,7 +152,7 @@ export default function ComposePage() {
                </button>
                <button 
                  onClick={() => handleSavePost('Scheduled')}
-                 disabled={isSubmitting || !text || selectedPlatforms.length === 0}
+                 disabled={isSubmitting || !text || selectedPlatforms.length === 0 || !subscriptionSnapshot.canPublish}
                  className="glass py-3.5 px-6 rounded-full font-bold text-white hover:bg-white/10 transition-all border border-white/10 flex items-center gap-2.5 group disabled:opacity-50 disabled:cursor-not-allowed text-sm shadow-md"
                >
                  {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin text-sky-400" /> : <Clock className="w-4 h-4 text-sky-400 group-hover:rotate-12 transition-transform" />}
@@ -147,7 +160,7 @@ export default function ComposePage() {
                </button>
                <button 
                  onClick={() => handleSavePost('Published')}
-                 disabled={isSubmitting || !text || selectedPlatforms.length === 0}
+                 disabled={isSubmitting || !text || selectedPlatforms.length === 0 || !subscriptionSnapshot.canPublish}
                  className="bg-violet-600 py-3.5 px-8 rounded-full font-bold text-white hover:bg-violet-500 transition-all shadow-[0_0_20px_rgba(139,92,246,0.5)] hover:shadow-[0_0_35px_rgba(139,92,246,0.7)] flex items-center gap-2.5 group hover:-translate-y-0.5 active:translate-y-0 border border-violet-400/50 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
                >
                  {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />}

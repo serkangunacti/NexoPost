@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useSyncExternalStore } from "react";
 
 type UserType = "basic" | "pro" | "agency";
+type BillingCycle = "monthly" | "annual";
 
 interface Client {
   id: string;
@@ -15,11 +16,21 @@ interface UserProfile {
   signedInAt: string;
 }
 
+interface Subscription {
+  billingCycle: BillingCycle;
+  expiresAt: string;
+  hasUsedTrial: boolean;
+  phase: "trial" | "paid";
+  plan: UserType;
+  startedAt: string;
+}
+
 interface AppSession {
   activeClientId: string;
   clients: Client[];
   connectedAccounts: Record<string, string[]>;
   isLoggedIn: boolean;
+  subscription: Subscription | null;
   userProfile: UserProfile | null;
   userType: UserType;
 }
@@ -30,9 +41,16 @@ interface AppContextType {
   setUserType: (type: UserType) => void;
   isLoggedIn: boolean;
   setIsLoggedIn: (status: boolean) => void;
+  subscription: Subscription | null;
   userProfile: UserProfile | null;
   login: (input: { email: string; fullName: string; userType: UserType }) => void;
   logout: () => void;
+  startPlan: (input: {
+    billingCycle: BillingCycle;
+    email: string;
+    fullName: string;
+    plan: UserType;
+  }) => void;
   activeClient: Client;
   setActiveClient: (client: Client) => void;
   clients: Client[];
@@ -49,6 +67,7 @@ const defaultSession: AppSession = {
   clients: [defaultClient],
   connectedAccounts: { "default_user": ["twitter", "facebook"] },
   isLoggedIn: false,
+  subscription: null,
   userProfile: null,
   userType: "basic",
 };
@@ -88,6 +107,7 @@ function readStoredSession(): AppSession {
       clients,
       connectedAccounts: parsed.connectedAccounts ?? defaultSession.connectedAccounts,
       isLoggedIn: parsed.isLoggedIn ?? false,
+      subscription: parsed.subscription ?? null,
       userProfile: parsed.userProfile ?? null,
       userType: parsed.userType ?? "basic",
     };
@@ -145,9 +165,11 @@ const defaultContextValue: AppContextType = {
   setUserType: () => {},
   isLoggedIn: false,
   setIsLoggedIn: () => {},
+  subscription: null,
   userProfile: null,
   login: () => {},
   logout: () => {},
+  startPlan: () => {},
   activeClient: defaultClient,
   setActiveClient: () => {},
   clients: [defaultClient],
@@ -194,24 +216,61 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
+  const buildUserProfile = (input: { email: string; fullName: string }, existingProfile: UserProfile | null): UserProfile => ({
+    email: input.email,
+    fullName: input.fullName,
+    sessionId:
+      existingProfile?.sessionId ??
+      (typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}`),
+    signedInAt: existingProfile?.signedInAt ?? new Date().toISOString(),
+  });
+
   const login = ({ email, fullName, userType }: { email: string; fullName: string; userType: UserType }) => {
-    const sessionId =
-      typeof crypto !== "undefined" && "randomUUID" in crypto
-        ? crypto.randomUUID()
-        : `${Date.now()}`;
+    writeSession({
+      ...session,
+      isLoggedIn: true,
+      userProfile: buildUserProfile({ email, fullName }, session.userProfile),
+      userType,
+    });
+  };
+
+  const startPlan = ({
+    billingCycle,
+    email,
+    fullName,
+    plan,
+  }: {
+    billingCycle: BillingCycle;
+    email: string;
+    fullName: string;
+    plan: UserType;
+  }) => {
+    const now = new Date();
+    const hasUsedTrial = session.subscription?.hasUsedTrial ?? false;
+    const phase: Subscription["phase"] = hasUsedTrial ? "paid" : "trial";
+    const durationDays = phase === "trial" ? 15 : billingCycle === "annual" ? 365 : 30;
+    const expiresAt = new Date(now);
+    expiresAt.setDate(expiresAt.getDate() + durationDays);
 
     writeSession({
-      activeClientId: defaultClient.id,
-      clients: [defaultClient],
-      connectedAccounts: defaultSession.connectedAccounts,
+      ...session,
+      activeClientId: session.activeClientId || defaultClient.id,
+      clients: session.clients.length ? session.clients : [defaultClient],
+      connectedAccounts:
+        Object.keys(session.connectedAccounts).length > 0
+          ? session.connectedAccounts
+          : defaultSession.connectedAccounts,
       isLoggedIn: true,
-      userProfile: {
-        email,
-        fullName,
-        sessionId,
-        signedInAt: new Date().toISOString(),
+      subscription: {
+        billingCycle,
+        expiresAt: expiresAt.toISOString(),
+        hasUsedTrial: true,
+        phase,
+        plan,
+        startedAt: now.toISOString(),
       },
-      userType,
+      userProfile: buildUserProfile({ email, fullName }, session.userProfile),
+      userType: plan,
     });
   };
 
@@ -261,9 +320,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         setUserType,
         isLoggedIn: session.isLoggedIn,
         setIsLoggedIn,
+        subscription: session.subscription,
         userProfile: session.userProfile,
         login,
         logout,
+        startPlan,
         activeClient,
         setActiveClient,
         clients: session.clients,

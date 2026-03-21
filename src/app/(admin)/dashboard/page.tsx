@@ -3,7 +3,9 @@
 import { useEffect, useState } from "react";
 import { ArrowUpRight, BarChart3, Plus, Layers, Calendar, Loader2 } from "lucide-react";
 import Link from "next/link";
+import { useApp } from "@/context/AppContext";
 import { db } from "@/lib/firebase";
+import { getSubscriptionSnapshot } from "@/lib/subscription";
 import { Timestamp, collection, onSnapshot, query, orderBy } from "firebase/firestore";
 import { SiX, SiFacebook, SiInstagram, SiTiktok, SiBluesky, SiThreads, SiPinterest } from "react-icons/si";
 import { FaLinkedin } from "react-icons/fa6";
@@ -19,9 +21,11 @@ interface DashboardPost {
 }
 
 export default function Home() {
+  const { subscription } = useApp();
   const [stats, setStats] = useState({ total: 0, published: 0, scheduled: 0 });
   const [upcomingPosts, setUpcomingPosts] = useState<DashboardPost[]>([]);
   const [loading, setLoading] = useState(() => Boolean(db));
+  const subscriptionSnapshot = getSubscriptionSnapshot(subscription);
 
   useEffect(() => {
     if (!db) {
@@ -82,11 +86,11 @@ export default function Home() {
             </p>
         </div>
         <Link 
-          href="/compose" 
+          href={subscriptionSnapshot.canPublish ? "/compose" : "/checkout"}
           className="glass py-3 px-6 rounded-full flex items-center gap-2 font-semibold hover:bg-white/10 transition-all text-white border-violet-500/30 shadow-[0_0_20px_rgba(139,92,246,0.15)] group hover:shadow-[0_0_30px_rgba(139,92,246,0.3)] hover:scale-105 active:scale-95"
         >
           <Plus className="w-5 h-5 text-violet-400 group-hover:rotate-90 transition-transform duration-300" />
-          Create Post
+          {subscriptionSnapshot.canPublish ? "Create Post" : "Renew to Publish"}
         </Link>
       </header>
 

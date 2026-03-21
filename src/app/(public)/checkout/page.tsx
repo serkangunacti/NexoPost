@@ -4,19 +4,20 @@ import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useLanguage } from "@/context/LanguageContext";
 import { useApp } from "@/context/AppContext";
+import { getSubscriptionSnapshot } from "@/lib/subscription";
 import { CheckCircle2, CreditCard, Lock, Zap, ArrowRight, Star } from "lucide-react";
 
 function CheckoutContent() {
   const { t } = useLanguage();
-  const { login } = useApp();
+  const { startPlan, subscription, userProfile } = useApp();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [selectedPlan, setSelectedPlan] = useState<"basic" | "pro" | "agency">("pro");
-  const [isAnnual, setIsAnnual] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<"basic" | "pro" | "agency">(subscription?.plan ?? "pro");
+  const [isAnnual, setIsAnnual] = useState(subscription?.billingCycle === "annual");
   const [step, setStep] = useState<"plan" | "payment" | "success">("plan");
   const [loading, setLoading] = useState(false);
-  const [fullName, setFullName] = useState("");
-  const [email, setEmail] = useState("");
+  const [fullName, setFullName] = useState(userProfile?.fullName ?? "");
+  const [email, setEmail] = useState(userProfile?.email ?? "");
 
   const plans = [
     {
@@ -70,10 +71,11 @@ function CheckoutContent() {
     setLoading(true);
     // Simüle edilmiş ödeme işlemi
     await new Promise(r => setTimeout(r, 1800));
-    login({
+    startPlan({
+      billingCycle: isAnnual ? "annual" : "monthly",
       email: email.trim(),
       fullName: fullName.trim(),
-      userType: selectedPlan,
+      plan: selectedPlan,
     });
     setLoading(false);
     setStep("success");
@@ -82,6 +84,14 @@ function CheckoutContent() {
   const handleGoToDashboard = () => {
     router.push(nextPath);
   };
+
+  const isFirstTrial = !(subscription?.hasUsedTrial ?? false);
+  const subscriptionSnapshot = getSubscriptionSnapshot(subscription);
+  const purchaseCta = isFirstTrial
+    ? (t.checkout.start_trial ?? "Start 15-Day Trial")
+    : subscription && !subscriptionSnapshot.isExpired
+      ? (t.checkout.change_paid_plan ?? "Switch to Paid Plan")
+      : (t.checkout.renew_plan ?? "Renew Package");
 
   if (step === "success") {
     return (
@@ -306,7 +316,7 @@ function CheckoutContent() {
                   ) : (
                     <>
                       <Lock className="w-5 h-5" />
-                      {t.checkout.secure_payment} — ${price}
+                      {purchaseCta} — ${price}
                     </>
                   )}
                 </button>
