@@ -75,7 +75,7 @@ export default function LandingPage() {
       <AnimatedShowcase />
 
       {/* Features Section */}
-      <section className="w-full bg-white/[0.02] border-y border-white/5 py-32 px-6">
+      <section id="features" className="w-full bg-white/[0.02] border-y border-white/5 py-32 px-6">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-20">
             <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">{t.features.title}</h2>
@@ -108,7 +108,7 @@ export default function LandingPage() {
       </section>
 
       {/* Pricing Section */}
-      <section className="w-full py-32 px-6">
+      <section id="pricing" className="w-full py-32 px-6">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-white mb-4">{t.pricing.title}</h2>

@@ -24,6 +24,14 @@ export default function PublicNavbar() {
           </span>
         </Link>
 
+        {/* Navigation Links */}
+        <div className="hidden md:flex items-center gap-8 absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+          <Link href="/#features" className="text-sm font-semibold text-neutral-300 hover:text-white transition-colors">{t.nav.features}</Link>
+          <Link href="/#pricing" className="text-sm font-semibold text-neutral-300 hover:text-white transition-colors">{t.nav.pricing}</Link>
+          <Link href="/blog" className="text-sm font-semibold text-neutral-300 hover:text-white transition-colors">{t.nav.blog}</Link>
+          <Link href="/contact" className="text-sm font-semibold text-neutral-300 hover:text-white transition-colors">{t.nav.contact}</Link>
+        </div>
+
         {/* Right side controls */}
         <div className="flex items-center gap-4">
           

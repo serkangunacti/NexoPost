@@ -2,6 +2,8 @@
   "nav": {
     "features": "Features",
     "pricing": "Pricing",
+    "blog": "Blog",
+    "contact": "Contact Us",
     "login": "Login / Dashboard",
     "agency": "Agency Suite"
   },
