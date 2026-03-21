@@ -5,7 +5,13 @@
     "blog": "Blog",
     "contact": "Bize Ulaşın",
     "login": "Giriş Yap / Panel",
+    "login_short": "Giriş Yap",
     "agency": "Ajans Paketi"
+  },
+  "common": {
+    "go_back": "Geri Dön",
+    "email": "E-posta",
+    "whatsapp": "WhatsApp"
   },
   "blog_index": {
     "title": "NexoPost Blog",
@@ -73,7 +79,37 @@
     "basic_perk7": "Tüm Platformlardan Özgürce Paylaşım",
     "pro_perk7": "Tüm Platformlardan Özgürce Paylaşım",
     "agency_perk7": "Tüm Platformlardan Özgürce Paylaşım",
-    "choose": "Planı Seç"
+    "choose": "Planı Seç",
+    "popular": "En Popüler"
+  },
+  "checkout": {
+    "trial_badge": "15 Günlük Ücretsiz Deneme Dahil",
+    "title_main": "Planınızı seçin,",
+    "title_highlight": "hemen başlayın.",
+    "subtitle": "İstediğiniz zaman iptal edebilirsiniz. Kredi kartınızdan ilk 15 gün ücret çekilmez.",
+    "annual_bonus": "2 Ay Bizden",
+    "select_plan": "{plan} Planını Seç",
+    "selected_plan": "Seçilen Plan",
+    "annual_fee": "Yıllık Ücret",
+    "monthly_fee": "Aylık Ücret",
+    "trial_note": "15 günlük ücretsiz deneme — ilk ödeme {period} sonra başlar.",
+    "trial_period_year": "bir yıl",
+    "trial_period_month": "30 gün",
+    "payment_title": "Ödeme Bilgileri",
+    "full_name": "Ad Soyad",
+    "full_name_placeholder": "Serkan Günacti",
+    "email": "E-posta",
+    "card_number": "Kart Numarası",
+    "expiry": "Son Kullanma",
+    "processing": "İşleniyor...",
+    "secure_payment": "Güvenli Ödeme Yap",
+    "security_note": "256-bit SSL şifrelemesi ile korunur. İstediğiniz zaman iptal edebilirsiniz.",
+    "back_to_plans": "Plan seçimine dön",
+    "success_title": "Hoş Geldiniz! 🎉",
+    "success_message_prefix": "",
+    "success_message_suffix": " paketiniz başarıyla aktive edildi.",
+    "success_subtitle": "NexoPost deneyiminiz hazır. Sizi dashboard'da bekliyoruz.",
+    "go_to_dashboard": "Dashboard'a Git"
   },
   "contact": {
     "title": "Bize Ulaşın",
@@ -147,6 +183,24 @@
   "cookies": {
     "text": "Sizlere daha iyi hizmet sunabilmek ve KVKK/GDPR kapsamında kullanıcı deneyiminizi geliştirmek için çerezler (cookies) kullanıyoruz.",
     "accept": "Kabul Et"
+  },
+  "showcase": {
+    "full_text": "Yeni ürünümüzü bugün duyurmaktan heyecan duyuyoruz! 🚀 #NexoPost #Guncelleme",
+    "compose_title": "Yeni Gönderi Oluştur",
+    "placeholder": "Ne paylaşmak istiyorsunuz?",
+    "processing": "İşleniyor...",
+    "queued": "Kuyruğa Alındı",
+    "publish_now": "Hemen Yayınla",
+    "live_preview": "Canlı Önizleme",
+    "live_networks": "Canlı Ağlar",
+    "waiting_text": "Metin bekleniyor...",
+    "linkedin_role": "Sosyal Medya Otomasyon SaaS'ı",
+    "facebook_time": "Şimdi",
+    "tiktok_following": "Takip Edilen",
+    "tiktok_for_you": "Sana Özel",
+    "original_audio": "Orijinal ses - NexoPost",
+    "success_title": "Onaylandı ve Kuyruğa Alındı!",
+    "success_subtitle": "Gönderiniz 5 platforma doğru yola çıktı."
   },
   "features_page": {
     "badge": "Platform Özellikleri",

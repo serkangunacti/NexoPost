@@ -18,7 +18,7 @@ export default function TermsPage() {
           href="/" 
           className="inline-flex items-center gap-2 text-violet-400 hover:text-violet-300 font-semibold mb-12 transition-colors hover:-translate-x-1 duration-300 relative z-20"
         >
-          <ArrowLeft className="w-4 h-4" /> Go Back
+          <ArrowLeft className="w-4 h-4" /> {t.common.go_back}
         </Link>
         
         <div className="relative glass p-10 md:p-16 rounded-[3rem] border border-white/10 shadow-2xl overflow-hidden">

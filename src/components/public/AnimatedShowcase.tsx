@@ -1,15 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useLanguage } from "@/context/LanguageContext";
 import { SiX, SiFacebook, SiInstagram, SiTiktok } from "react-icons/si";
 import { FaLinkedin } from "react-icons/fa6";
 import { Calendar, CheckCircle2, PenLine, Send, Camera, MessageCircle, Repeat2, Heart, BarChart2, Share, ThumbsUp, MessageSquare, Repeat, Bookmark, Music, MoreHorizontal } from "lucide-react";
 
 export default function AnimatedShowcase() {
+  const { t } = useLanguage();
   const [step, setStep] = useState(0);
   const [text, setText] = useState("");
   
-  const fullText = "Excited to launch our new product today! 🚀 #NexoPost #Update";
+  const fullText = t.showcase.full_text;
 
   useEffect(() => {
     let timeout: NodeJS.Timeout;
@@ -84,7 +86,7 @@ export default function AnimatedShowcase() {
                 <div className="p-2.5 rounded-xl bg-violet-500/10 text-violet-400 border border-violet-500/20">
                   <PenLine className="w-5 h-5" />
                 </div>
-                Craft New Post
+                {t.showcase.compose_title}
               </h3>
 
               {/* Platform Selector */}
@@ -118,7 +120,7 @@ export default function AnimatedShowcase() {
                   )}
                 </p>
                 {text === "" && step < 5 && (
-                  <p className="text-neutral-600 text-[16px] absolute top-6 left-6">What do you want to share?</p>
+                  <p className="text-neutral-600 text-[16px] absolute top-6 left-6">{t.showcase.placeholder}</p>
                 )}
               </div>
 
@@ -143,7 +145,7 @@ export default function AnimatedShowcase() {
                     step === 7 ? 'bg-violet-600/70 cursor-wait shadow-violet-500/20' :
                     step >= 8 ? 'bg-emerald-500 shadow-emerald-500/20' : 'bg-violet-600 hover:bg-violet-500 shadow-violet-500/30'
                   }`}>
-                    {step === 7 ? 'Processing...' : step >= 8 ? <><CheckCircle2 className="w-6 h-6"/> Queued</> : <><Send className="w-6 h-6"/> Publish Now</>}
+                    {step === 7 ? t.showcase.processing : step >= 8 ? <><CheckCircle2 className="w-6 h-6"/> {t.showcase.queued}</> : <><Send className="w-6 h-6"/> {t.showcase.publish_now}</>}
                   </div>
                 </div>
               </div>
@@ -153,7 +155,7 @@ export default function AnimatedShowcase() {
             <div className="hidden lg:flex flex-col items-center justify-center shrink-0 mx-4 relative overflow-visible">
                <h4 className={`text-xs font-bold uppercase tracking-widest mb-6 flex items-center gap-2 transition-colors duration-500 ${step >= 9 ? 'text-violet-400' : 'text-neutral-500'}`}>
                   <div className={`w-2 h-2 rounded-full ${step >= 9 ? 'bg-violet-400 animate-pulse' : 'bg-neutral-600'}`} />
-                  {step >= 9 ? 'Live Networks' : 'Live Preview'}
+                  {step >= 9 ? t.showcase.live_networks : t.showcase.live_preview}
                </h4>
 
                {/* Rigorous Hardware Phone Shell */}
@@ -176,7 +178,7 @@ export default function AnimatedShowcase() {
                         </div>
                      </div>
                      <p className="text-[14px] text-neutral-400 break-words leading-relaxed min-h-[4rem]">
-                        {text || <span className="opacity-50">Waiting for text...</span>}
+                        {text || <span className="opacity-50">{t.showcase.waiting_text}</span>}
                      </p>
                      
                      <div className={`w-full h-[220px] bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center mt-4 transition-all duration-700 ${step >= 6 ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
@@ -216,7 +218,7 @@ export default function AnimatedShowcase() {
                               <img src="/logo.png" className="w-12 h-12 rounded bg-white border border-neutral-200 p-1.5 object-contain" />
                               <div className="leading-tight">
                                  <div className="text-[14px] font-bold text-black flex items-center gap-1">NexoPost <span className="text-neutral-500 text-[10px] font-normal">1st</span></div>
-                                 <div className="text-[12px] text-neutral-500">Social Media Automation SaaS</div>
+                                 <div className="text-[12px] text-neutral-500">{t.showcase.linkedin_role}</div>
                                  <div className="text-[11px] text-neutral-500 flex items-center gap-1">1m • 🌐</div>
                               </div>
                            </div>
@@ -242,7 +244,7 @@ export default function AnimatedShowcase() {
                               <img src="/logo.png" className="w-10 h-10 rounded-full border border-neutral-200 bg-neutral-100 p-1.5 object-contain" />
                               <div className="leading-tight">
                                  <div className="text-[14px] font-bold text-[#050505]">NexoPost</div>
-                                 <div className="text-[12px] text-[#65676B]">Just now • 🌍</div>
+                                 <div className="text-[12px] text-[#65676B]">{t.showcase.facebook_time} • 🌍</div>
                               </div>
                               <MoreHorizontal className="w-5 h-5 text-[#65676B] ml-auto mb-3" />
                            </div>
@@ -296,7 +298,7 @@ export default function AnimatedShowcase() {
                         
                         {/* Top bar */}
                         <div className="absolute top-10 inset-x-0 px-4 flex justify-between z-20 text-white font-semibold">
-                           <div className="text-[16px] drop-shadow-md">Following <span className="opacity-50 mx-1">|</span> For You</div>
+                           <div className="text-[16px] drop-shadow-md">{t.showcase.tiktok_following} <span className="opacity-50 mx-1">|</span> {t.showcase.tiktok_for_you}</div>
                            <div className="opacity-80">🔍</div>
                         </div>
 
@@ -316,7 +318,7 @@ export default function AnimatedShowcase() {
                            <div className="font-bold text-[15px] drop-shadow-md mb-1">@nexopost</div>
                            <p className="text-[13px] drop-shadow-md mb-3 line-clamp-2 leading-snug">{text}</p>
                            <div className="flex items-center gap-2 text-[12px] font-semibold">
-                              <Music className="w-4 h-4" /> Original audio - NexoPost
+                              <Music className="w-4 h-4" /> {t.showcase.original_audio}
                            </div>
                         </div>
                      </div>
@@ -333,8 +335,8 @@ export default function AnimatedShowcase() {
               <div className="w-24 h-24 bg-emerald-500/20 border border-emerald-500/30 rounded-[2rem] flex items-center justify-center mb-6 shadow-[0_0_60px_rgba(16,185,129,0.4)]">
                 <CheckCircle2 className="w-10 h-10 text-emerald-400" />
               </div>
-              <p className="text-white font-bold text-3xl mb-3 tracking-tight">Approved & Queued!</p>
-              <p className="text-neutral-400 text-lg">Your post is on its way to 5 platforms.</p>
+              <p className="text-white font-bold text-3xl mb-3 tracking-tight">{t.showcase.success_title}</p>
+              <p className="text-neutral-400 text-lg">{t.showcase.success_subtitle}</p>
             </div>
           )}
 

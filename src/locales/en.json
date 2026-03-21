@@ -5,7 +5,13 @@
     "blog": "Blog",
     "contact": "Contact Us",
     "login": "Login / Dashboard",
+    "login_short": "Login",
     "agency": "Agency Suite"
+  },
+  "common": {
+    "go_back": "Go Back",
+    "email": "Email",
+    "whatsapp": "WhatsApp"
   },
   "blog_index": {
     "title": "NexoPost Blog",
@@ -73,7 +79,37 @@
     "basic_perk7": "Post to All Supported Platforms",
     "pro_perk7": "Post to All Supported Platforms",
     "agency_perk7": "Post to All Supported Platforms",
-    "choose": "Choose Plan"
+    "choose": "Choose Plan",
+    "popular": "Most Popular"
+  },
+  "checkout": {
+    "trial_badge": "Includes 15-Day Free Trial",
+    "title_main": "Choose your plan,",
+    "title_highlight": "start now.",
+    "subtitle": "Cancel anytime. Your card will not be charged for the first 15 days.",
+    "annual_bonus": "2 Months Free",
+    "select_plan": "Choose {plan} Plan",
+    "selected_plan": "Selected Plan",
+    "annual_fee": "Annual Fee",
+    "monthly_fee": "Monthly Fee",
+    "trial_note": "15-day free trial — first payment starts after {period}.",
+    "trial_period_year": "one year",
+    "trial_period_month": "30 days",
+    "payment_title": "Payment Details",
+    "full_name": "Full Name",
+    "full_name_placeholder": "Serkan Gunacti",
+    "email": "Email",
+    "card_number": "Card Number",
+    "expiry": "Expiry",
+    "processing": "Processing...",
+    "secure_payment": "Pay Securely",
+    "security_note": "Protected with 256-bit SSL encryption. Cancel anytime.",
+    "back_to_plans": "Back to plan selection",
+    "success_title": "Welcome! 🎉",
+    "success_message_prefix": "Your",
+    "success_message_suffix": "plan has been activated successfully.",
+    "success_subtitle": "Your NexoPost experience is ready. Your dashboard is waiting for you.",
+    "go_to_dashboard": "Go to Dashboard"
   },
   "contact": {
     "title": "Contact Us",
@@ -147,6 +183,24 @@
   "cookies": {
     "text": "We use cookies to ensure you get the best experience on our website according to privacy regulations (KVKK / GDPR).",
     "accept": "Accept cookies"
+  },
+  "showcase": {
+    "full_text": "Excited to launch our new product today! 🚀 #NexoPost #Update",
+    "compose_title": "Craft New Post",
+    "placeholder": "What do you want to share?",
+    "processing": "Processing...",
+    "queued": "Queued",
+    "publish_now": "Publish Now",
+    "live_preview": "Live Preview",
+    "live_networks": "Live Networks",
+    "waiting_text": "Waiting for text...",
+    "linkedin_role": "Social Media Automation SaaS",
+    "facebook_time": "Just now",
+    "tiktok_following": "Following",
+    "tiktok_for_you": "For You",
+    "original_audio": "Original audio - NexoPost",
+    "success_title": "Approved & Queued!",
+    "success_subtitle": "Your post is on its way to 5 platforms."
   },
   "features_page": {
     "badge": "Platform Features",

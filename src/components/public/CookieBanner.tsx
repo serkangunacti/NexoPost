@@ -1,18 +1,17 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useLanguage } from "@/context/LanguageContext";
 import { ShieldCheck } from "lucide-react";
 
 export default function CookieBanner() {
   const { t } = useLanguage();
-  const [show, setShow] = useState(false);
-
-  useEffect(() => {
-    const accepted = localStorage.getItem("cookies_accepted");
-    if (!accepted) {
-      setShow(true);
+  const [show, setShow] = useState(() => {
+    if (typeof window === "undefined") {
+      return false;
     }
-  }, []);
+
+    return !window.localStorage.getItem("cookies_accepted");
+  });
 
   if (!show) return null;
 

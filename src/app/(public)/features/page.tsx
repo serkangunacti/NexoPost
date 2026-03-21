@@ -1,11 +1,18 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
-import { Repeat2, LayoutDashboard, Timer, CheckCircle2, Workflow, ArrowRight, Zap, Target, BarChart, Smartphone, BarChart3, Sparkles, MessageSquare } from "lucide-react";
+import { Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Repeat2, LayoutDashboard, Timer, CheckCircle2, Workflow, ArrowRight, BarChart3, Sparkles, MessageSquare } from "lucide-react";
 import Link from "next/link";
 import { useLanguage } from "@/context/LanguageContext";
 import { useCtaHref } from "@/hooks/useCtaHref";
+
+const tabIds = ["sync", "multi", "schedule", "analytics", "ai", "inbox"] as const;
+type TabId = (typeof tabIds)[number];
+
+function isTabId(value: string | null): value is TabId {
+  return value !== null && tabIds.includes(value as TabId);
+}
 
 export default function FeaturesPage() {
   return (
@@ -17,17 +24,10 @@ export default function FeaturesPage() {
 
 function FeaturesContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const { t } = useLanguage();
   const ctaHref = useCtaHref();
-  const [activeTab, setActiveTab] = useState<"sync" | "multi" | "schedule" | "analytics" | "ai" | "inbox">("sync");
-
-  // Load the initial tab from URL param if available
-  useEffect(() => {
-    const tabParam = searchParams.get("tab");
-    if (tabParam === "sync" || tabParam === "multi" || tabParam === "schedule" || tabParam === "analytics" || tabParam === "ai" || tabParam === "inbox") {
-      setActiveTab(tabParam as any);
-    }
-  }, [searchParams]);
+  const activeTab: TabId = isTabId(searchParams.get("tab")) ? searchParams.get("tab") : "sync";
 
   const tabs = [
     {
@@ -133,7 +133,7 @@ function FeaturesContent() {
                return (
                  <button
                    key={tab.id}
-                   onClick={() => setActiveTab(tab.id as any)}
+                    onClick={() => router.replace(`/features?tab=${tab.id}`, { scroll: false })}
                    className={`flex items-start text-left gap-4 p-5 rounded-2xl transition-all duration-300 relative group overflow-hidden whitespace-nowrap lg:whitespace-normal shrink-0 lg:shrink w-auto lg:w-full
                      ${isActive ? `glass border border-white/10 ${ColorTheme}` : 'hover:bg-white/5 border border-transparent'}
                    `}

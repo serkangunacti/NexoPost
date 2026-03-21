@@ -38,7 +38,7 @@ function CheckoutContent() {
       color: "violet",
       accent: "border-violet-500/40 shadow-violet-500/10",
       activeAccent: "border-violet-400 shadow-[0_0_30px_rgba(139,92,246,0.3)] bg-violet-500/5",
-      badge: "Most Popular",
+      badge: t.pricing.popular,
     },
     {
       id: "agency" as const,
@@ -78,16 +78,18 @@ function CheckoutContent() {
           <div className="w-24 h-24 rounded-full bg-emerald-500/10 border-2 border-emerald-400 flex items-center justify-center mx-auto mb-8 shadow-[0_0_40px_rgba(16,185,129,0.3)]">
             <CheckCircle2 className="w-12 h-12 text-emerald-400" />
           </div>
-          <h2 className="text-3xl font-extrabold text-white mb-3">Hoş Geldiniz! 🎉</h2>
+          <h2 className="text-3xl font-extrabold text-white mb-3">{t.checkout.success_title}</h2>
           <p className="text-neutral-400 font-medium mb-2">
-            <span className="text-white font-bold">{currentPlan.name}</span> paketiniz başarıyla aktive edildi.
+            {t.checkout.success_message_prefix ? `${t.checkout.success_message_prefix} ` : null}
+            <span className="text-white font-bold">{currentPlan.name}</span>
+            {t.checkout.success_message_suffix}
           </p>
-          <p className="text-neutral-500 text-sm mb-10">NexoPost deneyiminiz artık hazır. Dashboard'unuzda sizi bekliyoruz.</p>
+          <p className="text-neutral-500 text-sm mb-10">{t.checkout.success_subtitle}</p>
           <button
             onClick={handleGoToDashboard}
             className="w-full bg-violet-600 hover:bg-violet-500 text-white font-bold py-4 rounded-2xl flex items-center justify-center gap-2 transition-all shadow-[0_0_20px_rgba(139,92,246,0.3)] hover:scale-105"
           >
-            Dashboard'a Git <ArrowRight className="w-5 h-5" />
+            {t.checkout.go_to_dashboard} <ArrowRight className="w-5 h-5" />
           </button>
         </div>
       </div>
@@ -105,16 +107,16 @@ function CheckoutContent() {
         {/* Header */}
         <div className="text-center mb-14 animate-in fade-in slide-in-from-bottom-6 duration-700">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass border border-violet-500/20 text-violet-400 font-bold text-sm mb-6 uppercase tracking-widest shadow-lg">
-            <Zap className="w-4 h-4" /> 15 Günlük Ücretsiz Deneme Dahil
+            <Zap className="w-4 h-4" /> {t.checkout.trial_badge}
           </div>
           <h1 className="text-4xl md:text-5xl font-extrabold text-white mb-4 tracking-tight">
-            Planınızı Seçin,{" "}
+            {t.checkout.title_main}{" "}
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-sky-400">
-              Hemen Başlayın.
+              {t.checkout.title_highlight}
             </span>
           </h1>
           <p className="text-neutral-400 font-medium text-lg max-w-xl mx-auto">
-            İstediğiniz zaman iptal edebilirsiniz. Kredi kartı bilginiz 15 gün boyunca çekilmez.
+            {t.checkout.subtitle}
           </p>
 
           {/* Billing toggle */}
@@ -124,16 +126,16 @@ function CheckoutContent() {
               className={`relative px-6 py-2.5 rounded-full text-sm font-bold transition-all duration-300 ${!isAnnual ? "text-white" : "text-neutral-400 hover:text-white"}`}
             >
               {!isAnnual && <div className="absolute inset-0 bg-violet-600 rounded-full -z-10 shadow-[0_0_15px_rgba(139,92,246,0.4)]" />}
-              Aylık
+              {t.pricing.monthly}
             </button>
             <button
               onClick={() => setIsAnnual(true)}
               className={`relative px-6 py-2.5 rounded-full text-sm font-bold transition-all duration-300 flex items-center gap-2 ${isAnnual ? "text-white" : "text-neutral-400 hover:text-white"}`}
             >
               {isAnnual && <div className="absolute inset-0 bg-violet-600 rounded-full -z-10 shadow-[0_0_15px_rgba(139,92,246,0.4)]" />}
-              Yıllık
+              {t.pricing.annually}
               <span className={`text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full font-black ${isAnnual ? "bg-white text-violet-600" : "bg-violet-600/30 text-violet-300"}`}>
-                2 Ay Bizden
+                {t.checkout.annual_bonus}
               </span>
             </button>
           </div>
@@ -172,7 +174,7 @@ function CheckoutContent() {
                     <p className="text-neutral-500 text-sm font-medium mb-6">{plan.desc}</p>
                     <div className="mb-6 flex items-end gap-1">
                       <span className="text-4xl font-extrabold text-white">${isAnnual ? plan.annualPrice : plan.monthlyPrice}</span>
-                      <span className="text-neutral-500 font-medium mb-1">{isAnnual ? "/yıl" : "/ay"}</span>
+                      <span className="text-neutral-500 font-medium mb-1">{isAnnual ? t.pricing.yr : t.pricing.mo}</span>
                     </div>
                     <ul className="space-y-3 flex-1 mb-8">
                       {plan.perks.map((perk, i) => (
@@ -192,7 +194,7 @@ function CheckoutContent() {
                       className={`w-full py-3.5 rounded-2xl text-white font-bold flex items-center justify-center gap-2 transition-all hover:scale-105 active:scale-95 ${btnColor}`}
                     >
                       <CreditCard className="w-4 h-4" />
-                      {plan.name} Planını Seç
+                      {t.checkout.select_plan.replace("{plan}", plan.name)}
                       <ArrowRight className="w-4 h-4" />
                     </button>
                   </div>
@@ -209,33 +211,33 @@ function CheckoutContent() {
               <div className="bg-violet-500/10 border border-violet-500/20 rounded-2xl p-5 mb-8">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-neutral-400 text-sm font-semibold">Seçilen Plan</p>
+                    <p className="text-neutral-400 text-sm font-semibold">{t.checkout.selected_plan}</p>
                     <p className="text-white font-extrabold text-xl">{currentPlan.name}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-neutral-400 text-sm font-semibold">{isAnnual ? "Yıllık" : "Aylık"} Ücret</p>
+                    <p className="text-neutral-400 text-sm font-semibold">{isAnnual ? t.checkout.annual_fee : t.checkout.monthly_fee}</p>
                     <p className="text-2xl font-extrabold text-violet-300">${price}</p>
                   </div>
                 </div>
                 <div className="mt-4 pt-4 border-t border-violet-500/20 flex items-center gap-2 text-emerald-400 text-sm font-bold">
                   <Star className="w-4 h-4 fill-emerald-400" />
-                  15 günlük ücretsiz deneme — ilk ödeme {isAnnual ? "bir yıl" : "30 gün"} sonra.
+                  {t.checkout.trial_note.replace("{period}", isAnnual ? t.checkout.trial_period_year : t.checkout.trial_period_month)}
                 </div>
               </div>
 
-              <h2 className="text-2xl font-extrabold text-white mb-7">Ödeme Bilgileri</h2>
+              <h2 className="text-2xl font-extrabold text-white mb-7">{t.checkout.payment_title}</h2>
 
               <div className="flex flex-col gap-5">
                 <div>
-                  <label className="block text-sm font-semibold text-neutral-400 mb-2">Ad Soyad</label>
+                  <label className="block text-sm font-semibold text-neutral-400 mb-2">{t.checkout.full_name}</label>
                   <input
                     type="text"
-                    placeholder="Serkan Günacti"
+                    placeholder={t.checkout.full_name_placeholder}
                     className="w-full bg-black/40 border border-white/10 rounded-xl px-5 py-3.5 text-white placeholder-neutral-600 font-medium focus:outline-none focus:border-violet-500/50 focus:bg-white/5 transition-all"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-neutral-400 mb-2">E-posta</label>
+                  <label className="block text-sm font-semibold text-neutral-400 mb-2">{t.checkout.email}</label>
                   <input
                     type="email"
                     placeholder="hello@nexopost.com"
@@ -243,7 +245,7 @@ function CheckoutContent() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-neutral-400 mb-2">Kart Numarası</label>
+                  <label className="block text-sm font-semibold text-neutral-400 mb-2">{t.checkout.card_number}</label>
                   <div className="relative">
                     <input
                       type="text"
@@ -256,7 +258,7 @@ function CheckoutContent() {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-semibold text-neutral-400 mb-2">Son Kullanma</label>
+                    <label className="block text-sm font-semibold text-neutral-400 mb-2">{t.checkout.expiry}</label>
                     <input
                       type="text"
                       placeholder="MM / YY"
@@ -283,25 +285,25 @@ function CheckoutContent() {
                   {loading ? (
                     <>
                       <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      İşleniyor...
+                      {t.checkout.processing}
                     </>
                   ) : (
                     <>
                       <Lock className="w-5 h-5" />
-                      Güvenli Ödeme Yap — ${price}
+                      {t.checkout.secure_payment} — ${price}
                     </>
                   )}
                 </button>
 
                 <p className="text-center text-neutral-600 text-xs font-medium">
-                  256-bit SSL şifrelemesi ile korunmaktadır. İstediğiniz zaman iptal edebilirsiniz.
+                  {t.checkout.security_note}
                 </p>
 
                 <button
                   onClick={() => setStep("plan")}
                   className="text-center text-neutral-500 hover:text-white text-sm font-semibold transition-colors"
                 >
-                  ← Plan seçimine dön
+                  ← {t.checkout.back_to_plans}
                 </button>
               </div>
             </div>

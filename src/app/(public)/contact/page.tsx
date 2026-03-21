@@ -16,7 +16,7 @@ export default function ContactPage() {
           href="/" 
           className="inline-flex items-center gap-2 text-violet-400 hover:text-violet-300 font-semibold mb-12 transition-colors hover:-translate-x-1 duration-300"
         >
-          <ArrowLeft className="w-4 h-4" /> Go Back
+          <ArrowLeft className="w-4 h-4" /> {t.common.go_back}
         </Link>
         
         <div className="text-center mb-16">
@@ -34,7 +34,7 @@ export default function ContactPage() {
                 <label className="block text-sm font-semibold text-neutral-400 mb-2">{t.contact.form_name}</label>
                 <input 
                   type="text" 
-                  placeholder="John Doe"
+                  placeholder={t.contact.form_name === "Ad Soyad" ? "Serkan Günacti" : "John Doe"}
                   className="w-full bg-black/40 border border-white/10 rounded-xl px-5 py-3.5 text-white placeholder-neutral-600 font-medium focus:outline-none focus:border-violet-500/50 focus:bg-white/5 transition-all" 
                 />
               </div>
@@ -42,7 +42,7 @@ export default function ContactPage() {
                 <label className="block text-sm font-semibold text-neutral-400 mb-2">{t.contact.form_email}</label>
                 <input 
                   type="email" 
-                  placeholder="hello@example.com"
+                  placeholder="hello@nexopost.com"
                   className="w-full bg-black/40 border border-white/10 rounded-xl px-5 py-3.5 text-white placeholder-neutral-600 font-medium focus:outline-none focus:border-violet-500/50 focus:bg-white/5 transition-all" 
                 />
               </div>
@@ -71,7 +71,7 @@ export default function ContactPage() {
                 <Mail className="w-6 h-6" />
               </div>
               <div>
-                <p className="text-sm font-bold text-neutral-500 mb-1">Email</p>
+                <p className="text-sm font-bold text-neutral-500 mb-1">{t.common.email}</p>
                 <div className="text-white font-bold text-lg group-hover:text-emerald-400 transition-colors">info@nexopost.com</div>
               </div>
             </a>
@@ -81,7 +81,7 @@ export default function ContactPage() {
                 <SiWhatsapp className="w-6 h-6" />
               </div>
               <div>
-                <p className="text-sm font-bold text-neutral-500 mb-1">WhatsApp</p>
+                <p className="text-sm font-bold text-neutral-500 mb-1">{t.common.whatsapp}</p>
                 <div className="text-white font-bold text-lg group-hover:text-[#25D366] transition-colors">0543 871 61 31</div>
               </div>
             </a>

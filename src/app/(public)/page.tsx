@@ -5,7 +5,6 @@ import { useLanguage } from "@/context/LanguageContext";
 import { useCtaHref } from "@/hooks/useCtaHref";
 import { ArrowRight, CheckCircle2, Zap, Layers, Users, Clock, BarChart3, Sparkles, MessageSquare } from "lucide-react";
 import Link from "next/link";
-import Image from "next/image";
 import { SiX, SiFacebook, SiInstagram, SiTiktok, SiBluesky, SiThreads, SiPinterest, SiYoutube } from "react-icons/si";
 import { FaLinkedin } from "react-icons/fa6";
 import AnimatedShowcase from "@/components/public/AnimatedShowcase";
@@ -41,7 +40,7 @@ export default function LandingPage() {
           </div>
           
           <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight text-white mb-8 leading-[1.1]">
-            {t.hero.title.split('.').map((part, i, arr) => (
+            {t.hero.title.split('.').map((part, i) => (
               <span key={i}>
                 {i === 0 ? <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-neutral-500">{part}.</span> : <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-sky-400">{part}</span>}
               </span>
@@ -206,7 +205,7 @@ export default function LandingPage() {
             {/* Pro Tier */}
             <div className="glass p-10 rounded-[2.5rem] border border-violet-500/50 bg-violet-900/10 relative shadow-[0_0_50px_rgba(139,92,246,0.15)] flex flex-col transform md:-translate-y-4 z-10">
               <div className="absolute -top-4 inset-x-0 mx-auto w-fit bg-gradient-to-r from-violet-500 to-sky-500 text-white text-xs font-bold uppercase tracking-widest py-1.5 px-4 rounded-full shadow-lg">
-                Most Popular
+                {t.pricing.popular}
               </div>
               
               <h3 className="text-2xl font-bold text-white mb-2">{t.pricing.pro}</h3>

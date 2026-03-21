@@ -79,7 +79,7 @@ export default function PublicNavbar() {
           >
             <User className="w-4 h-4 text-violet-400" />
             <span className="hidden sm:inline">{t.nav.login}</span>
-            <span className="sm:hidden">Login</span>
+            <span className="sm:hidden">{t.nav.login_short}</span>
             <ArrowRight className="w-4 h-4 ml-1 opacity-50 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
           </Link>
 

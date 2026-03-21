@@ -3,7 +3,7 @@
 import { useLanguage } from "@/context/LanguageContext";
 import Link from "next/link";
 import Image from "next/image";
-import { SiX, SiFacebook, SiInstagram, SiTiktok, SiBluesky, SiThreads, SiPinterest, SiYoutube } from "react-icons/si";
+import { SiX, SiFacebook, SiInstagram } from "react-icons/si";
 import { FaLinkedin } from "react-icons/fa6";
 
 export default function PublicFooter() {
