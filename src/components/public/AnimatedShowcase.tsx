@@ -196,7 +196,7 @@ export default function AnimatedShowcase() {
                        </div>
                        <p className="text-[14px] text-white leading-normal mb-3 whitespace-pre-wrap">{text}</p>
                        <div className="w-full aspect-square border border-neutral-800 rounded-2xl bg-neutral-900 flex items-center justify-center overflow-hidden mb-3">
-                          <img src="/logo.png" className="w-28 h-28 object-contain drop-shadow-2xl" />
+                          <img src="/logo.png" className="w-full h-full object-cover" />
                        </div>
                        <div className="flex items-center justify-between text-neutral-500 px-2 mt-2">
                           <MessageCircle className="w-[18px] h-[18px]" />
@@ -222,8 +222,8 @@ export default function AnimatedShowcase() {
                            </div>
                            <p className="text-[13px] text-black leading-normal mb-3 whitespace-pre-wrap">{text}</p>
                         </div>
-                        <div className="bg-white w-full aspect-square flex items-center justify-center px-4 py-2 border-b border-neutral-200">
-                           <img src="/logo.png" className="w-40 h-40 object-contain drop-shadow-xl" />
+                        <div className="bg-white w-full aspect-square flex items-center justify-center border-b border-neutral-200 overflow-hidden">
+                           <img src="/logo.png" className="w-full h-full object-cover" />
                         </div>
                         <div className="bg-white px-5 py-3 flex items-center justify-between text-neutral-500 font-semibold text-[11px]">
                            <div className="flex flex-col items-center gap-1"><ThumbsUp className="w-4 h-4" /> Like</div>
@@ -248,8 +248,8 @@ export default function AnimatedShowcase() {
                            </div>
                            <p className="text-[14px] text-[#050505] leading-normal">{text}</p>
                         </div>
-                        <div className="bg-white w-full aspect-square flex items-center justify-center outline outline-1 outline-neutral-200">
-                           <img src="/logo.png" className="w-48 h-48 object-contain drop-shadow-lg" />
+                        <div className="bg-white w-full aspect-square flex items-center justify-center border-y border-neutral-200 overflow-hidden">
+                           <img src="/logo.png" className="w-full h-full object-cover" />
                         </div>
                         <div className="bg-white p-2 border-b border-neutral-300">
                         </div>
@@ -269,8 +269,8 @@ export default function AnimatedShowcase() {
                            <div className="text-[13px] font-bold text-black">nexopost</div>
                            <MoreHorizontal className="w-5 h-5 text-black ml-auto" />
                         </div>
-                        <div className="w-full aspect-square bg-neutral-50 border-b border-neutral-100 flex items-center justify-center">
-                           <img src="/logo.png" className="w-40 h-40 object-contain drop-shadow-2xl" />
+                        <div className="w-full aspect-square bg-neutral-50 border-y border-neutral-100 flex items-center justify-center overflow-hidden">
+                           <img src="/logo.png" className="w-full h-full object-cover" />
                         </div>
                         <div className="p-3">
                            <div className="flex items-center gap-4 mb-3">
@@ -291,8 +291,7 @@ export default function AnimatedShowcase() {
                   {step === 13 && (
                      <div className="absolute inset-0 bg-black z-40 animate-in slide-in-from-right-10 fade-in duration-500 pt-8 flex flex-col">
                         <div className="absolute inset-0 overflow-hidden flex items-center justify-center">
-                           <img src="/logo.png" className="absolute w-[200%] h-[200%] object-cover opacity-20 blur-xl scale-150 saturate-200" />
-                           <img src="/logo.png" className="w-56 h-56 object-contain relative z-10 drop-shadow-[0_0_50px_rgba(255,255,255,0.2)]" />
+                           <img src="/logo.png" className="absolute inset-0 w-full h-full object-cover opacity-90" />
                         </div>
                         
                         {/* Top bar */}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Send, Calendar as CalendarIcon, Image as ImageIcon, Smile, Type, Clock, Loader2 } from "lucide-react";
+import { Send, Calendar as CalendarIcon, Image as ImageIcon, Smile, Type, Clock, Loader2, Wand2 } from "lucide-react";
 import { db } from "@/lib/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { SiX, SiFacebook, SiInstagram, SiTiktok, SiBluesky, SiThreads, SiPinterest, SiYoutube } from "react-icons/si";
@@ -11,6 +11,7 @@ export default function ComposePage() {
   const [text, setText] = useState("");
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>(["twitter"]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [autoOptimize, setAutoOptimize] = useState(true);
 
   const platforms = [
     { id: "twitter", name: "Twitter", icon: <SiX className="w-6 h-6" />, color: "hover:bg-neutral-800 bg-neutral-900 border border-neutral-700", activeColor: "bg-black ring-2 ring-white text-white" },
@@ -42,6 +43,7 @@ export default function ComposePage() {
         createdAt: serverTimestamp(),
         date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
         time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
+        autoOptimize: autoOptimize,
       });
       setText("");
       alert(status === 'Published' ? "Post published successfully!" : "Post scheduled effectively!");
@@ -103,31 +105,51 @@ export default function ComposePage() {
             />
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex justify-end gap-4 pt-4 flex-wrap">
-            <button 
-              onClick={() => handleSavePost('Draft')}
-              disabled={isSubmitting || !text || selectedPlatforms.length === 0}
-              className="glass py-4 px-8 rounded-full font-bold text-neutral-300 hover:text-white hover:bg-white/10 transition-all border border-white/10 flex items-center gap-2.5 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Save Draft
-            </button>
-            <button 
-              onClick={() => handleSavePost('Scheduled')}
-              disabled={isSubmitting || !text || selectedPlatforms.length === 0}
-              className="glass py-4 px-8 rounded-full font-bold text-white hover:bg-white/10 transition-all border border-white/10 flex items-center gap-2.5 group disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin text-sky-400" /> : <Clock className="w-5 h-5 text-sky-400 group-hover:rotate-12 transition-transform" />}
-              Schedule
-            </button>
-            <button 
-              onClick={() => handleSavePost('Published')}
-              disabled={isSubmitting || !text || selectedPlatforms.length === 0}
-              className="bg-violet-600 py-4 px-10 rounded-full font-bold text-white hover:bg-violet-500 transition-all shadow-[0_0_20px_rgba(139,92,246,0.5)] hover:shadow-[0_0_35px_rgba(139,92,246,0.7)] flex items-center gap-2.5 group hover:scale-105 active:scale-95 border border-violet-400/50 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />}
-              Post Now
-            </button>
+          {/* Footer Actions Row */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 pt-4">
+             {/* Auto Optimize Media Toggle */}
+             <div 
+               onClick={() => setAutoOptimize(!autoOptimize)}
+               className="flex items-center gap-4 bg-white/[0.03] border border-white/10 px-5 py-3.5 rounded-2xl cursor-pointer hover:bg-white/[0.08] transition-colors group select-none shadow-inner"
+             >
+                <div className={`w-11 h-6 rounded-full p-1 transition-colors duration-300 relative ${autoOptimize ? 'bg-violet-600 shadow-[0_0_10px_rgba(139,92,246,0.5)]' : 'bg-neutral-700'}`}>
+                   <div className={`w-4 h-4 rounded-full bg-white box-shadow-sm transition-transform duration-300 absolute top-1 ${autoOptimize ? 'translate-x-5' : 'translate-x-0'}`} />
+                </div>
+                <div className="flex flex-col">
+                   <span className="text-white text-[15px] font-bold flex items-center gap-2">
+                     <Wand2 className={`w-4 h-4 ${autoOptimize ? 'text-violet-400' : 'text-neutral-500'} transition-colors`} /> 
+                     Auto-Scale Media
+                   </span>
+                   <span className="text-neutral-400 text-xs font-medium mt-0.5">Crop & fit seamlessly per platform (1:1, 9:16)</span>
+                </div>
+             </div>
+
+             {/* Action Buttons */}
+             <div className="flex justify-end gap-3 flex-wrap ml-auto">
+               <button 
+                 onClick={() => handleSavePost('Draft')}
+                 disabled={isSubmitting || !text || selectedPlatforms.length === 0}
+                 className="glass py-3.5 px-6 rounded-full font-bold text-neutral-300 hover:text-white hover:bg-white/10 transition-all border border-white/10 flex items-center gap-2.5 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+               >
+                 Save Draft
+               </button>
+               <button 
+                 onClick={() => handleSavePost('Scheduled')}
+                 disabled={isSubmitting || !text || selectedPlatforms.length === 0}
+                 className="glass py-3.5 px-6 rounded-full font-bold text-white hover:bg-white/10 transition-all border border-white/10 flex items-center gap-2.5 group disabled:opacity-50 disabled:cursor-not-allowed text-sm shadow-md"
+               >
+                 {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin text-sky-400" /> : <Clock className="w-4 h-4 text-sky-400 group-hover:rotate-12 transition-transform" />}
+                 Schedule
+               </button>
+               <button 
+                 onClick={() => handleSavePost('Published')}
+                 disabled={isSubmitting || !text || selectedPlatforms.length === 0}
+                 className="bg-violet-600 py-3.5 px-8 rounded-full font-bold text-white hover:bg-violet-500 transition-all shadow-[0_0_20px_rgba(139,92,246,0.5)] hover:shadow-[0_0_35px_rgba(139,92,246,0.7)] flex items-center gap-2.5 group hover:-translate-y-0.5 active:translate-y-0 border border-violet-400/50 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+               >
+                 {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />}
+                 Post Now
+               </button>
+             </div>
           </div>
         </div>
 
