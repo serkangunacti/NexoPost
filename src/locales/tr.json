@@ -129,5 +129,31 @@
   "cookies": {
     "text": "Sizlere daha iyi hizmet sunabilmek ve KVKK/GDPR kapsamında kullanıcı deneyiminizi geliştirmek için çerezler (cookies) kullanıyoruz.",
     "accept": "Kabul Et"
+  },
+  "features_page": {
+    "badge": "Platform Özellikleri",
+    "title_main": "İhtiyacınız olan her şey.",
+    "title_highlight": "Gereksiz hiçbir şey yok.",
+    "subtitle": "NexoPost'u sosyal medya için nihai otomasyon ve orkestrasyon aracı yapan özel modülleri derinlemesine inceleyin.",
+    "detail_text": "Aşağıda, bu modülün dijital iş akışınızı nasıl hızlandırdığına dair temel mekanikler detaylandırılmıştır.",
+    "cta": "Hemen Deneyimleyin",
+    "sync": [
+      "Tüm platformları bağlayın: X (Twitter), Facebook, LinkedIn, Instagram, TikTok, Threads, Bluesky, Pinterest ve YouTube.",
+      "Kopyala-yapıştır yapmayı ortadan kaldıran, çoklu hedefler için tek bir merkezi gönderi oluşturma penceresi.",
+      "Akıllı Medya Formatlama (Auto-Scale) grafiklerinizi (IG için 1:1, TT için 9:16) kusursuzca otomatik boyutlandırır.",
+      "Platforma özel önizlemeler, içeriğinizin yayınlanmadan önce yerel ağda mükemmel görünmesini garanti eder."
+    ],
+    "multi": [
+      "Müşteri çalışma alanlarını tek bir oturum açma altında farklı 'Markalar' veya 'Projeler' halinde izole edin.",
+      "Oturumu kapatıp açmadan 10'dan fazla farklı şirket/marka arasında anında geçiş yapın.",
+      "Her marka için özel analitikler sunarken ajans sahibi için merkezi faturalandırma.",
+      "Hata yapmayın; Token'ları güvenli bir şekilde izole edin, Marka A'nın Twitter hesabına atacağınız gönderi Asla Marka B ile karışmaz."
+    ],
+    "schedule": [
+      "Görsel Sürükle ve Bırak Takvimi (Drag & Drop) içinde haftalarca sürecek gönderileri sıraya koyun.",
+      "Küresel kitlelere ulaşmak için belirli saat dilimlerine (Timezone) özel zamanlar ayarlayın.",
+      "'Planla' tuşuna basmadan önce metin yazarlarınızın veya müşterilerinizin incelemesi için gönderileri Taslak olarak kaydedin.",
+      "En iyi performans gösteren gönderilerinizi süresiz olarak geri dönüştürmek (Re-post) için 'Evergreen' döngülerinden yararlanın."
+    ]
   }
 }

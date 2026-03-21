@@ -34,12 +34,7 @@ function FeaturesContent() {
       title: t.features.f1_title,
       summary: t.features.f1_desc,
       color: "violet",
-      points: [
-        "Connect all platforms: X (Twitter), Facebook, LinkedIn, Instagram, TikTok, Threads, Bluesky, Pinterest, and YouTube.",
-        "One central compose window for multiple destinations, eliminating copy-pasting.",
-        "Auto-Scale Media artificially scales your graphics (1:1 for IG, 9:16 for TT) flawlessly.",
-        "Platform-specific previews guarantee your content looks perfect natively before publishing."
-      ]
+      points: t.features_page.sync
     },
     {
       id: "multi",
@@ -47,12 +42,7 @@ function FeaturesContent() {
       title: t.features.f2_title,
       summary: t.features.f2_desc,
       color: "indigo",
-      points: [
-        "Isolate client workspaces into distinct 'Brands' or 'Projects' under one login.",
-        "Toggle instantly between 10+ different companies without logging out and back in.",
-        "Centralized billing for the agency owner while deploying dedicated analytics per brand.",
-        "Keep tokens securely isolated; post to Brand A's Twitter without mixing it up with Brand B's."
-      ]
+      points: t.features_page.multi
     },
     {
       id: "schedule",
@@ -60,12 +50,7 @@ function FeaturesContent() {
       title: t.features.f3_title,
       summary: t.features.f3_desc,
       color: "sky",
-      points: [
-        "Queue weeks' worth of posts inside the visual Drag-and-Drop Calendar.",
-        "Set custom times for specific time zones to reach global audiences.",
-        "Save posts as Drafts for your copywriters or clients to review before hitting Schedule.",
-        "Leverage 'Evergreen' queues to recycle your best-performing posts indefinitely."
-      ]
+      points: t.features_page.schedule
     }
   ] as const;
 
@@ -83,14 +68,14 @@ function FeaturesContent() {
         {/* Header */}
         <div className="text-center mb-16 animate-in fade-in slide-in-from-bottom-8 duration-700">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass border border-white/10 text-violet-400 font-bold text-sm mb-6 uppercase tracking-widest shadow-lg shadow-violet-500/10">
-            <Workflow className="w-4 h-4" /> Platform Features
+            <Workflow className="w-4 h-4" /> {t.features_page.badge}
           </div>
           <h1 className="text-4xl md:text-5xl lg:text-7xl font-extrabold text-transparent bg-clip-text bg-gradient-to-br from-white via-white to-neutral-500 tracking-tight leading-tight mb-6">
-            Everything you need. <br className="hidden md:block" />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-sky-400">Nothing you don't.</span>
+            {t.features_page.title_main} <br className="hidden md:block" />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-sky-400">{t.features_page.title_highlight}</span>
           </h1>
           <p className="text-lg md:text-xl text-neutral-400 max-w-2xl mx-auto font-medium">
-            Dive deep into the specific modules that make NexoPost the ultimate automation and orchestration tool for social media.
+            {t.features_page.subtitle}
           </p>
         </div>
 
@@ -161,11 +146,11 @@ function FeaturesContent() {
                  {currentTabData.title}
                </h2>
                <p className="text-xl text-neutral-400 font-medium leading-relaxed mb-10">
-                 {currentTabData.summary} Detailed below are the core mechanics of how this module accelerates your digital workflow.
+                 {currentTabData.summary} {t.features_page.detail_text}
                </p>
 
                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-12">
-                 {currentTabData.points.map((point, index) => (
+                 {currentTabData.points.map((point: string, index: number) => (
                    <div key={index} className="flex gap-4">
                       <div className="shrink-0 mt-1">
                         <CheckCircle2 className={`w-6 h-6 text-${currentTabData.color}-400`} />
@@ -178,7 +163,7 @@ function FeaturesContent() {
                </div>
 
                <Link href="/dashboard" className="inline-flex items-center gap-2 text-white font-bold bg-white/10 hover:bg-white/20 border border-white/10 rounded-full px-8 py-4 transition-all hover:scale-105 active:scale-95 group">
-                 Experience it now <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                 {t.features_page.cta} <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                </Link>
              </div>
           </div>

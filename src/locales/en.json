@@ -129,5 +129,31 @@
   "cookies": {
     "text": "We use cookies to ensure you get the best experience on our website according to privacy regulations (KVKK / GDPR).",
     "accept": "Accept cookies"
+  },
+  "features_page": {
+    "badge": "Platform Features",
+    "title_main": "Everything you need.",
+    "title_highlight": "Nothing you don't.",
+    "subtitle": "Dive deep into the specific modules that make NexoPost the ultimate automation and orchestration tool for social media.",
+    "detail_text": "Detailed below are the core mechanics of how this module accelerates your digital workflow.",
+    "cta": "Experience it now",
+    "sync": [
+      "Connect all platforms: X (Twitter), Facebook, LinkedIn, Instagram, TikTok, Threads, Bluesky, Pinterest, and YouTube.",
+      "One central compose window for multiple destinations, eliminating copy-pasting.",
+      "Auto-Scale Media artificially scales your graphics (1:1 for IG, 9:16 for TT) flawlessly.",
+      "Platform-specific previews guarantee your content looks perfect natively before publishing."
+    ],
+    "multi": [
+      "Isolate client workspaces into distinct 'Brands' or 'Projects' under one login.",
+      "Toggle instantly between 10+ different companies without logging out and back in.",
+      "Centralized billing for the agency owner while deploying dedicated analytics per brand.",
+      "Keep tokens securely isolated; post to Brand A's Twitter without mixing it up with Brand B's."
+    ],
+    "schedule": [
+      "Queue weeks' worth of posts inside the visual Drag-and-Drop Calendar.",
+      "Set custom times for specific time zones to reach global audiences.",
+      "Save posts as Drafts for your copywriters or clients to review before hitting Schedule.",
+      "Leverage 'Evergreen' queues to recycle your best-performing posts indefinitely."
+    ]
   }
 }
