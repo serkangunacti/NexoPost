@@ -3,10 +3,10 @@
 import Link from "next/link";
 import { AlertTriangle, CalendarDays, Crown, Rocket, ShieldCheck } from "lucide-react";
 import { useApp } from "@/context/AppContext";
-import { getSubscriptionSnapshot } from "@/lib/subscription";
+import { formatDateTime, getSubscriptionSnapshot } from "@/lib/subscription";
 
 export default function AdminPlanBanner() {
-  const { subscription, userProfile } = useApp();
+  const { pendingChange, subscription, userProfile } = useApp();
   const snapshot = getSubscriptionSnapshot(subscription);
 
   const Icon = snapshot.isExpired ? AlertTriangle : snapshot.isTrial ? Rocket : ShieldCheck;
@@ -74,6 +74,18 @@ export default function AdminPlanBanner() {
               </p>
             </div>
           </div>
+
+          {pendingChange ? (
+            <div className="rounded-2xl border border-violet-400/20 bg-violet-500/10 p-4">
+              <p className="text-xs uppercase tracking-[0.25em] text-violet-300 font-bold mb-2">Scheduled Change</p>
+              <p className="text-white font-bold">
+                Your {pendingChange.plan} {pendingChange.billingCycle} package will start on {formatDateTime(pendingChange.effectiveAt)}.
+              </p>
+              <p className="text-neutral-300 text-sm mt-2">
+                Your current package stays active until the end of this month. The new billing date will begin on the first day of the next month.
+              </p>
+            </div>
+          ) : null}
         </div>
       </div>
     </section>

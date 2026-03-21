@@ -1,6 +1,12 @@
 type UserType = "basic" | "pro" | "agency";
 type BillingCycle = "monthly" | "annual";
 
+export interface PendingPlanChange {
+  billingCycle: BillingCycle;
+  effectiveAt: string;
+  plan: UserType;
+}
+
 export interface SubscriptionRecord {
   billingCycle: BillingCycle;
   expiresAt: string;
@@ -15,6 +21,7 @@ export interface SubscriptionSnapshot {
   expiresAtLabel: string;
   isExpired: boolean;
   isTrial: boolean;
+  pendingChangeLabel: string | null;
   phaseLabel: string;
   planLabel: string;
   renewLabel: string;
@@ -40,6 +47,7 @@ export function getSubscriptionSnapshot(subscription: SubscriptionRecord | null)
       expiresAtLabel: "No active expiration date",
       isExpired: true,
       isTrial: false,
+      pendingChangeLabel: null,
       phaseLabel: "No plan",
       planLabel: "No plan",
       renewLabel: "Choose a plan to unlock publishing",
@@ -62,6 +70,7 @@ export function getSubscriptionSnapshot(subscription: SubscriptionRecord | null)
     expiresAtLabel,
     isExpired,
     isTrial,
+    pendingChangeLabel: null,
     phaseLabel: isTrial ? "Trial" : `${billingLabels[subscription.billingCycle]} Plan`,
     planLabel,
     renewLabel: isExpired
@@ -82,4 +91,27 @@ export function formatDate(isoDate: string): string {
     month: "short",
     year: "numeric",
   }).format(new Date(isoDate));
+}
+
+export function formatDateTime(isoDate: string): string {
+  return new Intl.DateTimeFormat("en-US", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  }).format(new Date(isoDate));
+}
+
+export function getNextMonthStart(fromDate = new Date()): Date {
+  return new Date(fromDate.getFullYear(), fromDate.getMonth() + 1, 1, 0, 0, 0, 0);
+}
+
+export function addPaidDuration(startDate: Date, billingCycle: BillingCycle): Date {
+  const nextDate = new Date(startDate);
+  if (billingCycle === "annual") {
+    nextDate.setFullYear(nextDate.getFullYear() + 1);
+    return nextDate;
+  }
+
+  nextDate.setMonth(nextDate.getMonth() + 1);
+  return nextDate;
 }

@@ -1,5 +1,11 @@
 "use client";
 import React, { createContext, useContext, useSyncExternalStore } from "react";
+import {
+  PendingPlanChange,
+  SubscriptionRecord,
+  addPaidDuration,
+  getNextMonthStart,
+} from "@/lib/subscription";
 
 type UserType = "basic" | "pro" | "agency";
 type BillingCycle = "monthly" | "annual";
@@ -16,23 +22,21 @@ interface UserProfile {
   signedInAt: string;
 }
 
-interface Subscription {
-  billingCycle: BillingCycle;
-  expiresAt: string;
-  hasUsedTrial: boolean;
-  phase: "trial" | "paid";
-  plan: UserType;
-  startedAt: string;
-}
-
 interface AppSession {
   activeClientId: string;
   clients: Client[];
   connectedAccounts: Record<string, string[]>;
   isLoggedIn: boolean;
-  subscription: Subscription | null;
+  pendingChange: PendingPlanChange | null;
+  subscription: SubscriptionRecord | null;
   userProfile: UserProfile | null;
   userType: UserType;
+}
+
+interface StartPlanResult {
+  effectiveAt: string;
+  phase: "trial" | "paid";
+  scheduled: boolean;
 }
 
 interface AppContextType {
@@ -41,7 +45,8 @@ interface AppContextType {
   setUserType: (type: UserType) => void;
   isLoggedIn: boolean;
   setIsLoggedIn: (status: boolean) => void;
-  subscription: Subscription | null;
+  pendingChange: PendingPlanChange | null;
+  subscription: SubscriptionRecord | null;
   userProfile: UserProfile | null;
   login: (input: { email: string; fullName: string; userType: UserType }) => void;
   logout: () => void;
@@ -50,7 +55,7 @@ interface AppContextType {
     email: string;
     fullName: string;
     plan: UserType;
-  }) => void;
+  }) => StartPlanResult;
   activeClient: Client;
   setActiveClient: (client: Client) => void;
   clients: Client[];
@@ -67,6 +72,7 @@ const defaultSession: AppSession = {
   clients: [defaultClient],
   connectedAccounts: { "default_user": ["twitter", "facebook"] },
   isLoggedIn: false,
+  pendingChange: null,
   subscription: null,
   userProfile: null,
   userType: "basic",
@@ -107,6 +113,7 @@ function readStoredSession(): AppSession {
       clients,
       connectedAccounts: parsed.connectedAccounts ?? defaultSession.connectedAccounts,
       isLoggedIn: parsed.isLoggedIn ?? false,
+      pendingChange: parsed.pendingChange ?? null,
       subscription: parsed.subscription ?? null,
       userProfile: parsed.userProfile ?? null,
       userType: parsed.userType ?? "basic",
@@ -116,8 +123,35 @@ function readStoredSession(): AppSession {
   }
 }
 
+function resolveSessionDates(session: AppSession): AppSession {
+  if (!session.pendingChange) {
+    return session;
+  }
+
+  const effectiveAt = new Date(session.pendingChange.effectiveAt);
+  if (effectiveAt.getTime() > Date.now()) {
+    return session;
+  }
+
+  const expiresAt = addPaidDuration(effectiveAt, session.pendingChange.billingCycle);
+
+  return {
+    ...session,
+    pendingChange: null,
+    subscription: {
+      billingCycle: session.pendingChange.billingCycle,
+      expiresAt: expiresAt.toISOString(),
+      hasUsedTrial: true,
+      phase: "paid",
+      plan: session.pendingChange.plan,
+      startedAt: effectiveAt.toISOString(),
+    },
+    userType: session.pendingChange.plan,
+  };
+}
+
 function getClientSessionSnapshot() {
-  currentSessionSnapshot = readStoredSession();
+  currentSessionSnapshot = resolveSessionDates(readStoredSession());
   return currentSessionSnapshot;
 }
 
@@ -136,7 +170,7 @@ function subscribeSession(listener: () => void) {
 
   const onStorage = (event: StorageEvent) => {
     if (event.key === APP_SESSION_STORAGE_KEY) {
-      currentSessionSnapshot = readStoredSession();
+      currentSessionSnapshot = resolveSessionDates(readStoredSession());
       listener();
     }
   };
@@ -165,11 +199,12 @@ const defaultContextValue: AppContextType = {
   setUserType: () => {},
   isLoggedIn: false,
   setIsLoggedIn: () => {},
+  pendingChange: null,
   subscription: null,
   userProfile: null,
   login: () => {},
   logout: () => {},
-  startPlan: () => {},
+  startPlan: () => ({ effectiveAt: "", phase: "paid", scheduled: false }),
   activeClient: defaultClient,
   setActiveClient: () => {},
   clients: [defaultClient],
@@ -244,13 +279,45 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     email: string;
     fullName: string;
     plan: UserType;
-  }) => {
+  }): StartPlanResult => {
     const now = new Date();
-    const hasUsedTrial = session.subscription?.hasUsedTrial ?? false;
-    const phase: Subscription["phase"] = hasUsedTrial ? "paid" : "trial";
-    const durationDays = phase === "trial" ? 15 : billingCycle === "annual" ? 365 : 30;
-    const expiresAt = new Date(now);
-    expiresAt.setDate(expiresAt.getDate() + durationDays);
+    const currentSubscription = session.subscription;
+    const hasUsedTrial = currentSubscription?.hasUsedTrial ?? false;
+    const isActivePaidSubscription =
+      currentSubscription?.phase === "paid" &&
+      new Date(currentSubscription.expiresAt).getTime() > now.getTime();
+
+    if (
+      isActivePaidSubscription &&
+      currentSubscription &&
+      (currentSubscription.plan !== plan || currentSubscription.billingCycle !== billingCycle)
+    ) {
+      const effectiveAt = getNextMonthStart(now).toISOString();
+
+      writeSession({
+        ...session,
+        isLoggedIn: true,
+        pendingChange: {
+          billingCycle,
+          effectiveAt,
+          plan,
+        },
+        userProfile: buildUserProfile({ email, fullName }, session.userProfile),
+      });
+
+      return {
+        effectiveAt,
+        phase: "paid",
+        scheduled: true,
+      };
+    }
+
+    const phase: SubscriptionRecord["phase"] = hasUsedTrial ? "paid" : "trial";
+    const startAt = now;
+    const expiresAt =
+      phase === "trial"
+        ? new Date(startAt.getTime() + 15 * 24 * 60 * 60 * 1000)
+        : addPaidDuration(startAt, billingCycle);
 
     writeSession({
       ...session,
@@ -261,17 +328,24 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           ? session.connectedAccounts
           : defaultSession.connectedAccounts,
       isLoggedIn: true,
+      pendingChange: null,
       subscription: {
         billingCycle,
         expiresAt: expiresAt.toISOString(),
         hasUsedTrial: true,
         phase,
         plan,
-        startedAt: now.toISOString(),
+        startedAt: startAt.toISOString(),
       },
       userProfile: buildUserProfile({ email, fullName }, session.userProfile),
       userType: plan,
     });
+
+    return {
+      effectiveAt: startAt.toISOString(),
+      phase,
+      scheduled: false,
+    };
   };
 
   const logout = () => {
@@ -320,6 +394,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         setUserType,
         isLoggedIn: session.isLoggedIn,
         setIsLoggedIn,
+        pendingChange: session.pendingChange,
         subscription: session.subscription,
         userProfile: session.userProfile,
         login,

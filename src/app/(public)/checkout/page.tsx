@@ -4,8 +4,14 @@ import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useLanguage } from "@/context/LanguageContext";
 import { useApp } from "@/context/AppContext";
-import { getSubscriptionSnapshot } from "@/lib/subscription";
+import { formatDateTime, getSubscriptionSnapshot } from "@/lib/subscription";
 import { CheckCircle2, CreditCard, Lock, Zap, ArrowRight, Star } from "lucide-react";
+
+interface PurchaseResult {
+  effectiveAt: string;
+  phase: "trial" | "paid";
+  scheduled: boolean;
+}
 
 function CheckoutContent() {
   const { t } = useLanguage();
@@ -18,6 +24,7 @@ function CheckoutContent() {
   const [loading, setLoading] = useState(false);
   const [fullName, setFullName] = useState(userProfile?.fullName ?? "");
   const [email, setEmail] = useState(userProfile?.email ?? "");
+  const [purchaseResult, setPurchaseResult] = useState<PurchaseResult | null>(null);
 
   const plans = [
     {
@@ -71,12 +78,13 @@ function CheckoutContent() {
     setLoading(true);
     // Simüle edilmiş ödeme işlemi
     await new Promise(r => setTimeout(r, 1800));
-    startPlan({
+    const result = startPlan({
       billingCycle: isAnnual ? "annual" : "monthly",
       email: email.trim(),
       fullName: fullName.trim(),
       plan: selectedPlan,
     });
+    setPurchaseResult(result);
     setLoading(false);
     setStep("success");
   };
@@ -92,6 +100,10 @@ function CheckoutContent() {
     : subscription && !subscriptionSnapshot.isExpired
       ? (t.checkout.change_paid_plan ?? "Switch to Paid Plan")
       : (t.checkout.renew_plan ?? "Renew Package");
+  const scheduledDateLabel = purchaseResult ? formatDateTime(purchaseResult.effectiveAt) : "";
+  const successSubtitle = purchaseResult?.scheduled
+    ? t.checkout.scheduled_success_subtitle
+    : t.checkout.success_subtitle;
 
   if (step === "success") {
     return (
@@ -100,13 +112,25 @@ function CheckoutContent() {
           <div className="w-24 h-24 rounded-full bg-emerald-500/10 border-2 border-emerald-400 flex items-center justify-center mx-auto mb-8 shadow-[0_0_40px_rgba(16,185,129,0.3)]">
             <CheckCircle2 className="w-12 h-12 text-emerald-400" />
           </div>
-          <h2 className="text-3xl font-extrabold text-white mb-3">{t.checkout.success_title}</h2>
-          <p className="text-neutral-400 font-medium mb-2">
-            {t.checkout.success_message_prefix ? `${t.checkout.success_message_prefix} ` : null}
-            <span className="text-white font-bold">{currentPlan.name}</span>
-            {t.checkout.success_message_suffix}
-          </p>
-          <p className="text-neutral-500 text-sm mb-10">{t.checkout.success_subtitle}</p>
+          <h2 className="text-3xl font-extrabold text-white mb-3">
+            {purchaseResult?.scheduled
+              ? t.checkout.scheduled_success_title
+              : t.checkout.success_title}
+          </h2>
+          {purchaseResult?.scheduled ? (
+            <>
+              <p className="text-neutral-300 font-medium mb-2">
+                {t.checkout.scheduled_success_message.replace("{date}", scheduledDateLabel)}
+              </p>
+            </>
+          ) : (
+            <p className="text-neutral-400 font-medium mb-2">
+              {t.checkout.success_message_prefix ? `${t.checkout.success_message_prefix} ` : null}
+              <span className="text-white font-bold">{currentPlan.name}</span>
+              {t.checkout.success_message_suffix}
+            </p>
+          )}
+          <p className="text-neutral-500 text-sm mb-10">{successSubtitle}</p>
           <button
             onClick={handleGoToDashboard}
             className="w-full bg-violet-600 hover:bg-violet-500 text-white font-bold py-4 rounded-2xl flex items-center justify-center gap-2 transition-all shadow-[0_0_20px_rgba(139,92,246,0.3)] hover:scale-105"

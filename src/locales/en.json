@@ -112,6 +112,9 @@
     "success_message_prefix": "Your",
     "success_message_suffix": "plan has been activated successfully.",
     "success_subtitle": "Your NexoPost experience is ready. Your dashboard is waiting for you.",
+    "scheduled_success_title": "Plan Change Scheduled",
+    "scheduled_success_message": "Your new package will start on {date}.",
+    "scheduled_success_subtitle": "Your current package stays active until the end of this month. Your new billing date will begin on the first day of the next month.",
     "go_to_dashboard": "Go to Dashboard"
   },
   "contact": {

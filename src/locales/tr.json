@@ -112,6 +112,9 @@
     "success_message_prefix": "",
     "success_message_suffix": " paketiniz başarıyla aktive edildi.",
     "success_subtitle": "NexoPost deneyiminiz hazır. Sizi dashboard'da bekliyoruz.",
+    "scheduled_success_title": "Paket Değişikliği Planlandı",
+    "scheduled_success_message": "Yeni paketiniz {date} tarihinde başlayacak.",
+    "scheduled_success_subtitle": "Mevcut paketiniz ay sonuna kadar aktif kalır. Yeni fatura tarihiniz gelecek ayın ilk günü başlar.",
     "go_to_dashboard": "Dashboard'a Git"
   },
   "contact": {
