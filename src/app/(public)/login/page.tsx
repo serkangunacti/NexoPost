@@ -137,7 +137,7 @@ function LoginContent() {
 
           <div className="relative z-10 h-full">
             <div className="h-full rounded-[2.25rem] border border-white/10 bg-black/30 p-6 md:p-8 shadow-inner">
-              <div className="relative flex h-full min-h-[420px] flex-col items-center justify-start overflow-hidden rounded-[1.9rem] border border-white/10 bg-[radial-gradient(circle_at_top,rgba(139,92,246,0.18),transparent_38%),linear-gradient(180deg,#09090f,#050508)] px-8 pt-10 pb-12 text-center">
+              <div className="relative flex h-full min-h-[420px] flex-col items-center justify-center overflow-hidden rounded-[1.9rem] border border-white/10 bg-[radial-gradient(circle_at_top,rgba(139,92,246,0.18),transparent_38%),linear-gradient(180deg,#09090f,#050508)] px-8 pt-10 pb-12 text-center">
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_right,rgba(56,189,248,0.14),transparent_24%)] pointer-events-none" />
                 <div className="absolute inset-0 bg-[radial-gradient(circle,rgba(139,92,246,0.12),transparent_55%)] pointer-events-none" />
                 <div className="relative z-10 flex h-48 w-48 md:h-56 md:w-56 items-center justify-center rounded-[2.5rem] border border-violet-500/30 bg-white/[0.03] shadow-[0_0_60px_rgba(139,92,246,0.2)] backdrop-blur-sm">
@@ -149,49 +149,50 @@ function LoginContent() {
                     className="h-32 w-32 md:h-40 md:w-40 object-contain drop-shadow-[0_0_25px_rgba(255,255,255,0.12)]"
                   />
                 </div>
-                <p className="relative z-10 mt-8 max-w-lg text-2xl font-extrabold tracking-tight text-white md:text-3xl">
+                {mode === "register" ? (
                   <>
-                    Everything you need.
-                    <br />
-                    Nothing you don&apos;t.
-                  </>
-                </p>
-                <div className="relative z-10 mt-8 w-full max-w-md rounded-[1.5rem] border border-white/10 bg-black/20 p-5 text-left">
-                  <p className="text-xs font-bold uppercase tracking-[0.24em] text-violet-300">
-                    {trialPlan === "agency" ? t.pricing.agency : trialPlan === "pro" ? t.pricing.pro : t.pricing.basic}
-                  </p>
-                  <p className="mt-2 text-sm font-medium text-neutral-400">
-                    {trialPlan === "agency"
-                      ? t.pricing.agency_desc
-                      : trialPlan === "pro"
-                        ? t.pricing.pro_desc
-                        : t.pricing.basic_desc}
-                  </p>
-                  <div className="mt-4 grid grid-cols-2 gap-3">
-                    <div className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-3">
-                      <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-neutral-500">
-                        {t.login_page.selected_mode_label}
-                      </p>
-                      <p className="mt-2 text-sm font-semibold text-white">
-                        {registrationMode === "trial" ? t.login_page.trial_mode : t.login_page.buy_mode}
-                      </p>
-                    </div>
-                    <div className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-3">
+                    <p className="relative z-10 mt-8 max-w-lg text-2xl font-extrabold tracking-tight text-white md:text-3xl">
+                      <>
+                        Everything you need.
+                        <br />
+                        Nothing you don&apos;t.
+                      </>
+                    </p>
+                    <div className="relative z-10 mt-8 w-full max-w-md rounded-[1.5rem] border border-white/10 bg-black/20 p-5 text-left">
                       <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-neutral-500">
                         {t.login_page.selected_price}
                       </p>
-                      <p className="mt-2 text-sm font-semibold text-white">${selectedPlanPrice} USD</p>
-                    </div>
-                  </div>
-                  <div className="mt-4 space-y-3">
-                    {selectedPlanFeatures.slice(0, 4).map((feature) => (
-                      <div key={feature} className="flex items-start gap-3">
-                        <div className="mt-1 h-2 w-2 rounded-full bg-violet-400" />
-                        <p className="text-sm font-medium text-white">{feature}</p>
+                      <p className="mt-2 text-2xl font-extrabold text-white">${selectedPlanPrice} USD</p>
+                      <p className="mt-4 text-xs font-bold uppercase tracking-[0.24em] text-violet-300">
+                        {trialPlan === "agency" ? t.pricing.agency : trialPlan === "pro" ? t.pricing.pro : t.pricing.basic}
+                      </p>
+                      <p className="mt-2 text-sm font-medium text-neutral-400">
+                        {trialPlan === "agency"
+                          ? t.pricing.agency_desc
+                          : trialPlan === "pro"
+                            ? t.pricing.pro_desc
+                            : t.pricing.basic_desc}
+                      </p>
+                      <div className="mt-4 space-y-3">
+                        {selectedPlanFeatures.slice(0, 4).map((feature) => (
+                          <div key={feature} className="flex items-start gap-3">
+                            <div className="mt-1 h-2 w-2 rounded-full bg-violet-400" />
+                            <p className="text-sm font-medium text-white">{feature}</p>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                </div>
+                      {registrationMode === "trial" ? (
+                        <button
+                          type="button"
+                          onClick={() => setRegistrationMode("paid")}
+                          className="mt-6 w-full rounded-2xl border border-violet-400/40 bg-violet-500/10 px-4 py-3 text-sm font-bold text-white transition-all hover:bg-violet-500/20"
+                        >
+                          {t.login_page.buy_plan_submit}
+                        </button>
+                      ) : null}
+                    </div>
+                  </>
+                ) : null}
               </div>
             </div>
 
@@ -253,31 +254,6 @@ function LoginContent() {
               </>
             ) : (
               <>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setRegistrationMode("trial")}
-                    className={`rounded-2xl border px-4 py-3 text-left transition-all ${
-                      registrationMode === "trial"
-                        ? "border-violet-400/50 bg-violet-500/10 text-white"
-                        : "border-white/10 bg-black/20 text-neutral-300 hover:bg-white/5"
-                    }`}
-                  >
-                    <span className="font-semibold">{t.login_page.trial_mode}</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setRegistrationMode("paid")}
-                    className={`rounded-2xl border px-4 py-3 text-left transition-all ${
-                      registrationMode === "paid"
-                        ? "border-violet-400/50 bg-violet-500/10 text-white"
-                        : "border-white/10 bg-black/20 text-neutral-300 hover:bg-white/5"
-                    }`}
-                  >
-                    <span className="font-semibold">{t.login_page.buy_mode}</span>
-                  </button>
-                </div>
-
                 <div>
                   <label className="block text-sm font-semibold text-neutral-400 mb-2">
                     {t.login_page.trial_plan_label}
