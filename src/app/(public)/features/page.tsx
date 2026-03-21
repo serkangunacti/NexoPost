@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { Repeat2, LayoutDashboard, Timer, CheckCircle2, Workflow, ArrowRight, Zap, Target, BarChart, Smartphone } from "lucide-react";
+import { Repeat2, LayoutDashboard, Timer, CheckCircle2, Workflow, ArrowRight, Zap, Target, BarChart, Smartphone, BarChart3, Sparkles, MessageSquare } from "lucide-react";
 import Link from "next/link";
 import { useLanguage } from "@/context/LanguageContext";
 
@@ -17,13 +17,13 @@ export default function FeaturesPage() {
 function FeaturesContent() {
   const searchParams = useSearchParams();
   const { t } = useLanguage();
-  const [activeTab, setActiveTab] = useState<"sync" | "multi" | "schedule">("sync");
+  const [activeTab, setActiveTab] = useState<"sync" | "multi" | "schedule" | "analytics" | "ai" | "inbox">("sync");
 
   // Load the initial tab from URL param if available
   useEffect(() => {
     const tabParam = searchParams.get("tab");
-    if (tabParam === "sync" || tabParam === "multi" || tabParam === "schedule") {
-      setActiveTab(tabParam);
+    if (tabParam === "sync" || tabParam === "multi" || tabParam === "schedule" || tabParam === "analytics" || tabParam === "ai" || tabParam === "inbox") {
+      setActiveTab(tabParam as any);
     }
   }, [searchParams]);
 
@@ -51,6 +51,30 @@ function FeaturesContent() {
       summary: t.features.f3_desc,
       color: "sky",
       points: t.features_page.schedule
+    },
+    {
+      id: "analytics",
+      icon: <BarChart3 className="w-5 h-5" />,
+      title: t.features.f4_title,
+      summary: t.features.f4_desc,
+      color: "fuchsia",
+      points: t.features_page.analytics || []
+    },
+    {
+      id: "ai",
+      icon: <Sparkles className="w-5 h-5" />,
+      title: t.features.f5_title,
+      summary: t.features.f5_desc,
+      color: "amber",
+      points: t.features_page.ai || []
+    },
+    {
+      id: "inbox",
+      icon: <MessageSquare className="w-5 h-5" />,
+      title: t.features.f6_title,
+      summary: t.features.f6_desc,
+      color: "rose",
+      points: t.features_page.inbox || []
     }
   ] as const;
 
@@ -90,13 +114,19 @@ function FeaturesContent() {
                  violet: "text-violet-400 bg-violet-500/10 border-violet-500/20 shadow-[0_0_20px_rgba(139,92,246,0.15)]",
                  indigo: "text-indigo-400 bg-indigo-500/10 border-indigo-500/20 shadow-[0_0_20px_rgba(99,102,241,0.15)]",
                  sky: "text-sky-400 bg-sky-500/10 border-sky-500/20 shadow-[0_0_20px_rgba(14,165,233,0.15)]",
-               }[tab.color];
+                 fuchsia: "text-fuchsia-400 bg-fuchsia-500/10 border-fuchsia-500/20 shadow-[0_0_20px_rgba(217,70,239,0.15)]",
+                 amber: "text-amber-400 bg-amber-500/10 border-amber-500/20 shadow-[0_0_20px_rgba(245,158,11,0.15)]",
+                 rose: "text-rose-400 bg-rose-500/10 border-rose-500/20 shadow-[0_0_20px_rgba(244,63,94,0.15)]",
+               }[tab.color as "violet" | "indigo" | "sky" | "fuchsia" | "amber" | "rose"];
 
                const ActiveLineColor = {
                  violet: "bg-violet-500",
                  indigo: "bg-indigo-500",
                  sky: "bg-sky-500",
-               }[tab.color];
+                 fuchsia: "bg-fuchsia-500",
+                 amber: "bg-amber-500",
+                 rose: "bg-rose-500",
+               }[tab.color as "violet" | "indigo" | "sky" | "fuchsia" | "amber" | "rose"];
 
                return (
                  <button

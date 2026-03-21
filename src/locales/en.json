@@ -172,6 +172,24 @@
       "Set custom times for specific time zones to reach global audiences.",
       "Save posts as Drafts for your copywriters or clients to review before hitting Schedule.",
       "Leverage 'Evergreen' queues to recycle your best-performing posts indefinitely."
+    ],
+    "analytics": [
+      "Consolidate data from giant networks like Meta, TikTok, YouTube, and LinkedIn into a single unified pot.",
+      "Say goodbye to complex spreadsheets; track your audience growth, reach, and engagement with visual charts.",
+      "Discover the exact times of day your content performs best and optimize your publishing schedule flawlessly.",
+      "Export sleek, White-Label PDF reports (branded with your agency's logo) to present to your clients in seconds."
+    ],
+    "ai": [
+      "Generate scratch-written captions perfectly tailored to your brand's unique tone of voice (formal, witty, provocative) via ChatGPT integration.",
+      "Upload a single image and let our vision system deeply analyze it to instantly generate matching text and tags.",
+      "Automatically recommend the most powerful, trending hashtags guaranteed to multiply your post's organic reach.",
+      "Break language barriers: Professionally translate your post captions into over 30 languages with a single click."
+    ],
+    "inbox": [
+      "Manage all incoming comments from Facebook, Instagram, and TikTok on a single chronological screen without getting lost in tabs.",
+      "Conversational Commerce: Respond instantly to potential buyers inquiring about products under specific posts.",
+      "Crisis Management: Neutralize trolling or complaints in real-time to aggressively protect your brand reputation.",
+      "Team Collaboration: Instantly assign a specific comment ticket to your sales or customer support team for rapid resolution."
     ]
   }
 }
