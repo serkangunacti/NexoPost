@@ -36,12 +36,12 @@ export default function PrivacyPage() {
             </p>
           </div>
 
-          <article className="relative z-10 space-y-8 text-neutral-300 leading-relaxed font-medium">
+          <article className="relative z-10 space-y-4 text-neutral-300 leading-relaxed font-medium">
              {content?.map((item, i) => {
                if (item.tag === "h2") {
-                 return <h2 key={i} className="text-2xl font-bold text-white mt-12 mb-4 first:mt-0">{item.text}</h2>;
+                 return <h2 key={i} className="text-xl font-bold text-neutral-200 mt-10 mb-2 first:mt-0">{item.text}</h2>;
                }
-               return <p key={i} className="text-neutral-400 text-lg text-justify">{item.text}</p>;
+               return <p key={i} className="text-neutral-400 text-sm leading-relaxed text-justify">{item.text}</p>;
              })}
           </article>
         </div>
