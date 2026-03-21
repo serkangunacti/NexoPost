@@ -136,15 +136,17 @@ function FeaturesContent() {
              
              {/* Key content rendering bound by activeTab */}
              <div key={activeTab} className="animate-in slide-in-from-right-8 fade-in duration-500 fill-mode-both">
-               <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-white/5 border border-white/10 mb-8 shadow-inner shadow-white/5">
-                 <div className={`text-${currentTabData.color}-400`}>
-                   {currentTabData.icon}
+               <div className="flex items-center gap-5 mb-8">
+                 <div className="inline-flex items-center justify-center w-16 h-16 shrink-0 rounded-2xl bg-white/5 border border-white/10 shadow-inner shadow-white/5">
+                   <div className={`text-${currentTabData.color}-400`}>
+                     {currentTabData.icon}
+                   </div>
                  </div>
+                 <h2 className="text-3xl md:text-5xl font-extrabold text-white tracking-tight">
+                   {currentTabData.title}
+                 </h2>
                </div>
 
-               <h2 className="text-3xl md:text-5xl font-extrabold text-white tracking-tight mb-6">
-                 {currentTabData.title}
-               </h2>
                <p className="text-xl text-neutral-400 font-medium leading-relaxed mb-10">
                  {currentTabData.summary} {t.features_page.detail_text}
                </p>
