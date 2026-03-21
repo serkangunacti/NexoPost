@@ -1,5 +1,5 @@
 "use client";
-import React, { createContext, useContext, useState, ReactNode } from "react";
+import React, { createContext, useContext, useEffect, useMemo, useState, ReactNode } from "react";
 import en from "@/locales/en.json";
 import tr from "@/locales/tr.json";
 
@@ -13,12 +13,24 @@ interface LanguageContextType {
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
+const LANGUAGE_STORAGE_KEY = "nexopost-language";
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [lang, setLang] = useState<Language>("tr"); // Default to TR since user requests Turkish/English logic
-  
-  const translations = { en, tr };
+  const [lang, setLang] = useState<Language>(() => {
+    if (typeof window === "undefined") {
+      return "tr";
+    }
+
+    const savedLang = window.localStorage.getItem(LANGUAGE_STORAGE_KEY);
+    return savedLang === "en" || savedLang === "tr" ? savedLang : "tr";
+  });
+  const translations = useMemo(() => ({ en, tr }), []);
   const t = translations[lang];
+
+  useEffect(() => {
+    window.localStorage.setItem(LANGUAGE_STORAGE_KEY, lang);
+    document.documentElement.lang = lang;
+  }, [lang]);
 
   return (
     <LanguageContext.Provider value={{ lang, setLang, t }}>
