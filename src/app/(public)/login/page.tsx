@@ -8,8 +8,6 @@ import { useLanguage } from "@/context/LanguageContext";
 import { useApp } from "@/context/AppContext";
 import { findPurchasedAccount } from "@/lib/purchasedAccounts";
 
-type RegistrationOption = "trial" | "basic" | "pro" | "agency";
-
 function LoginContent() {
   const { t } = useLanguage();
   const { loginWithPurchasedAccount, startPlan } = useApp();
@@ -19,21 +17,14 @@ function LoginContent() {
   const [mode, setMode] = useState<"login" | "register">("login");
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
-  const [selectedOption, setSelectedOption] = useState<RegistrationOption>("trial");
   const [trialPlan, setTrialPlan] = useState<"basic" | "pro" | "agency">("pro");
   const [registerName, setRegisterName] = useState("");
   const [registerEmail, setRegisterEmail] = useState("");
   const [registerPassword, setRegisterPassword] = useState("");
   const [workspaceName, setWorkspaceName] = useState("");
-  const [cardNumber, setCardNumber] = useState("");
-  const [expiry, setExpiry] = useState("");
-  const [cvv, setCvv] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState("");
-
-  const isTrialSelection = selectedOption === "trial";
-  const selectedPlan = isTrialSelection ? trialPlan : selectedOption;
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -73,9 +64,8 @@ function LoginContent() {
       registerEmail.trim() &&
       registerPassword.trim() &&
       workspaceName.trim();
-    const paymentFieldsValid = cardNumber.trim() && expiry.trim() && cvv.trim();
 
-    if (!baseFieldsValid || (!isTrialSelection && !paymentFieldsValid)) {
+    if (!baseFieldsValid) {
       setError(t.login_page.register_error);
       return;
     }
@@ -84,23 +74,16 @@ function LoginContent() {
     await new Promise((resolve) => setTimeout(resolve, 800));
 
     const result = startPlan({
-      activationMode: isTrialSelection ? "trial" : "paid",
+      activationMode: "trial",
       billingCycle: "monthly",
       email: registerEmail.trim(),
       fullName: registerName.trim(),
-      plan: selectedPlan,
+      plan: trialPlan,
     });
 
     setSuccess(result.phase === "trial" ? t.login_page.register_success_trial : t.login_page.register_success_paid);
     router.push(nextPath);
   };
-
-  const registrationOptions = [
-    { id: "trial" as const, label: t.login_page.trial_option },
-    { id: "basic" as const, label: t.login_page.basic_option },
-    { id: "pro" as const, label: t.login_page.pro_option },
-    { id: "agency" as const, label: t.login_page.agency_option },
-  ];
 
   return (
     <div className="min-h-screen w-full px-6 py-28 relative overflow-hidden">
@@ -194,46 +177,27 @@ function LoginContent() {
               </>
             ) : (
               <>
-                <div className="grid grid-cols-1 gap-3">
-                  {registrationOptions.map((option) => (
-                    <button
-                      key={option.id}
-                      type="button"
-                      onClick={() => setSelectedOption(option.id)}
-                      className={`rounded-2xl border px-4 py-3 text-left transition-all ${
-                        selectedOption === option.id
-                          ? "border-violet-400/50 bg-violet-500/10 text-white"
-                          : "border-white/10 bg-black/20 text-neutral-300 hover:bg-white/5"
-                      }`}
-                    >
-                      <span className="font-semibold">{option.label}</span>
-                    </button>
-                  ))}
-                </div>
-
-                {isTrialSelection ? (
-                  <div>
-                    <label className="block text-sm font-semibold text-neutral-400 mb-2">
-                      {t.login_page.trial_plan_label}
-                    </label>
-                    <div className="grid grid-cols-3 gap-2">
-                      {(["basic", "pro", "agency"] as const).map((plan) => (
-                        <button
-                          key={plan}
-                          type="button"
-                          onClick={() => setTrialPlan(plan)}
-                          className={`rounded-xl border px-3 py-2 text-sm font-semibold transition-all ${
-                            trialPlan === plan
-                              ? "border-violet-400/50 bg-violet-500/10 text-white"
-                              : "border-white/10 bg-black/20 text-neutral-300 hover:bg-white/5"
-                          }`}
-                        >
-                          {plan.charAt(0).toUpperCase() + plan.slice(1)}
-                        </button>
-                      ))}
-                    </div>
+                <div>
+                  <label className="block text-sm font-semibold text-neutral-400 mb-2">
+                    {t.login_page.trial_plan_label}
+                  </label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {(["basic", "pro", "agency"] as const).map((plan) => (
+                      <button
+                        key={plan}
+                        type="button"
+                        onClick={() => setTrialPlan(plan)}
+                        className={`rounded-xl border px-3 py-2 text-sm font-semibold transition-all ${
+                          trialPlan === plan
+                            ? "border-violet-400/50 bg-violet-500/10 text-white"
+                            : "border-white/10 bg-black/20 text-neutral-300 hover:bg-white/5"
+                        }`}
+                      >
+                        {plan.charAt(0).toUpperCase() + plan.slice(1)}
+                      </button>
+                    ))}
                   </div>
-                ) : null}
+                </div>
 
                 <div>
                   <label className="block text-sm font-semibold text-neutral-400 mb-2">
@@ -287,49 +251,6 @@ function LoginContent() {
                   />
                 </div>
 
-                {!isTrialSelection ? (
-                  <>
-                    <div>
-                      <label className="block text-sm font-semibold text-neutral-400 mb-2">
-                        {t.login_page.card_number}
-                      </label>
-                      <input
-                        type="text"
-                        value={cardNumber}
-                        onChange={(event) => setCardNumber(event.target.value)}
-                        placeholder="4242 4242 4242 4242"
-                        className="w-full bg-black/40 border border-white/10 rounded-xl px-5 py-3.5 text-white placeholder-neutral-600 font-medium focus:outline-none focus:border-violet-500/50 focus:bg-white/5 transition-all"
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-semibold text-neutral-400 mb-2">
-                          {t.login_page.expiry}
-                        </label>
-                        <input
-                          type="text"
-                          value={expiry}
-                          onChange={(event) => setExpiry(event.target.value)}
-                          placeholder="MM / YY"
-                          className="w-full bg-black/40 border border-white/10 rounded-xl px-5 py-3.5 text-white placeholder-neutral-600 font-medium focus:outline-none focus:border-violet-500/50 focus:bg-white/5 transition-all"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-semibold text-neutral-400 mb-2">
-                          {t.login_page.cvv}
-                        </label>
-                        <input
-                          type="text"
-                          value={cvv}
-                          onChange={(event) => setCvv(event.target.value)}
-                          placeholder="123"
-                          className="w-full bg-black/40 border border-white/10 rounded-xl px-5 py-3.5 text-white placeholder-neutral-600 font-medium focus:outline-none focus:border-violet-500/50 focus:bg-white/5 transition-all"
-                        />
-                      </div>
-                    </div>
-                  </>
-                ) : null}
               </>
             )}
 
@@ -356,9 +277,7 @@ function LoginContent() {
                   : t.login_page.register_processing
                 : mode === "login"
                   ? t.login_page.submit
-                  : isTrialSelection
-                    ? t.login_page.start_trial_submit
-                    : t.login_page.buy_plan_submit}
+                  : t.login_page.start_trial_submit}
               {!loading ? <ArrowRight className="w-5 h-5" /> : null}
             </button>
 
