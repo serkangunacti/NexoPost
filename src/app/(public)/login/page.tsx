@@ -1,7 +1,6 @@
 "use client";
 
 import { FormEvent, Suspense, useState } from "react";
-import Link from "next/link";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowRight, Lock, ShieldCheck, User } from "lucide-react";
@@ -9,17 +8,32 @@ import { useLanguage } from "@/context/LanguageContext";
 import { useApp } from "@/context/AppContext";
 import { findPurchasedAccount } from "@/lib/purchasedAccounts";
 
+type RegistrationOption = "trial" | "basic" | "pro" | "agency";
+
 function LoginContent() {
   const { t } = useLanguage();
-  const { loginWithPurchasedAccount } = useApp();
+  const { loginWithPurchasedAccount, startPlan } = useApp();
   const router = useRouter();
   const searchParams = useSearchParams();
   const nextPath = searchParams.get("next") || "/dashboard";
+  const [mode, setMode] = useState<"login" | "register">("login");
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
+  const [selectedOption, setSelectedOption] = useState<RegistrationOption>("trial");
+  const [trialPlan, setTrialPlan] = useState<"basic" | "pro" | "agency">("pro");
+  const [registerName, setRegisterName] = useState("");
+  const [registerEmail, setRegisterEmail] = useState("");
+  const [registerPassword, setRegisterPassword] = useState("");
+  const [workspaceName, setWorkspaceName] = useState("");
+  const [cardNumber, setCardNumber] = useState("");
+  const [expiry, setExpiry] = useState("");
+  const [cvv, setCvv] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState("");
+
+  const isTrialSelection = selectedOption === "trial";
+  const selectedPlan = isTrialSelection ? trialPlan : selectedOption;
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -48,6 +62,45 @@ function LoginContent() {
     setSuccess(t.login_page.success);
     router.push(nextPath);
   };
+
+  const handleRegistration = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setError("");
+    setSuccess("");
+
+    const baseFieldsValid =
+      registerName.trim() &&
+      registerEmail.trim() &&
+      registerPassword.trim() &&
+      workspaceName.trim();
+    const paymentFieldsValid = cardNumber.trim() && expiry.trim() && cvv.trim();
+
+    if (!baseFieldsValid || (!isTrialSelection && !paymentFieldsValid)) {
+      setError(t.login_page.register_error);
+      return;
+    }
+
+    setLoading(true);
+    await new Promise((resolve) => setTimeout(resolve, 800));
+
+    const result = startPlan({
+      activationMode: isTrialSelection ? "trial" : "paid",
+      billingCycle: "monthly",
+      email: registerEmail.trim(),
+      fullName: registerName.trim(),
+      plan: selectedPlan,
+    });
+
+    setSuccess(result.phase === "trial" ? t.login_page.register_success_trial : t.login_page.register_success_paid);
+    router.push(nextPath);
+  };
+
+  const registrationOptions = [
+    { id: "trial" as const, label: t.login_page.trial_option },
+    { id: "basic" as const, label: t.login_page.basic_option },
+    { id: "pro" as const, label: t.login_page.pro_option },
+    { id: "agency" as const, label: t.login_page.agency_option },
+  ];
 
   return (
     <div className="min-h-screen w-full px-6 py-28 relative overflow-hidden">
@@ -88,48 +141,197 @@ function LoginContent() {
 
         <section className="relative min-h-[620px] overflow-hidden rounded-[2.75rem] border border-white/10 bg-[linear-gradient(180deg,rgba(14,14,22,0.96),rgba(9,9,14,0.94))] p-7 md:p-9 shadow-[0_30px_100px_rgba(0,0,0,0.45)] xl:mt-0">
           <div className="absolute inset-x-0 top-0 h-32 bg-[radial-gradient(circle_at_top,rgba(139,92,246,0.16),transparent_70%)] pointer-events-none" />
-          <form onSubmit={handleSubmit} className="mx-auto flex h-full max-w-[420px] flex-col justify-center space-y-6">
+          <form
+            onSubmit={mode === "login" ? handleSubmit : handleRegistration}
+            className="mx-auto flex h-full max-w-[420px] flex-col justify-center space-y-6"
+          >
             <div>
               <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-bold uppercase tracking-[0.3em] text-neutral-300">
                 <ShieldCheck className="w-4 h-4" />
                 Secure Account Access
               </div>
               <h2 className="mt-6 text-3xl md:text-[2rem] font-extrabold tracking-tight text-white">
-                {t.login_page.title}
+                {mode === "login" ? t.login_page.title : t.login_page.register_title}
               </h2>
+              {mode === "register" ? (
+                <p className="mt-3 text-sm text-neutral-400">{t.login_page.register_subtitle}</p>
+              ) : null}
             </div>
 
-            <div>
-              <label className="block text-sm font-semibold text-neutral-400 mb-2">
-                {t.login_page.identifier}
-              </label>
-              <div className="relative">
-                <input
-                  type="text"
-                  value={identifier}
-                  onChange={(event) => setIdentifier(event.target.value)}
-                  placeholder={t.login_page.identifier_placeholder}
-                  className="w-full bg-black/40 border border-white/10 rounded-xl px-5 py-3.5 text-white placeholder-neutral-600 font-medium focus:outline-none focus:border-violet-500/50 focus:bg-white/5 transition-all"
-                />
-                <User className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-600" />
-              </div>
-            </div>
+            {mode === "login" ? (
+              <>
+                <div>
+                  <label className="block text-sm font-semibold text-neutral-400 mb-2">
+                    {t.login_page.identifier}
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={identifier}
+                      onChange={(event) => setIdentifier(event.target.value)}
+                      placeholder={t.login_page.identifier_placeholder}
+                      className="w-full bg-black/40 border border-white/10 rounded-xl px-5 py-3.5 text-white placeholder-neutral-600 font-medium focus:outline-none focus:border-violet-500/50 focus:bg-white/5 transition-all"
+                    />
+                    <User className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-600" />
+                  </div>
+                </div>
 
-            <div>
-              <label className="block text-sm font-semibold text-neutral-400 mb-2">
-                {t.login_page.password}
-              </label>
-              <div className="relative">
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                  placeholder={t.login_page.password_placeholder}
-                  className="w-full bg-black/40 border border-white/10 rounded-xl px-5 py-3.5 text-white placeholder-neutral-600 font-medium focus:outline-none focus:border-violet-500/50 focus:bg-white/5 transition-all"
-                />
-                <Lock className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-600" />
-              </div>
-            </div>
+                <div>
+                  <label className="block text-sm font-semibold text-neutral-400 mb-2">
+                    {t.login_page.password}
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="password"
+                      value={password}
+                      onChange={(event) => setPassword(event.target.value)}
+                      placeholder={t.login_page.password_placeholder}
+                      className="w-full bg-black/40 border border-white/10 rounded-xl px-5 py-3.5 text-white placeholder-neutral-600 font-medium focus:outline-none focus:border-violet-500/50 focus:bg-white/5 transition-all"
+                    />
+                    <Lock className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-600" />
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 gap-3">
+                  {registrationOptions.map((option) => (
+                    <button
+                      key={option.id}
+                      type="button"
+                      onClick={() => setSelectedOption(option.id)}
+                      className={`rounded-2xl border px-4 py-3 text-left transition-all ${
+                        selectedOption === option.id
+                          ? "border-violet-400/50 bg-violet-500/10 text-white"
+                          : "border-white/10 bg-black/20 text-neutral-300 hover:bg-white/5"
+                      }`}
+                    >
+                      <span className="font-semibold">{option.label}</span>
+                    </button>
+                  ))}
+                </div>
+
+                {isTrialSelection ? (
+                  <div>
+                    <label className="block text-sm font-semibold text-neutral-400 mb-2">
+                      {t.login_page.trial_plan_label}
+                    </label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {(["basic", "pro", "agency"] as const).map((plan) => (
+                        <button
+                          key={plan}
+                          type="button"
+                          onClick={() => setTrialPlan(plan)}
+                          className={`rounded-xl border px-3 py-2 text-sm font-semibold transition-all ${
+                            trialPlan === plan
+                              ? "border-violet-400/50 bg-violet-500/10 text-white"
+                              : "border-white/10 bg-black/20 text-neutral-300 hover:bg-white/5"
+                          }`}
+                        >
+                          {plan.charAt(0).toUpperCase() + plan.slice(1)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+
+                <div>
+                  <label className="block text-sm font-semibold text-neutral-400 mb-2">
+                    {t.login_page.register_name}
+                  </label>
+                  <input
+                    type="text"
+                    value={registerName}
+                    onChange={(event) => setRegisterName(event.target.value)}
+                    placeholder={t.login_page.register_name_placeholder}
+                    className="w-full bg-black/40 border border-white/10 rounded-xl px-5 py-3.5 text-white placeholder-neutral-600 font-medium focus:outline-none focus:border-violet-500/50 focus:bg-white/5 transition-all"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-neutral-400 mb-2">
+                    {t.login_page.register_email}
+                  </label>
+                  <input
+                    type="email"
+                    value={registerEmail}
+                    onChange={(event) => setRegisterEmail(event.target.value)}
+                    placeholder={t.login_page.identifier_placeholder}
+                    className="w-full bg-black/40 border border-white/10 rounded-xl px-5 py-3.5 text-white placeholder-neutral-600 font-medium focus:outline-none focus:border-violet-500/50 focus:bg-white/5 transition-all"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-neutral-400 mb-2">
+                    {t.login_page.register_password}
+                  </label>
+                  <input
+                    type="password"
+                    value={registerPassword}
+                    onChange={(event) => setRegisterPassword(event.target.value)}
+                    placeholder={t.login_page.register_password_placeholder}
+                    className="w-full bg-black/40 border border-white/10 rounded-xl px-5 py-3.5 text-white placeholder-neutral-600 font-medium focus:outline-none focus:border-violet-500/50 focus:bg-white/5 transition-all"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-neutral-400 mb-2">
+                    {t.login_page.register_workspace}
+                  </label>
+                  <input
+                    type="text"
+                    value={workspaceName}
+                    onChange={(event) => setWorkspaceName(event.target.value)}
+                    placeholder={t.login_page.register_workspace_placeholder}
+                    className="w-full bg-black/40 border border-white/10 rounded-xl px-5 py-3.5 text-white placeholder-neutral-600 font-medium focus:outline-none focus:border-violet-500/50 focus:bg-white/5 transition-all"
+                  />
+                </div>
+
+                {!isTrialSelection ? (
+                  <>
+                    <div>
+                      <label className="block text-sm font-semibold text-neutral-400 mb-2">
+                        {t.login_page.card_number}
+                      </label>
+                      <input
+                        type="text"
+                        value={cardNumber}
+                        onChange={(event) => setCardNumber(event.target.value)}
+                        placeholder="4242 4242 4242 4242"
+                        className="w-full bg-black/40 border border-white/10 rounded-xl px-5 py-3.5 text-white placeholder-neutral-600 font-medium focus:outline-none focus:border-violet-500/50 focus:bg-white/5 transition-all"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-semibold text-neutral-400 mb-2">
+                          {t.login_page.expiry}
+                        </label>
+                        <input
+                          type="text"
+                          value={expiry}
+                          onChange={(event) => setExpiry(event.target.value)}
+                          placeholder="MM / YY"
+                          className="w-full bg-black/40 border border-white/10 rounded-xl px-5 py-3.5 text-white placeholder-neutral-600 font-medium focus:outline-none focus:border-violet-500/50 focus:bg-white/5 transition-all"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-semibold text-neutral-400 mb-2">
+                          {t.login_page.cvv}
+                        </label>
+                        <input
+                          type="text"
+                          value={cvv}
+                          onChange={(event) => setCvv(event.target.value)}
+                          placeholder="123"
+                          className="w-full bg-black/40 border border-white/10 rounded-xl px-5 py-3.5 text-white placeholder-neutral-600 font-medium focus:outline-none focus:border-violet-500/50 focus:bg-white/5 transition-all"
+                        />
+                      </div>
+                    </div>
+                  </>
+                ) : null}
+              </>
+            )}
 
             {error ? (
               <div className="rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-200">
@@ -148,15 +350,31 @@ function LoginContent() {
               disabled={loading}
               className="w-full bg-violet-600 hover:bg-violet-500 disabled:opacity-60 text-white font-bold py-4 rounded-2xl flex items-center justify-center gap-3 transition-all shadow-[0_0_20px_rgba(139,92,246,0.3)] hover:translate-y-[-1px] active:scale-[0.99]"
             >
-              {loading ? t.login_page.processing : t.login_page.submit}
+              {loading
+                ? mode === "login"
+                  ? t.login_page.processing
+                  : t.login_page.register_processing
+                : mode === "login"
+                  ? t.login_page.submit
+                  : isTrialSelection
+                    ? t.login_page.start_trial_submit
+                    : t.login_page.buy_plan_submit}
               {!loading ? <ArrowRight className="w-5 h-5" /> : null}
             </button>
 
             <p className="text-center text-sm text-neutral-500">
-              {t.login_page.hint}{" "}
-              <Link href="/checkout" className="text-violet-300 hover:text-violet-200 font-semibold transition-colors">
-                {t.login_page.go_checkout}
-              </Link>
+              {mode === "login" ? t.login_page.hint : t.login_page.register_login_link}{" "}
+              <button
+                type="button"
+                onClick={() => {
+                  setError("");
+                  setSuccess("");
+                  setMode((currentMode) => (currentMode === "login" ? "register" : "login"));
+                }}
+                className="text-violet-300 hover:text-violet-200 font-semibold transition-colors"
+              >
+                {mode === "login" ? t.login_page.go_checkout : t.login_page.title}
+              </button>
             </p>
           </form>
         </section>

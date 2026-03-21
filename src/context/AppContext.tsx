@@ -10,6 +10,7 @@ import {
 
 type UserType = "basic" | "pro" | "agency";
 type BillingCycle = "monthly" | "annual";
+type ActivationMode = "auto" | "trial" | "paid";
 
 interface Client {
   id: string;
@@ -53,6 +54,7 @@ interface AppContextType {
   loginWithPurchasedAccount: (account: PurchasedAccount) => void;
   logout: () => void;
   startPlan: (input: {
+    activationMode?: ActivationMode;
     billingCycle: BillingCycle;
     email: string;
     fullName: string;
@@ -299,11 +301,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   };
 
   const startPlan = ({
+    activationMode = "auto",
     billingCycle,
     email,
     fullName,
     plan,
   }: {
+    activationMode?: ActivationMode;
     billingCycle: BillingCycle;
     email: string;
     fullName: string;
@@ -341,7 +345,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       };
     }
 
-    const phase: SubscriptionRecord["phase"] = hasUsedTrial ? "paid" : "trial";
+    const phase: SubscriptionRecord["phase"] =
+      activationMode === "trial"
+        ? "trial"
+        : activationMode === "paid"
+          ? "paid"
+          : hasUsedTrial
+            ? "paid"
+            : "trial";
     const startAt = now;
     const expiresAt =
       phase === "trial"
