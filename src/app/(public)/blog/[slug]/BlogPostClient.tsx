@@ -9,8 +9,8 @@ export default function BlogPostClient({ post }: { post: BlogPost }) {
   const { lang, t } = useLanguage();
   const content = lang === "tr" ? post.tr : post.en;
   
-  // Exclude current post and get exactly 4 other posts for the sidebar
-  const relatedPosts = allBlogs.filter(p => p.id !== post.id).slice(0, 4);
+  // Exclude current post and get all other posts for the sidebar
+  const relatedPosts = allBlogs.filter(p => p.id !== post.id);
   
   return (
     <main className="w-full flex-1 flex flex-col relative pt-32 pb-24 px-6 min-h-screen">
@@ -84,7 +84,7 @@ export default function BlogPostClient({ post }: { post: BlogPost }) {
               {lang === "tr" ? "İlginizi Çekebilir" : "Related Articles"}
             </h3>
             
-            <div className="flex flex-col gap-6">
+            <div className="flex flex-col gap-6 max-h-[60vh] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
               {relatedPosts.map((related) => {
                 const relContent = lang === "tr" ? related.tr : related.en;
                 return (

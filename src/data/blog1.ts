@@ -57,7 +57,7 @@ export const postsPart1: BlogPost[] = [
     slug: "how-to-manage-multiple-brands-from-single-dashboard",
     date: "2026-03-20",
     readTime: 5,
-    coverImage: "https://images.unsplash.com/photo-1432888117246-4138e0bbf4de?q=80&w=1000&auto=format&fit=crop",
+    coverImage: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?q=80&w=1000&auto=format&fit=crop",
     en: {
       title: "How to Manage Multiple Brands from a Single Dashboard",
       excerpt: "Learn the secrets of high-performing digital agencies that manage dozens of brands without losing their sanity.",
