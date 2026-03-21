@@ -55,13 +55,13 @@ function LoginContent() {
       <div className="absolute -top-24 right-0 w-[30rem] h-[30rem] bg-sky-500/10 blur-[150px] rounded-full pointer-events-none" />
       <div className="absolute bottom-0 left-0 w-[24rem] h-[24rem] bg-violet-600/10 blur-[130px] rounded-full pointer-events-none" />
 
-      <div className="max-w-6xl mx-auto relative z-10 grid grid-cols-1 xl:grid-cols-2 gap-8 items-start">
-        <section className="relative overflow-hidden rounded-[2.75rem] border border-white/10 bg-[linear-gradient(145deg,rgba(18,18,28,0.95),rgba(7,7,12,0.92))] p-7 md:p-9 shadow-[0_30px_100px_rgba(0,0,0,0.45)]">
+      <div className="max-w-6xl mx-auto relative z-10 grid grid-cols-1 xl:grid-cols-2 gap-8 items-stretch">
+        <section className="relative min-h-[620px] overflow-hidden rounded-[2.75rem] border border-white/10 bg-[linear-gradient(145deg,rgba(18,18,28,0.95),rgba(7,7,12,0.92))] p-7 md:p-9 shadow-[0_30px_100px_rgba(0,0,0,0.45)]">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(56,189,248,0.12),transparent_28%),radial-gradient(circle_at_bottom_left,rgba(139,92,246,0.16),transparent_32%)] pointer-events-none" />
 
-          <div className="relative z-10">
-            <div className="rounded-[2.25rem] border border-white/10 bg-black/30 p-6 md:p-8 shadow-inner">
-              <div className="relative flex min-h-[420px] flex-col items-center justify-start overflow-hidden rounded-[1.9rem] border border-white/10 bg-[radial-gradient(circle_at_top,rgba(139,92,246,0.18),transparent_38%),linear-gradient(180deg,#09090f,#050508)] px-8 pt-10 pb-12 text-center">
+          <div className="relative z-10 h-full">
+            <div className="h-full rounded-[2.25rem] border border-white/10 bg-black/30 p-6 md:p-8 shadow-inner">
+              <div className="relative flex h-full min-h-[420px] flex-col items-center justify-start overflow-hidden rounded-[1.9rem] border border-white/10 bg-[radial-gradient(circle_at_top,rgba(139,92,246,0.18),transparent_38%),linear-gradient(180deg,#09090f,#050508)] px-8 pt-10 pb-12 text-center">
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_right,rgba(56,189,248,0.14),transparent_24%)] pointer-events-none" />
                 <div className="absolute inset-0 bg-[radial-gradient(circle,rgba(139,92,246,0.12),transparent_55%)] pointer-events-none" />
                 <div className="relative z-10 flex h-48 w-48 md:h-56 md:w-56 items-center justify-center rounded-[2.5rem] border border-violet-500/30 bg-white/[0.03] shadow-[0_0_60px_rgba(139,92,246,0.2)] backdrop-blur-sm">
@@ -88,7 +88,7 @@ function LoginContent() {
 
         <section className="relative min-h-[620px] overflow-hidden rounded-[2.75rem] border border-white/10 bg-[linear-gradient(180deg,rgba(14,14,22,0.96),rgba(9,9,14,0.94))] p-7 md:p-9 shadow-[0_30px_100px_rgba(0,0,0,0.45)] xl:mt-0">
           <div className="absolute inset-x-0 top-0 h-32 bg-[radial-gradient(circle_at_top,rgba(139,92,246,0.16),transparent_70%)] pointer-events-none" />
-          <form onSubmit={handleSubmit} className="mx-auto max-w-[420px] space-y-6">
+          <form onSubmit={handleSubmit} className="mx-auto flex h-full max-w-[420px] flex-col justify-center space-y-6">
             <div>
               <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-bold uppercase tracking-[0.3em] text-neutral-300">
                 <ShieldCheck className="w-4 h-4" />
