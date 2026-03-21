@@ -33,16 +33,42 @@
     "basic_price": "$9",
     "basic_perk1": "1 Workspace",
     "basic_perk2": "All Social Networks",
+    "basic_perk3": "AI Content Suggestions",
+    "basic_perk4": "Standard Email Support",
+    "basic_perk5": "7-Day Analytics History",
     "pro": "Pro",
     "pro_desc": "For growing brands.",
     "pro_price": "$19",
     "pro_perk1": "3 Workspaces",
     "pro_perk2": "All Social Networks",
+    "pro_perk3": "AI Strategy Generator",
+    "pro_perk4": "Priority Premium Support",
+    "pro_perk5": "30-Day Analytics History",
     "agency": "Agency",
     "agency_desc": "Built for scale.",
     "agency_price": "$49",
     "agency_perk1": "Unlimited Workspaces",
     "agency_perk2": "All Social Networks",
+    "agency_perk3": "White-Label Portal",
+    "agency_perk4": "24/7 Dedicated Support",
+    "agency_perk5": "Unlimited Analytics History",
     "choose": "Choose Plan"
+  },
+  "contact": {
+    "title": "Get In Touch",
+    "desc": "Have questions or want to collaborate? Send us an email directly, and we will get back to you.",
+    "button": "Send Email to info@nexopost.com",
+    "address_title": "Headquarters:",
+    "address": "Fatih Sultan Mehmet Mah. Depoyolu Sk. No:16 Ic Kapi no:58, One Block Plaza 34774 Umraniye/Istanbul"
+  },
+  "footer": {
+    "copyright": "NexoPost is a brand of Uptexx Information Technologies.",
+    "uptexx": "Uptexx Information Technologies",
+    "privacy": "Privacy & KVKK",
+    "terms": "Terms of Service"
+  },
+  "cookies": {
+    "text": "We use cookies to ensure you get the best experience on our website according to privacy regulations (KVKK / GDPR).",
+    "accept": "Accept cookies"
   }
 }

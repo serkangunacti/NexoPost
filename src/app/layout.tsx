@@ -5,8 +5,26 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "NexoPost - Automate Your Impact",
-  description: "Next Generation Social Media Management Tool.",
+  title: "NexoPost | Premium Social Media Management & Agency Panel",
+  description: "Schedule, analyze, and manage all your social media accounts from a single ultimate platform. Empower your reach and automate your impact with NexoPost. A premium brand by Uptexx Information Technologies.",
+  keywords: [
+    "sosyal medya yönetimi", "social media management", "sosyal medya otomasyonu", 
+    "social media automation", "içerik planlama", "content scheduling", 
+    "ajans paneli", "agency dashboard", "twitter", "instagram", "tiktok", "linkedin", 
+    "facebook", "toplu paylaşım", "cross-platform posting", "NexoPost", "Uptexx"
+  ],
+  authors: [{ name: "Uptexx Bilgi Teknolojileri", url: "https://www.uptexx.com" }],
+  creator: "NexoPost",
+  robots: "index, follow",
+  openGraph: {
+    title: "NexoPost - Social Media Management",
+    description: "Manage, schedule, and analyze your social media effortlessly.",
+    url: "https://nexopost.com",
+    siteName: "NexoPost",
+    images: [{ url: "/logo.png", width: 800, height: 600, alt: "NexoPost Logo" }],
+    locale: "tr_TR",
+    type: "website",
+  },
 };
 
 export default function RootLayout({
@@ -15,13 +33,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
-      <body className={`${inter.className} bg-[#050508] text-white min-h-screen selection:bg-violet-500/30 overflow-x-hidden`}>
-        {/* Ambient background glow effects globally */}
-        <div className="fixed top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-violet-600/10 blur-[150px] pointer-events-none z-0" />
-        <div className="fixed bottom-[-20%] right-[-10%] w-[50%] h-[50%] rounded-full bg-sky-600/10 blur-[150px] pointer-events-none z-0" />
-        
-        {/* children could be (admin) or (public) content */}
+    <html lang="tr">
+      <body className={`${inter.className} bg-[#0a0a0f] text-white min-h-screen selection:bg-violet-500/30`}>
         {children}
       </body>
     </html>

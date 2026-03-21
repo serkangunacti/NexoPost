@@ -4,6 +4,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { useLanguage } from "@/context/LanguageContext";
 import { Globe, User, ArrowRight } from "lucide-react";
+import { SiX, SiFacebook, SiInstagram } from "react-icons/si";
+import { FaLinkedin } from "react-icons/fa6";
 
 export default function PublicNavbar() {
   const { lang, setLang, t } = useLanguage();
@@ -25,6 +27,14 @@ export default function PublicNavbar() {
         {/* Right side controls */}
         <div className="flex items-center gap-4">
           
+          {/* Social Icons (Header) */}
+          <div className="hidden lg:flex items-center gap-4 text-neutral-400 mr-2">
+            <a href="#" className="hover:text-white transition-colors"><SiX className="w-4 h-4" /></a>
+            <a href="#" className="hover:text-white transition-colors"><FaLinkedin className="w-4 h-4" /></a>
+            <a href="#" className="hover:text-white transition-colors"><SiFacebook className="w-4 h-4" /></a>
+            <a href="#" className="hover:text-white transition-colors"><SiInstagram className="w-4 h-4" /></a>
+          </div>
+
           {/* Language Selector */}
           <div className="relative group py-2">
             <button className="flex items-center gap-2 text-sm font-semibold text-neutral-400 hover:text-white transition-colors py-2 px-3 rounded-lg hover:bg-white/5">
