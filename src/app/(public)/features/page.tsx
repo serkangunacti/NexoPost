@@ -27,7 +27,8 @@ function FeaturesContent() {
   const router = useRouter();
   const { t } = useLanguage();
   const ctaHref = useCtaHref();
-  const activeTab: TabId = isTabId(searchParams.get("tab")) ? searchParams.get("tab") : "sync";
+  const tabParam = searchParams.get("tab");
+  const activeTab: TabId = isTabId(tabParam) ? tabParam : "sync";
 
   const tabs = [
     {
