@@ -7,6 +7,7 @@ import { ArrowRight, Lock, ShieldCheck, User } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 import { useApp } from "@/context/AppContext";
 import { findPurchasedAccount } from "@/lib/purchasedAccounts";
+import AnimatedShowcase from "@/components/public/AnimatedShowcase";
 
 function LoginContent() {
   const { t } = useLanguage();
@@ -63,16 +64,9 @@ function LoginContent() {
           <h1 className="text-4xl md:text-5xl font-extrabold text-white tracking-tight mb-5">
             {t.login_page.title}
           </h1>
-          <p className="text-neutral-400 text-lg leading-relaxed max-w-xl">
-            {t.login_page.subtitle}
-          </p>
-
-          <div className="mt-10 grid gap-4 text-sm text-neutral-300">
-            <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-              Purchased credentials can include your saved plan, billing cycle and workspace structure.
-            </div>
-            <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-              After you send the user list, those accounts can be added directly to the purchased account registry.
+          <div className="mt-8 overflow-hidden rounded-[2.25rem] border border-white/10 bg-black/20">
+            <div className="pointer-events-none origin-top-left scale-[0.72] sm:scale-[0.82] lg:scale-[0.72] xl:scale-[0.8] w-[139%] sm:w-[122%] lg:w-[139%] xl:w-[125%] -mb-20 sm:-mb-12 lg:-mb-20 xl:-mb-10 -ml-10 sm:-ml-8 lg:-ml-10 xl:-ml-8">
+              <AnimatedShowcase />
             </div>
           </div>
         </section>
