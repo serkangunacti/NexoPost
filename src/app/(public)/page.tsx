@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useLanguage } from "@/context/LanguageContext";
-import { ArrowRight, CheckCircle2, Zap, Layers, Users, Clock } from "lucide-react";
+import { ArrowRight, CheckCircle2, Zap, Layers, Users, Clock, BarChart3, Sparkles, MessageSquare } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { SiX, SiFacebook, SiInstagram, SiTiktok, SiBluesky, SiThreads, SiPinterest, SiYoutube } from "react-icons/si";
@@ -103,6 +103,27 @@ export default function LandingPage() {
               <h3 className="text-2xl font-bold text-white mb-4 relative z-10 group-hover:text-emerald-300 transition-colors">{t.features.f3_title}</h3>
               <p className="text-neutral-400 leading-relaxed font-medium relative z-10">{t.features.f3_desc}</p>
             </Link>
+
+            <div className="block glass p-10 rounded-3xl border border-white/5 relative group hover:-translate-y-2 transition-transform duration-500 cursor-default">
+              <div className="absolute inset-0 bg-gradient-to-b from-fuchsia-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-3xl" />
+              <BarChart3 className="w-12 h-12 text-fuchsia-400 mb-6 relative z-10 group-hover:scale-110 transition-transform duration-500" />
+              <h3 className="text-2xl font-bold text-white mb-4 relative z-10 group-hover:text-fuchsia-300 transition-colors">{t.features.f4_title}</h3>
+              <p className="text-neutral-400 leading-relaxed font-medium relative z-10">{t.features.f4_desc}</p>
+            </div>
+
+            <div className="block glass p-10 rounded-3xl border border-white/5 relative group hover:-translate-y-2 transition-transform duration-500 cursor-default">
+              <div className="absolute inset-0 bg-gradient-to-b from-amber-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-3xl" />
+              <Sparkles className="w-12 h-12 text-amber-400 mb-6 relative z-10 group-hover:scale-110 transition-transform duration-500" />
+              <h3 className="text-2xl font-bold text-white mb-4 relative z-10 group-hover:text-amber-300 transition-colors">{t.features.f5_title}</h3>
+              <p className="text-neutral-400 leading-relaxed font-medium relative z-10">{t.features.f5_desc}</p>
+            </div>
+
+            <div className="block glass p-10 rounded-3xl border border-white/5 relative group hover:-translate-y-2 transition-transform duration-500 cursor-default">
+              <div className="absolute inset-0 bg-gradient-to-b from-rose-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-3xl" />
+              <MessageSquare className="w-12 h-12 text-rose-400 mb-6 relative z-10 group-hover:scale-110 transition-transform duration-500" />
+              <h3 className="text-2xl font-bold text-white mb-4 relative z-10 group-hover:text-rose-300 transition-colors">{t.features.f6_title}</h3>
+              <p className="text-neutral-400 leading-relaxed font-medium relative z-10">{t.features.f6_desc}</p>
+            </div>
           </div>
         </div>
       </section>
@@ -160,10 +181,6 @@ export default function LandingPage() {
                 <li className="flex items-center gap-3 text-neutral-300 font-medium tracking-wide">
                   <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
                   {t.pricing.basic_perk3}
-                </li>
-                <li className="flex items-center gap-3 text-neutral-300 font-medium tracking-wide">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
-                  {t.pricing.basic_perk4}
                 </li>
                 <li className="flex items-center gap-3 text-neutral-300 font-medium tracking-wide">
                   <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />

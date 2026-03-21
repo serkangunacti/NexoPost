@@ -27,7 +27,13 @@
     "f2_title": "Multi-Company Management",
     "f2_desc": "Manage multiple clients from one unified dashboard.",
     "f3_title": "Smart Scheduling",
-    "f3_desc": "Plan weeks of content in just minutes."
+    "f3_desc": "Plan weeks of content in just minutes.",
+    "f4_title": "Advanced Social Analytics",
+    "f4_desc": "Monitor your engagement, reach, and demographic data across all channels on a single screen.",
+    "f5_title": "Nexo AI AI Assistant",
+    "f5_desc": "Instantly generate high-converting post captions and targeted hashtag recommendations.",
+    "f6_title": "Unified Social Inbox",
+    "f6_desc": "Read and reply to comments and direct messages from every platform in one central hub."
   },
   "pricing": {
     "title": "Simple Pricing",

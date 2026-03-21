@@ -27,7 +27,13 @@
     "f2_title": "Çoklu Firma Yönetimi",
     "f2_desc": "Birden fazla müşteriyi tek bir birleştirilmiş panelden yönetin.",
     "f3_title": "Akıllı Zamanlama",
-    "f3_desc": "Haftalarca sürecek içeriği saniyeler içinde planlayın."
+    "f3_desc": "Haftalarca sürecek içeriği saniyeler içinde planlayın.",
+    "f4_title": "Gelişmiş Sosyal Analitik",
+    "f4_desc": "Tüm ağlardaki etkileşim, erişim ve kitle verilerinizi tek ekranda uçtan uca inceleyin.",
+    "f5_title": "Nexo AI Metin Asistanı",
+    "f5_desc": "Hedef kitleye özel, yüksek dönüşümlü gönderi açıklamalarını ve hashtagleri anında üretin.",
+    "f6_title": "Merkezi İletişim Kutusu",
+    "f6_desc": "Tüm platformlardan gelen yorum ve mesajlara tek panelden yanıt vererek müşteri ilişkilerini yönetin."
   },
   "pricing": {
     "title": "Esnek Fiyatlandırma",
