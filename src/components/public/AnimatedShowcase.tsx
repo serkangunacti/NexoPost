@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { SiX, SiFacebook, SiInstagram } from "react-icons/si";
 import { FaLinkedin } from "react-icons/fa6";
-import { Calendar, CheckCircle2, PenLine, Send, Camera } from "lucide-react";
+import { Calendar, CheckCircle2, PenLine, Send, Camera, MessageCircle, Repeat2, Heart, BarChart2, Share, ThumbsUp, MessageSquare, Repeat } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 
 export default function AnimatedShowcase() {
@@ -42,10 +42,16 @@ export default function AnimatedShowcase() {
       timeout = setTimeout(() => setStep(5), 1000); // Click schedule
     } else if (step === 5) {
       // Scheduling spinner
-      timeout = setTimeout(() => setStep(6), 1500); // Success
+      timeout = setTimeout(() => setStep(6), 1500); // Success overlay
     } else if (step === 6) {
-      // Done - sit for a bit then reset
-      timeout = setTimeout(() => setStep(0), 4000);
+      // Done - Success overlay, wait then move to X preview
+      timeout = setTimeout(() => setStep(7), 2000); // X Preview
+    } else if (step === 7) {
+      // X preview duration
+      timeout = setTimeout(() => setStep(8), 3500); // LinkedIn preview
+    } else if (step === 8) {
+      // LinkedIn preview duration
+      timeout = setTimeout(() => setStep(0), 3500); // Reset
     }
 
     return () => clearTimeout(timeout);
@@ -120,8 +126,8 @@ export default function AnimatedShowcase() {
                     <Camera className="w-6 h-6" />
                   </div>
                   {step >= 4 && (
-                    <div className="px-4 py-2 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-sm font-bold animate-in fade-in slide-in-from-left-4 flex items-center gap-2">
-                       media_1.png
+                    <div className="px-4 py-2 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-sm font-bold animate-in fade-in slide-in-from-left-4 flex items-center gap-2">
+                       nexopost-logo.png
                     </div>
                   )}
                 </div>
@@ -153,28 +159,77 @@ export default function AnimatedShowcase() {
                 {/* Notch */}
                 <div className="absolute top-0 inset-x-0 h-6 bg-[#1a1a1e] w-36 mx-auto rounded-b-2xl z-20" />
                 
-                <div className="mt-8 flex items-center gap-3 mb-5">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-violet-500 to-sky-500 shadow-inner" />
-                  <div>
-                    <div className="w-24 h-2.5 bg-neutral-700 rounded-full mb-2" />
-                    <div className="w-16 h-2 bg-neutral-800 rounded-full" />
+                {step === 7 ? (
+                  // X Preview
+                  <div className="animate-in zoom-in-95 fade-in duration-500 mt-6 bg-black rounded-2xl border border-neutral-800 p-4 font-sans relative z-10 mx-[-4px]">
+                     <div className="flex items-center gap-3 mb-3">
+                       <img src="/logo.png" alt="NexoPost X" className="w-10 h-10 rounded-full bg-white/10 p-1.5 object-contain" />
+                       <div>
+                         <div className="text-[15px] font-bold text-white leading-tight flex items-center gap-1">NexoPost <span className="text-blue-400 text-xs">✔</span></div>
+                         <div className="text-[14px] text-neutral-500">@nexopost · 1m</div>
+                       </div>
+                       <SiX className="w-4 h-4 text-neutral-500 ml-auto" />
+                     </div>
+                     <p className="text-[15px] text-white mb-3 leading-snug font-normal whitespace-pre-wrap">{text}</p>
+                     <div className="w-full aspect-video rounded-2xl border border-neutral-800 relative overflow-hidden bg-white/5 flex items-center justify-center mb-3">
+                        <img src="/logo.png" alt="Attachment" className="w-24 h-24 object-contain drop-shadow-2xl opacity-90" />
+                     </div>
+                     <div className="flex items-center justify-between text-neutral-500 px-1">
+                        <MessageCircle className="w-[18px] h-[18px]" />
+                        <Repeat2 className="w-[18px] h-[18px]" />
+                        <Heart className="w-[18px] h-[18px]" />
+                        <BarChart2 className="w-[18px] h-[18px]" />
+                        <Share className="w-[18px] h-[18px]" />
+                     </div>
                   </div>
-                </div>
-
-                <div className="space-y-2 mb-5">
-                  <p className="text-sm text-neutral-300 break-words leading-relaxed">{text || <span className="text-neutral-800">Preview text here...</span>}</p>
-                </div>
-
-                {step >= 4 && (
-                  <div className="w-full h-40 bg-indigo-500/10 rounded-2xl animate-in zoom-in duration-300 flex flex-col items-center justify-center border border-indigo-500/20">
-                    <Camera className="w-8 h-8 text-indigo-400/30 mb-2" />
-                    <span className="text-xs text-indigo-400/50 font-bold">Image Attachment</span>
+                ) : step === 8 ? (
+                  // LinkedIn Preview
+                  <div className="animate-in zoom-in-95 fade-in duration-500 mt-6 bg-white rounded-2xl border border-neutral-200 p-4 font-sans relative z-10 shadow-lg mx-[-4px]">
+                     <div className="flex items-start gap-3 mb-3">
+                       <img src="/logo.png" alt="NexoPost LinkedIn" className="w-12 h-12 rounded-md bg-neutral-100 p-2 object-contain" />
+                       <div className="flex-1">
+                         <div className="text-[15px] font-bold text-black leading-tight flex items-center justify-between">NexoPost <FaLinkedin className="w-4 h-4 text-[#0A66C2]" /></div>
+                         <div className="text-[12px] text-neutral-500 leading-tight mb-0.5">Social Media Automation</div>
+                         <div className="text-[12px] text-neutral-500 flex items-center gap-1">Just now • <span className="text-[10px]">🌐</span></div>
+                       </div>
+                     </div>
+                     <p className="text-[14px] text-black mb-3 leading-snug font-normal whitespace-pre-wrap">{text}</p>
+                     <div className="w-full aspect-video border border-neutral-200 relative overflow-hidden bg-neutral-50 flex items-center justify-center mb-4 rounded-lg">
+                        <img src="/logo.png" alt="Attachment" className="w-24 h-24 object-contain drop-shadow-lg opacity-90" />
+                     </div>
+                     <div className="border-t border-neutral-200 pt-3 flex items-center justify-between text-neutral-500 px-1 font-medium text-xs">
+                        <div className="flex flex-col items-center gap-1 hover:text-[#0A66C2] transition-colors"><ThumbsUp className="w-[18px] h-[18px]" /> <span>Like</span></div>
+                        <div className="flex flex-col items-center gap-1 hover:text-[#0A66C2] transition-colors"><MessageSquare className="w-[18px] h-[18px]" /> <span>Comment</span></div>
+                        <div className="flex flex-col items-center gap-1 hover:text-[#0A66C2] transition-colors"><Repeat className="w-[18px] h-[18px]" /> <span>Repost</span></div>
+                        <div className="flex flex-col items-center gap-1 hover:text-[#0A66C2] transition-colors"><Send className="w-[18px] h-[18px]" /> <span>Send</span></div>
+                     </div>
                   </div>
+                ) : (
+                  // Generic Preview
+                  <>
+                    <div className="mt-8 flex items-center gap-3 mb-5">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-violet-500 to-sky-500 shadow-inner" />
+                      <div>
+                        <div className="w-24 h-2.5 bg-neutral-700 rounded-full mb-2" />
+                        <div className="w-16 h-2 bg-neutral-800 rounded-full" />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2 mb-5">
+                      <p className="text-sm text-neutral-300 break-words leading-relaxed">{text || <span className="text-neutral-800">Preview text here...</span>}</p>
+                    </div>
+
+                    {step >= 4 && (
+                      <div className="w-full h-40 bg-white/5 rounded-2xl animate-in zoom-in duration-300 flex flex-col items-center justify-center border border-white/10 relative overflow-hidden group">
+                        <img src="/logo.png" alt="Attached Media" className="w-16 h-16 object-contain opacity-80 drop-shadow-[0_0_15px_rgba(255,255,255,0.2)] group-hover:scale-110 transition-transform duration-500" />
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
 
               {/* Success Overlay */}
-              {step >= 6 && (
+              {step === 6 && (
                 <div className="absolute inset-0 bg-black/60 backdrop-blur-md flex flex-col items-center justify-center animate-in fade-in duration-500 z-30">
                   <div className="w-20 h-20 bg-emerald-500/20 border border-emerald-500/30 rounded-2xl flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(16,185,129,0.3)]">
                     <CheckCircle2 className="w-10 h-10 text-emerald-400" />
