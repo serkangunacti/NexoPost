@@ -3,15 +3,12 @@
 import { useEffect, useState } from "react";
 import { SiX, SiFacebook, SiInstagram, SiTiktok } from "react-icons/si";
 import { FaLinkedin } from "react-icons/fa6";
-import { Calendar, CheckCircle2, PenLine, Send, Camera, MessageCircle, Repeat2, Heart, BarChart2, Share, ThumbsUp, MessageSquare, Repeat, Bookmark, Music } from "lucide-react";
-import { useLanguage } from "@/context/LanguageContext";
+import { Calendar, CheckCircle2, PenLine, Send, Camera, MessageCircle, Repeat2, Heart, BarChart2, Share, ThumbsUp, MessageSquare, Repeat, Bookmark, Music, MoreHorizontal } from "lucide-react";
 
 export default function AnimatedShowcase() {
-  const { t } = useLanguage();
   const [step, setStep] = useState(0);
   const [text, setText] = useState("");
   
-  // Use localized text (fallback if missing)
   const fullText = "Excited to launch our new product today! 🚀 #NexoPost #Update";
 
   useEffect(() => {
@@ -19,46 +16,43 @@ export default function AnimatedShowcase() {
 
     if (step === 0) {
       setText("");
-      timeout = setTimeout(() => setStep(1), 600); // Select X
+      timeout = setTimeout(() => setStep(1), 600);
     } else if (step === 1) {
-      timeout = setTimeout(() => setStep(2), 400); // Select LinkedIn
+      timeout = setTimeout(() => setStep(2), 400);
     } else if (step === 2) {
-      timeout = setTimeout(() => setStep(3), 400); // Select Facebook
+      timeout = setTimeout(() => setStep(3), 400);
     } else if (step === 3) {
-      timeout = setTimeout(() => setStep(4), 400); // Select Instagram
+      timeout = setTimeout(() => setStep(4), 400);
     } else if (step === 4) {
-      timeout = setTimeout(() => setStep(5), 400); // Select TikTok
+      timeout = setTimeout(() => setStep(5), 400);
     } else if (step === 5) {
-      // Typing effect
       let i = 0;
+      setText(""); // ensure cleared
       const interval = setInterval(() => {
-        setText(fullText.slice(0, i + 1));
+        setText((prev) => fullText.slice(0, prev.length + 1));
         i++;
-        if (i === fullText.length) {
+        if (i >= fullText.length) {
           clearInterval(interval);
-          timeout = setTimeout(() => setStep(6), 600); // Done typing, move to image
+          timeout = setTimeout(() => setStep(6), 600);
         }
-      }, 40);
+      }, 30);
       return () => clearInterval(interval);
     } else if (step === 6) {
-      // Attach image
-      timeout = setTimeout(() => setStep(7), 800); // Click schedule
+      timeout = setTimeout(() => setStep(7), 800);
     } else if (step === 7) {
-      // Scheduling spinner
-      timeout = setTimeout(() => setStep(8), 1200); // Success overlay
+      timeout = setTimeout(() => setStep(8), 1200);
     } else if (step === 8) {
-      // Done - Success overlay, wait then move to X preview
-      timeout = setTimeout(() => setStep(9), 1500); // X Preview
+      timeout = setTimeout(() => setStep(9), 1800);
     } else if (step === 9) {
-      timeout = setTimeout(() => setStep(10), 3000); // LinkedIn preview
+      timeout = setTimeout(() => setStep(10), 3000);
     } else if (step === 10) {
-      timeout = setTimeout(() => setStep(11), 3000); // Facebook preview
+      timeout = setTimeout(() => setStep(11), 3000);
     } else if (step === 11) {
-      timeout = setTimeout(() => setStep(12), 3000); // Instagram preview
+      timeout = setTimeout(() => setStep(12), 3000);
     } else if (step === 12) {
-      timeout = setTimeout(() => setStep(13), 3000); // TikTok preview
+      timeout = setTimeout(() => setStep(13), 3000);
     } else if (step === 13) {
-      timeout = setTimeout(() => setStep(0), 3500); // Reset
+      timeout = setTimeout(() => setStep(0), 3000);
     }
 
     return () => clearTimeout(timeout);
@@ -66,25 +60,26 @@ export default function AnimatedShowcase() {
 
   return (
     <section className="w-full px-6 py-12 mb-20">
-      <div className="w-full max-w-5xl mx-auto relative cursor-default">
+      <div className="w-full max-w-[1100px] mx-auto relative cursor-default">
         {/* Background glow */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-[80%] bg-violet-600/10 blur-[120px] rounded-full pointer-events-none" />
 
-        {/* App Window */}
+        {/* Global App Window */}
         <div className="relative z-10 w-full glass rounded-[2.5rem] border border-white/5 overflow-hidden shadow-2xl flex flex-col hover:border-white/10 transition-colors bg-[#050508]/80 backdrop-blur-2xl">
+          
           {/* Top bar (macOS style) */}
-          <div className="h-14 border-b border-white/5 bg-white/[0.01] flex items-center px-6 gap-2">
+          <div className="h-14 border-b border-white/5 bg-white/[0.01] flex items-center px-6 gap-2 shrink-0">
             <div className="w-3.5 h-3.5 rounded-full bg-[#ff5f56]" />
             <div className="w-3.5 h-3.5 rounded-full bg-[#ffbd2e]" />
             <div className="w-3.5 h-3.5 rounded-full bg-[#27c93f]" />
             <div className="flex-1 text-center text-xs font-bold text-neutral-600 tracking-widest hidden sm:block">app.nexopost.com</div>
           </div>
 
-          {/* Mock Body */}
-          <div className="p-6 md:p-10 flex flex-col lg:flex-row gap-8">
+          {/* Main Layout */}
+          <div className="flex flex-col lg:flex-row p-6 md:p-8 gap-8 items-stretch">
             
-            {/* Main Compose Area */}
-            <div className="flex-1 bg-black/40 rounded-[2rem] border border-white/5 p-8 shadow-inner relative">
+            {/* 1) Compose Area (Dims when in preview loop) */}
+            <div className={`flex-1 bg-black/40 rounded-[2rem] border border-white/5 p-8 shadow-inner flex flex-col transition-all duration-1000 ${step >= 9 ? 'opacity-20 blur-sm brightness-50 pointer-events-none scale-[0.98]' : 'opacity-100 scale-100'}`}>
               <h3 className="text-xl font-bold text-white mb-8 flex items-center gap-3">
                 <div className="p-2.5 rounded-xl bg-violet-500/10 text-violet-400 border border-violet-500/20">
                   <PenLine className="w-5 h-5" />
@@ -99,13 +94,13 @@ export default function AnimatedShowcase() {
                   { id: 'linkedin', icon: <FaLinkedin className="w-6 h-6" />, color: 'bg-[#0A66C2] text-white', defaultActive: step >= 2 },
                   { id: 'facebook', icon: <SiFacebook className="w-6 h-6" />, color: 'bg-[#1877F2] text-white', defaultActive: step >= 3 },
                   { id: 'instagram', icon: <SiInstagram className="w-6 h-6" />, color: 'bg-gradient-to-tr from-[#fd5949] to-[#d6249f] text-white', defaultActive: step >= 4 },
-                  { id: 'tiktok', icon: <SiTiktok className="w-6 h-6" />, color: 'bg-black text-white shadow-[2px_2px_0_#fe0979,-2px_-2px_0_#00f2fe]', defaultActive: step >= 5 },
+                  { id: 'tiktok', icon: <SiTiktok className="w-6 h-6" />, color: 'bg-black text-white shadow-[0_0_10px_rgba(254,9,121,0.5)] border border-neutral-700', defaultActive: step >= 5 },
                 ].map((platform) => (
                   <div 
                     key={platform.id}
                     className={`w-14 h-14 rounded-2xl border flex items-center justify-center transition-all duration-300 ${
                       platform.defaultActive 
-                        ? `${platform.color} border-transparent scale-105 shadow-[0_0_20px_rgba(255,255,255,0.2)]` 
+                        ? `${platform.color} border-transparent scale-105 shadow-[0_0_20px_rgba(255,255,255,0.15)]` 
                         : 'border-white/10 bg-white/5 text-neutral-500 scale-100'
                     }`}
                   >
@@ -115,217 +110,235 @@ export default function AnimatedShowcase() {
               </div>
 
               {/* Textarea */}
-              <div className="w-full bg-white/[0.02] border border-white/5 rounded-2xl p-6 mb-6 min-h-[160px] relative">
-                <p className="text-neutral-200 text-lg leading-relaxed whitespace-pre-wrap">
+              <div className="w-full bg-white/[0.02] border border-white/5 rounded-2xl p-6 mb-8 min-h-[160px] relative flex-1">
+                <p className="text-neutral-200 text-[16px] leading-relaxed whitespace-pre-wrap">
                   {text}
                   {step >= 5 && step <= 7 && (
-                    <span className="inline-block w-1.5 h-5 bg-violet-400 ml-1 animate-pulse align-middle" />
+                    <span className="inline-block w-[3px] h-5 bg-violet-400 ml-1 animate-pulse align-middle" />
                   )}
                 </p>
                 {text === "" && step < 5 && (
-                  <p className="text-neutral-600 text-lg absolute top-6 left-6">What do you want to share?</p>
+                  <p className="text-neutral-600 text-[16px] absolute top-6 left-6">What do you want to share?</p>
                 )}
               </div>
 
               {/* Attachments & Actions */}
-              <div className="flex flex-col sm:flex-row items-center justify-between mt-8 gap-6">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-6 shrink-0 mt-auto">
                 <div className="flex items-center gap-4 w-full sm:w-auto">
-                  <div className={`p-3.5 rounded-xl border transition-all duration-500 flex items-center justify-center ${step >= 6 ? 'bg-indigo-500/20 border-indigo-500/40 text-indigo-400 shadow-lg shadow-indigo-500/10' : 'bg-white/5 border-white/10 text-neutral-400'}`}>
+                  <div className={`p-4 rounded-xl border transition-all duration-500 flex items-center justify-center ${step >= 6 ? 'bg-indigo-500/20 border-indigo-500/40 text-indigo-400 shadow-xl' : 'bg-white/5 border-white/10 text-neutral-500'}`}>
                     <Camera className="w-6 h-6" />
                   </div>
                   {step >= 6 && (
-                    <div className="px-4 py-2 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-sm font-bold animate-in fade-in slide-in-from-left-4 flex items-center gap-2">
-                       nexopost-logo.png
+                    <div className="px-5 py-2.5 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 font-bold text-sm animate-in fade-in slide-in-from-left-4 flex items-center gap-2">
+                       media_1.png
                     </div>
                   )}
                 </div>
 
                 <div className="flex items-center gap-4 w-full sm:w-auto">
-                  <div className="p-3.5 rounded-xl bg-white/5 border border-white/10 text-neutral-400 hidden sm:flex">
+                  <div className="p-4 rounded-xl bg-white/5 border border-white/10 text-neutral-500 hidden sm:flex">
                     <Calendar className="w-6 h-6" />
                   </div>
                   <div className={`px-8 py-4 w-full sm:w-auto rounded-2xl font-bold text-white transition-all duration-300 flex items-center justify-center gap-3 shadow-lg ${
                     step === 7 ? 'bg-violet-600/70 cursor-wait shadow-violet-500/20' :
                     step >= 8 ? 'bg-emerald-500 shadow-emerald-500/20' : 'bg-violet-600 hover:bg-violet-500 shadow-violet-500/30'
                   }`}>
-                    {step === 7 ? 'Generating...' : step >= 8 ? <><CheckCircle2 className="w-6 h-6"/> Queued</> : <><Send className="w-6 h-6"/> Publish Now</>}
+                    {step === 7 ? 'Processing...' : step >= 8 ? <><CheckCircle2 className="w-6 h-6"/> Queued</> : <><Send className="w-6 h-6"/> Publish Now</>}
                   </div>
                 </div>
               </div>
-
             </div>
 
-            {/* Side Preview Area */}
-            <div className="hidden lg:flex flex-col w-80 bg-white/[0.02] border border-white/5 rounded-[2rem] p-8 relative overflow-hidden">
-              <h4 className="text-xs font-bold text-neutral-500 uppercase tracking-widest mb-8 flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-violet-500 animate-pulse" />
-                Live Preview
-              </h4>
-              
-              {/* Fake phone frame */}
-              <div className="flex-1 bg-black rounded-[2.5rem] border-[6px] border-[#1a1a1e] p-5 relative overflow-hidden shadow-2xl flex flex-col">
-                {/* Notch */}
-                <div className="absolute top-0 inset-x-0 h-6 bg-[#1a1a1e] w-36 mx-auto rounded-b-2xl z-20" />
-                
-                {step === 9 ? (
-                  // X Preview
-                  <div key="x-preview" className="animate-in slide-in-from-bottom-12 fade-in zoom-in-95 duration-700 mt-6 bg-black rounded-2xl border border-neutral-800 p-4 font-sans relative z-10 mx-[-4px] shadow-2xl">
-                     <div className="flex items-center gap-3 mb-3">
-                       <img src="/logo.png" alt="NexoPost X" className="w-10 h-10 rounded-full bg-white/10 p-1.5 object-contain" />
-                       <div>
-                         <div className="text-[15px] font-bold text-white leading-tight flex items-center gap-1">NexoPost <span className="text-blue-400 text-xs">✔</span></div>
-                         <div className="text-[14px] text-neutral-500">@nexopost · 1m</div>
-                       </div>
-                       <SiX className="w-4 h-4 text-neutral-500 ml-auto" />
-                     </div>
-                     <p className="text-[15px] text-white mb-3 leading-snug font-normal whitespace-pre-wrap">{text}</p>
-                     <div className="w-full aspect-video rounded-2xl border border-neutral-800 relative overflow-hidden bg-white/5 flex items-center justify-center mb-3">
-                        <img src="/logo.png" alt="Attachment" className="w-24 h-24 object-contain drop-shadow-2xl opacity-90" />
-                     </div>
-                     <div className="flex items-center justify-between text-neutral-500 px-1 hover:cursor-pointer">
-                        <MessageCircle className="w-[18px] h-[18px] hover:text-blue-500 transition-colors" />
-                        <Repeat2 className="w-[18px] h-[18px] hover:text-green-500 transition-colors" />
-                        <Heart className="w-[18px] h-[18px] hover:text-red-500 transition-colors" />
-                        <BarChart2 className="w-[18px] h-[18px] hover:text-blue-500 transition-colors" />
-                        <Share className="w-[18px] h-[18px] hover:text-blue-500 transition-colors" />
-                     </div>
-                  </div>
-                ) : step === 10 ? (
-                  // LinkedIn Preview
-                  <div key="linkedin-preview" className="animate-in slide-in-from-right-16 fade-in zoom-in-95 duration-500 mt-6 bg-white rounded-2xl border border-neutral-200 p-4 font-sans relative z-10 shadow-xl mx-[-4px]">
-                     <div className="flex items-start gap-3 mb-3">
-                       <img src="/logo.png" alt="NexoPost LinkedIn" className="w-12 h-12 rounded-md bg-neutral-100 p-2 object-contain" />
-                       <div className="flex-1">
-                         <div className="text-[15px] font-bold text-black leading-tight flex items-center justify-between">NexoPost <FaLinkedin className="w-4 h-4 text-[#0A66C2]" /></div>
-                         <div className="text-[12px] text-neutral-500 leading-tight mb-0.5">Social Media Automation</div>
-                         <div className="text-[12px] text-neutral-500 flex items-center gap-1">Just now • <span className="text-[10px]">🌐</span></div>
-                       </div>
-                     </div>
-                     <p className="text-[14px] text-black mb-3 leading-snug font-normal whitespace-pre-wrap">{text}</p>
-                     <div className="w-full aspect-video border border-neutral-200 relative overflow-hidden bg-neutral-50 flex items-center justify-center mb-4 rounded-lg">
-                        <img src="/logo.png" alt="Attachment" className="w-24 h-24 object-contain drop-shadow-lg opacity-90" />
-                     </div>
-                     <div className="border-t border-neutral-200 pt-3 flex items-center justify-between text-neutral-500 px-1 font-medium text-xs">
-                        <div className="flex flex-col items-center gap-1 hover:text-[#0A66C2] transition-colors cursor-pointer"><ThumbsUp className="w-[18px] h-[18px]" /> <span>Like</span></div>
-                        <div className="flex flex-col items-center gap-1 hover:text-[#0A66C2] transition-colors cursor-pointer"><MessageSquare className="w-[18px] h-[18px]" /> <span>Comment</span></div>
-                        <div className="flex flex-col items-center gap-1 hover:text-[#0A66C2] transition-colors cursor-pointer"><Repeat className="w-[18px] h-[18px]" /> <span>Repost</span></div>
-                        <div className="flex flex-col items-center gap-1 hover:text-[#0A66C2] transition-colors cursor-pointer"><Send className="w-[18px] h-[18px]" /> <span>Send</span></div>
-                     </div>
-                  </div>
-                ) : step === 11 ? (
-                  // Facebook Preview
-                  <div key="fb-preview" className="animate-in slide-in-from-bottom-8 fade-in zoom-in-95 duration-500 mt-6 bg-white rounded-2xl border border-neutral-200 p-3 font-sans relative z-10 shadow-xl mx-[-4px]">
-                     <div className="flex items-center gap-3 mb-2">
-                       <img src="/logo.png" alt="NexoPost Facebook" className="w-10 h-10 rounded-full border border-neutral-200 bg-white p-1 object-contain" />
-                       <div>
-                         <div className="text-[14px] font-bold text-[#050505] leading-tight">NexoPost</div>
-                         <div className="text-[13px] text-[#65676B] flex items-center gap-1">Just now • <span className="text-[10px]">🌍</span></div>
-                       </div>
-                       <div className="ml-auto flex items-center gap-4 text-[#65676B]">
-                         <span className="text-lg leading-none font-bold pb-2">...</span>
-                       </div>
-                     </div>
-                     <p className="text-[15px] text-[#050505] mb-3 leading-snug font-normal">{text}</p>
-                     <div className="w-full aspect-square border-y border-neutral-200 relative overflow-hidden bg-[#F0F2F5] flex items-center justify-center mb-3 mx-[-12px] w-[calc(100%+24px)]">
-                        <img src="/logo.png" alt="Attachment" className="w-32 h-32 object-contain drop-shadow-xl opacity-90" />
-                     </div>
-                     <div className="border-y border-neutral-200 py-1.5 flex items-center justify-around text-[#65676B] font-semibold text-[14px]">
-                        <div className="flex items-center gap-2 hover:bg-neutral-100 py-1.5 px-3 rounded-md cursor-pointer transition-colors"><ThumbsUp className="w-5 h-5" /> Like</div>
-                        <div className="flex items-center gap-2 hover:bg-neutral-100 py-1.5 px-3 rounded-md cursor-pointer transition-colors"><MessageSquare className="w-5 h-5" /> Comment</div>
-                        <div className="flex items-center gap-2 hover:bg-neutral-100 py-1.5 px-3 rounded-md cursor-pointer transition-colors"><Share className="w-5 h-5" /> Share</div>
-                     </div>
-                  </div>
-                ) : step === 12 ? (
-                  // Instagram Preview
-                  <div key="ig-preview" className="animate-in slide-in-from-right-16 fade-in duration-600 mt-6 bg-white rounded-2xl border border-neutral-200 font-sans relative z-10 shadow-2xl mx-[-4px] overflow-hidden">
-                     <div className="flex items-center gap-3 px-3 py-3">
-                       <img src="/logo.png" alt="NexoPost IG" className="w-8 h-8 rounded-full border border-neutral-200 bg-white p-1 object-contain" />
-                       <div className="text-[14px] font-semibold text-black">nexopost</div>
-                       <div className="ml-auto text-black font-bold text-lg leading-none pb-2">...</div>
-                     </div>
-                     <div className="w-full aspect-square relative bg-neutral-100 flex items-center justify-center border-y border-neutral-100">
-                        <img src="/logo.png" alt="Attachment" className="w-32 h-32 object-contain drop-shadow-2xl" />
-                     </div>
-                     <div className="p-3">
-                       <div className="flex items-center gap-4 mb-3 text-black">
-                         <Heart className="w-6 h-6 hover:text-red-500 cursor-pointer transition-colors" />
-                         <MessageCircle className="w-6 h-6 hover:text-neutral-500 cursor-pointer transition-colors" />
-                         <Send className="w-6 h-6 hover:text-neutral-500 cursor-pointer transition-colors" />
-                         <Bookmark className="w-6 h-6 ml-auto hover:text-neutral-500 cursor-pointer transition-colors" />
-                       </div>
-                       <div className="text-[14px] text-black leading-snug">
-                         <span className="font-semibold mr-2">nexopost</span>
-                         <span className="font-normal">{text}</span>
-                       </div>
-                     </div>
-                  </div>
-                ) : step === 13 ? (
-                  // TikTok Preview
-                  <div key="tt-preview" className="animate-in slide-in-from-bottom-12 fade-in zoom-in-[0.98] duration-700 mt-6 bg-black rounded-2xl border border-neutral-800 font-sans relative z-10 shadow-2xl mx-[-4px] overflow-hidden h-80 flex items-center justify-center">
-                     <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-black/40 z-10" />
-                     
-                     {/* Media Background Content */}
-                     <img src="/logo.png" alt="Attachment" className="w-32 h-32 object-contain drop-shadow-[0_0_30px_rgba(255,255,255,0.4)] relative z-0" />
-                     
-                     {/* Overlay Interactions */}
-                     <div className="absolute right-2 bottom-4 z-20 flex flex-col items-center gap-4 text-white">
-                        <div className="flex flex-col items-center gap-1 group cursor-pointer"><div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center backdrop-blur-md group-hover:bg-white/20"><Heart className="w-6 h-6 fill-white" /></div><span className="text-xs font-semibold">12K</span></div>
-                        <div className="flex flex-col items-center gap-1 group cursor-pointer"><div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center backdrop-blur-md group-hover:bg-white/20"><MessageCircle className="w-6 h-6 fill-white" /></div><span className="text-xs font-semibold">430</span></div>
-                        <div className="flex flex-col items-center gap-1 group cursor-pointer"><div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center backdrop-blur-md group-hover:bg-white/20"><Bookmark className="w-6 h-6 fill-white" /></div><span className="text-xs font-semibold">Saved</span></div>
-                        <div className="flex flex-col items-center gap-1 group cursor-pointer"><div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center backdrop-blur-md group-hover:bg-white/20"><div className="w-6 h-6 rounded-full bg-white/30" /></div><span className="text-xs font-semibold">Share</span></div>
-                     </div>
+            {/* 2) Phone Preview Area (Fixed Structure) */}
+            <div className="hidden lg:flex flex-col items-center justify-center shrink-0 mx-4 relative overflow-visible">
+               <h4 className={`text-xs font-bold uppercase tracking-widest mb-6 flex items-center gap-2 transition-colors duration-500 ${step >= 9 ? 'text-violet-400' : 'text-neutral-500'}`}>
+                  <div className={`w-2 h-2 rounded-full ${step >= 9 ? 'bg-violet-400 animate-pulse' : 'bg-neutral-600'}`} />
+                  {step >= 9 ? 'Live Networks' : 'Live Preview'}
+               </h4>
 
-                     {/* Overlay Bottom Text */}
-                     <div className="absolute left-3 bottom-3 right-16 z-20 text-white">
-                        <div className="flex items-center gap-2 mb-2">
-                           <img src="/logo.png" className="w-8 h-8 rounded-full border border-white/20 bg-black/50 p-1" />
-                           <span className="font-bold text-[15px]">@nexopost</span>
-                        </div>
-                        <p className="text-[13px] line-clamp-2 leading-snug mb-2 font-medium drop-shadow-md">{text}</p>
-                        <div className="flex items-center gap-2 text-xs font-medium">
-                           <Music className="w-4 h-4" />
-                           <span className="marquee">Original Audio - NexoPost</span>
+               {/* Rigorous Hardware Phone Shell */}
+               <div className="w-[300px] h-[600px] bg-black rounded-[2.5rem] border-[8px] border-[#18181b] relative shadow-2xl overflow-hidden ring-1 ring-white/10 z-10">
+                  {/* Elegant Hardware Notch */}
+                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-[#18181b] rounded-b-xl flex items-center justify-center gap-2 z-50">
+                     <div className="w-10 h-1.5 bg-black/40 rounded-full" />
+                     <div className="w-2 h-2 bg-black/40 rounded-full" />
+                  </div>
+
+                  {/* Absolute layer wrapper for all screens so they crossfade perfectly over each other without layout jumps */}
+                  
+                  {/* Generic Screen (Steps 0-8) */}
+                  <div className={`absolute inset-0 bg-neutral-950 px-4 pt-10 pb-4 flex flex-col transition-all duration-700 ${step < 9 ? 'opacity-100 z-40' : 'opacity-0 scale-95 z-0 delay-300 pointer-events-none'}`}>
+                     <div className="flex items-center gap-3 mb-6 mt-2">
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-violet-500 to-sky-500 shadow-inner" />
+                        <div className="space-y-2">
+                          <div className="w-24 h-2 bg-neutral-800 rounded-full" />
+                          <div className="w-16 h-2 bg-neutral-800 rounded-full" />
                         </div>
                      </div>
+                     <p className="text-[14px] text-neutral-400 break-words leading-relaxed min-h-[4rem]">
+                        {text || <span className="opacity-50">Waiting for text...</span>}
+                     </p>
+                     
+                     <div className={`w-full h-[220px] bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center mt-4 transition-all duration-700 ${step >= 6 ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
+                         <img src="/logo.png" className="w-20 h-20 object-contain opacity-50 drop-shadow-2xl" alt="Preview Media" />
+                     </div>
                   </div>
-                ) : (
-                  // Generic Preview
-                  <div key="generic-preview" className="animate-in fade-in duration-300">
-                    <div className="mt-8 flex items-center gap-3 mb-5">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-violet-500 to-sky-500 shadow-inner" />
-                      <div>
-                        <div className="w-24 h-2.5 bg-neutral-700 rounded-full mb-2" />
-                        <div className="w-16 h-2 bg-neutral-800 rounded-full" />
-                      </div>
+
+                  {/* X (Twitter) Screen */}
+                  {step === 9 && (
+                    <div className="absolute inset-0 bg-black px-4 pt-10 pb-4 z-40 animate-in slide-in-from-right-10 fade-in duration-500">
+                       <div className="flex items-center gap-3 mb-3 mt-1">
+                          <img src="/logo.png" className="w-10 h-10 rounded-full bg-neutral-900 border border-neutral-800 p-1.5 object-contain" />
+                          <div>
+                             <div className="text-[15px] font-bold text-white flex items-center gap-1 leading-tight">NexoPost <span className="text-blue-400 text-[11px]">✔</span></div>
+                             <div className="text-[13px] text-neutral-500">@nexopost</div>
+                          </div>
+                       </div>
+                       <p className="text-[14px] text-white leading-normal mb-3 whitespace-pre-wrap">{text}</p>
+                       <div className="w-full aspect-square border border-neutral-800 rounded-2xl bg-neutral-900 flex items-center justify-center overflow-hidden mb-3">
+                          <img src="/logo.png" className="w-28 h-28 object-contain drop-shadow-2xl" />
+                       </div>
+                       <div className="flex items-center justify-between text-neutral-500 px-2 mt-2">
+                          <MessageCircle className="w-[18px] h-[18px]" />
+                          <Repeat2 className="w-[18px] h-[18px]" />
+                          <Heart className="w-[18px] h-[18px]" />
+                          <BarChart2 className="w-[18px] h-[18px]" />
+                          <Share className="w-[18px] h-[18px]" />
+                       </div>
                     </div>
+                  )}
 
-                    <div className="space-y-2 mb-5">
-                      <p className="text-sm text-neutral-300 break-words leading-relaxed">{text || <span className="text-neutral-800">Preview text here...</span>}</p>
-                    </div>
+                  {/* LinkedIn Screen */}
+                  {step === 10 && (
+                     <div className="absolute inset-0 bg-[#e9e5df] pt-8 z-40 animate-in slide-in-from-right-10 fade-in duration-500 flex flex-col">
+                        <div className="bg-white p-4 pb-2">
+                           <div className="flex items-center gap-3 mb-3 mt-1">
+                              <img src="/logo.png" className="w-12 h-12 rounded bg-white border border-neutral-200 p-1.5 object-contain" />
+                              <div className="leading-tight">
+                                 <div className="text-[14px] font-bold text-black flex items-center gap-1">NexoPost <span className="text-neutral-500 text-[10px] font-normal">1st</span></div>
+                                 <div className="text-[12px] text-neutral-500">Social Media Automation SaaS</div>
+                                 <div className="text-[11px] text-neutral-500 flex items-center gap-1">1m • 🌐</div>
+                              </div>
+                           </div>
+                           <p className="text-[13px] text-black leading-normal mb-3 whitespace-pre-wrap">{text}</p>
+                        </div>
+                        <div className="bg-white w-full aspect-square flex items-center justify-center px-4 py-2 border-b border-neutral-200">
+                           <img src="/logo.png" className="w-40 h-40 object-contain drop-shadow-xl" />
+                        </div>
+                        <div className="bg-white px-5 py-3 flex items-center justify-between text-neutral-500 font-semibold text-[11px]">
+                           <div className="flex flex-col items-center gap-1"><ThumbsUp className="w-4 h-4" /> Like</div>
+                           <div className="flex flex-col items-center gap-1"><MessageSquare className="w-4 h-4" /> Comment</div>
+                           <div className="flex flex-col items-center gap-1"><Repeat className="w-4 h-4" /> Repost</div>
+                           <div className="flex flex-col items-center gap-1"><Send className="w-4 h-4" /> Send</div>
+                        </div>
+                     </div>
+                  )}
 
-                    {step >= 6 && (
-                      <div className="w-full h-40 bg-white/5 rounded-2xl animate-in zoom-in duration-300 flex flex-col items-center justify-center border border-white/10 relative overflow-hidden group">
-                        <img src="/logo.png" alt="Attached Media" className="w-16 h-16 object-contain opacity-80 drop-shadow-[0_0_15px_rgba(255,255,255,0.2)] group-hover:scale-110 transition-transform duration-500" />
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
+                  {/* Facebook Screen */}
+                  {step === 11 && (
+                     <div className="absolute inset-0 bg-[#c9ccd1] pt-8 z-40 animate-in slide-in-from-right-10 fade-in duration-500 flex flex-col">
+                        <div className="bg-white p-4 pb-3">
+                           <div className="flex items-center gap-2 mb-3 mt-1">
+                              <img src="/logo.png" className="w-10 h-10 rounded-full border border-neutral-200 bg-neutral-100 p-1.5 object-contain" />
+                              <div className="leading-tight">
+                                 <div className="text-[14px] font-bold text-[#050505]">NexoPost</div>
+                                 <div className="text-[12px] text-[#65676B]">Just now • 🌍</div>
+                              </div>
+                              <MoreHorizontal className="w-5 h-5 text-[#65676B] ml-auto mb-3" />
+                           </div>
+                           <p className="text-[14px] text-[#050505] leading-normal">{text}</p>
+                        </div>
+                        <div className="bg-white w-full aspect-square flex items-center justify-center outline outline-1 outline-neutral-200">
+                           <img src="/logo.png" className="w-48 h-48 object-contain drop-shadow-lg" />
+                        </div>
+                        <div className="bg-white p-2 border-b border-neutral-300">
+                        </div>
+                        <div className="bg-white px-6 py-2 flex items-center justify-between text-[#65676B] font-semibold text-[13px]">
+                           <div className="flex items-center gap-2 py-1"><ThumbsUp className="w-5 h-5" /> Like</div>
+                           <div className="flex items-center gap-2 py-1"><MessageSquare className="w-5 h-5" /> Comment</div>
+                           <div className="flex items-center gap-2 py-1"><Share className="w-5 h-5" /> Share</div>
+                        </div>
+                     </div>
+                  )}
 
-              {/* Success Overlay */}
-              {step === 8 && (
-                <div className="absolute inset-0 bg-black/60 backdrop-blur-md flex flex-col items-center justify-center animate-in fade-in duration-500 z-30">
-                  <div className="w-20 h-20 bg-emerald-500/20 border border-emerald-500/30 rounded-2xl flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(16,185,129,0.3)]">
-                    <CheckCircle2 className="w-10 h-10 text-emerald-400" />
-                  </div>
-                  <p className="text-white font-bold text-2xl mb-1">Approved!</p>
-                  <p className="text-neutral-400 text-sm text-center px-4">Your posts have been verified and queued securely.</p>
-                </div>
-              )}
-              
+                  {/* Instagram Screen */}
+                  {step === 12 && (
+                     <div className="absolute inset-0 bg-white pt-8 z-40 animate-in slide-in-from-right-10 fade-in duration-500 flex flex-col">
+                        <div className="flex items-center gap-3 p-3 border-b border-neutral-100 mt-1">
+                           <img src="/logo.png" className="w-8 h-8 rounded-full border border-neutral-300 p-1 object-contain" />
+                           <div className="text-[13px] font-bold text-black">nexopost</div>
+                           <MoreHorizontal className="w-5 h-5 text-black ml-auto" />
+                        </div>
+                        <div className="w-full aspect-square bg-neutral-50 border-b border-neutral-100 flex items-center justify-center">
+                           <img src="/logo.png" className="w-40 h-40 object-contain drop-shadow-2xl" />
+                        </div>
+                        <div className="p-3">
+                           <div className="flex items-center gap-4 mb-3">
+                              <Heart className="w-6 h-6 text-black" />
+                              <MessageCircle className="w-6 h-6 text-black" />
+                              <Send className="w-6 h-6 text-black" />
+                              <Bookmark className="w-6 h-6 text-black ml-auto" />
+                           </div>
+                           <div className="text-[13px] text-black leading-snug">
+                              <span className="font-bold mr-2">nexopost</span>
+                              {text}
+                           </div>
+                        </div>
+                     </div>
+                  )}
+
+                  {/* TikTok Screen */}
+                  {step === 13 && (
+                     <div className="absolute inset-0 bg-black z-40 animate-in slide-in-from-right-10 fade-in duration-500 pt-8 flex flex-col">
+                        <div className="absolute inset-0 overflow-hidden flex items-center justify-center">
+                           <img src="/logo.png" className="absolute w-[200%] h-[200%] object-cover opacity-20 blur-xl scale-150 saturate-200" />
+                           <img src="/logo.png" className="w-56 h-56 object-contain relative z-10 drop-shadow-[0_0_50px_rgba(255,255,255,0.2)]" />
+                        </div>
+                        
+                        {/* Top bar */}
+                        <div className="absolute top-10 inset-x-0 px-4 flex justify-between z-20 text-white font-semibold">
+                           <div className="text-[16px] drop-shadow-md">Following <span className="opacity-50 mx-1">|</span> For You</div>
+                           <div className="opacity-80">🔍</div>
+                        </div>
+
+                        {/* Right Actions */}
+                        <div className="absolute bottom-8 right-2 flex flex-col gap-5 items-center z-20">
+                           <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center p-1 border border-white">
+                              <img src="/logo.png" className="w-full h-full object-contain rounded-full" />
+                           </div>
+                           <div className="flex flex-col items-center"><Heart className="w-8 h-8 fill-white/90 text-transparent drop-shadow-md" /><span className="text-white text-xs font-bold font-sans mt-0.5">12K</span></div>
+                           <div className="flex flex-col items-center"><MessageCircle className="w-8 h-8 fill-white/90 text-transparent drop-shadow-md" /><span className="text-white text-xs font-bold font-sans mt-0.5">340</span></div>
+                           <div className="flex flex-col items-center"><Bookmark className="w-8 h-8 fill-white/90 text-transparent drop-shadow-md" /><span className="text-white text-xs font-bold font-sans mt-0.5">85</span></div>
+                           <div className="flex flex-col items-center"><Share className="w-8 h-8 fill-white/90 text-transparent drop-shadow-md" /><span className="text-white text-xs font-bold font-sans mt-0.5">12</span></div>
+                        </div>
+
+                        {/* Bottom Text */}
+                        <div className="absolute bottom-6 left-3 right-16 z-20 text-white">
+                           <div className="font-bold text-[15px] drop-shadow-md mb-1">@nexopost</div>
+                           <p className="text-[13px] drop-shadow-md mb-3 line-clamp-2 leading-snug">{text}</p>
+                           <div className="flex items-center gap-2 text-[12px] font-semibold">
+                              <Music className="w-4 h-4" /> Original audio - NexoPost
+                           </div>
+                        </div>
+                     </div>
+                  )}
+
+               </div>
             </div>
 
           </div>
+
+          {/* Full Screen Success Overlay that appears before the preview magic begins */}
+          {step === 8 && (
+            <div className="absolute inset-0 bg-neutral-950/80 backdrop-blur-xl flex flex-col items-center justify-center animate-in fade-in zoom-in-95 duration-500 z-[100]">
+              <div className="w-24 h-24 bg-emerald-500/20 border border-emerald-500/30 rounded-[2rem] flex items-center justify-center mb-6 shadow-[0_0_60px_rgba(16,185,129,0.4)]">
+                <CheckCircle2 className="w-10 h-10 text-emerald-400" />
+              </div>
+              <p className="text-white font-bold text-3xl mb-3 tracking-tight">Approved & Queued!</p>
+              <p className="text-neutral-400 text-lg">Your post is on its way to 5 platforms.</p>
+            </div>
+          )}
+
         </div>
       </div>
     </section>
