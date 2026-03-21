@@ -17,14 +17,19 @@ function LoginContent() {
   const [mode, setMode] = useState<"login" | "register">("login");
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
+  const [registrationMode, setRegistrationMode] = useState<"trial" | "paid">("trial");
   const [trialPlan, setTrialPlan] = useState<"basic" | "pro" | "agency">("pro");
   const [registerName, setRegisterName] = useState("");
   const [registerEmail, setRegisterEmail] = useState("");
   const [registerPassword, setRegisterPassword] = useState("");
   const [workspaceName, setWorkspaceName] = useState("");
+  const [cardNumber, setCardNumber] = useState("");
+  const [expiry, setExpiry] = useState("");
+  const [cvv, setCvv] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState("");
+  const selectedPlanPrice = trialPlan === "agency" ? 49 : trialPlan === "pro" ? 19 : 9;
   const planFeatureMap = {
     basic: [
       t.pricing.basic_perk1,
@@ -93,9 +98,15 @@ function LoginContent() {
       registerEmail.trim() &&
       registerPassword.trim() &&
       workspaceName.trim();
+    const paymentFieldsValid = cardNumber.trim() && expiry.trim() && cvv.trim();
 
     if (!baseFieldsValid) {
       setError(t.login_page.register_error);
+      return;
+    }
+
+    if (registrationMode === "paid" && !paymentFieldsValid) {
+      setError(t.login_page.buy_requires_payment);
       return;
     }
 
@@ -103,7 +114,7 @@ function LoginContent() {
     await new Promise((resolve) => setTimeout(resolve, 800));
 
     const result = startPlan({
-      activationMode: "trial",
+      activationMode: registrationMode,
       billingCycle: "monthly",
       email: registerEmail.trim(),
       fullName: registerName.trim(),
@@ -156,6 +167,22 @@ function LoginContent() {
                         ? t.pricing.pro_desc
                         : t.pricing.basic_desc}
                   </p>
+                  <div className="mt-4 grid grid-cols-2 gap-3">
+                    <div className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-3">
+                      <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-neutral-500">
+                        {t.login_page.selected_mode_label}
+                      </p>
+                      <p className="mt-2 text-sm font-semibold text-white">
+                        {registrationMode === "trial" ? t.login_page.trial_mode : t.login_page.buy_mode}
+                      </p>
+                    </div>
+                    <div className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-3">
+                      <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-neutral-500">
+                        {t.login_page.selected_price}
+                      </p>
+                      <p className="mt-2 text-sm font-semibold text-white">${selectedPlanPrice} USD</p>
+                    </div>
+                  </div>
                   <div className="mt-4 space-y-3">
                     {selectedPlanFeatures.slice(0, 4).map((feature) => (
                       <div key={feature} className="flex items-start gap-3">
@@ -226,6 +253,31 @@ function LoginContent() {
               </>
             ) : (
               <>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setRegistrationMode("trial")}
+                    className={`rounded-2xl border px-4 py-3 text-left transition-all ${
+                      registrationMode === "trial"
+                        ? "border-violet-400/50 bg-violet-500/10 text-white"
+                        : "border-white/10 bg-black/20 text-neutral-300 hover:bg-white/5"
+                    }`}
+                  >
+                    <span className="font-semibold">{t.login_page.trial_mode}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRegistrationMode("paid")}
+                    className={`rounded-2xl border px-4 py-3 text-left transition-all ${
+                      registrationMode === "paid"
+                        ? "border-violet-400/50 bg-violet-500/10 text-white"
+                        : "border-white/10 bg-black/20 text-neutral-300 hover:bg-white/5"
+                    }`}
+                  >
+                    <span className="font-semibold">{t.login_page.buy_mode}</span>
+                  </button>
+                </div>
+
                 <div>
                   <label className="block text-sm font-semibold text-neutral-400 mb-2">
                     {t.login_page.trial_plan_label}
@@ -300,6 +352,50 @@ function LoginContent() {
                   />
                 </div>
 
+                {registrationMode === "paid" ? (
+                  <>
+                    <div>
+                      <label className="block text-sm font-semibold text-neutral-400 mb-2">
+                        {t.login_page.card_number}
+                      </label>
+                      <input
+                        type="text"
+                        value={cardNumber}
+                        onChange={(event) => setCardNumber(event.target.value)}
+                        placeholder="4242 4242 4242 4242"
+                        className="w-full bg-black/40 border border-white/10 rounded-xl px-5 py-3.5 text-white placeholder-neutral-600 font-medium focus:outline-none focus:border-violet-500/50 focus:bg-white/5 transition-all"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-semibold text-neutral-400 mb-2">
+                          {t.login_page.expiry}
+                        </label>
+                        <input
+                          type="text"
+                          value={expiry}
+                          onChange={(event) => setExpiry(event.target.value)}
+                          placeholder="MM / YY"
+                          className="w-full bg-black/40 border border-white/10 rounded-xl px-5 py-3.5 text-white placeholder-neutral-600 font-medium focus:outline-none focus:border-violet-500/50 focus:bg-white/5 transition-all"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-semibold text-neutral-400 mb-2">
+                          {t.login_page.cvv}
+                        </label>
+                        <input
+                          type="text"
+                          value={cvv}
+                          onChange={(event) => setCvv(event.target.value)}
+                          placeholder="123"
+                          className="w-full bg-black/40 border border-white/10 rounded-xl px-5 py-3.5 text-white placeholder-neutral-600 font-medium focus:outline-none focus:border-violet-500/50 focus:bg-white/5 transition-all"
+                        />
+                      </div>
+                    </div>
+                  </>
+                ) : null}
+
               </>
             )}
 
@@ -326,7 +422,9 @@ function LoginContent() {
                   : t.login_page.register_processing
                 : mode === "login"
                   ? t.login_page.submit
-                  : t.login_page.start_trial_submit}
+                  : registrationMode === "trial"
+                    ? t.login_page.start_trial_submit
+                    : t.login_page.buy_plan_submit}
               {!loading ? <ArrowRight className="w-5 h-5" /> : null}
             </button>
 
@@ -338,6 +436,7 @@ function LoginContent() {
                   setError("");
                   setSuccess("");
                   setMode((currentMode) => (currentMode === "login" ? "register" : "login"));
+                  setRegistrationMode("trial");
                 }}
                 className="text-violet-300 hover:text-violet-200 font-semibold transition-colors"
               >
