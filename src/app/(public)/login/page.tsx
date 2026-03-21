@@ -6,11 +6,12 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowRight, Lock, ShieldCheck, User } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 import { useApp } from "@/context/AppContext";
-import { findPurchasedAccount } from "@/lib/purchasedAccounts";
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
+import { auth } from "@/lib/firebase";
 
 function LoginContent() {
   const { t } = useLanguage();
-  const { loginWithPurchasedAccount, startPlan } = useApp();
+  const { startPlan } = useApp();
   const router = useRouter();
   const searchParams = useSearchParams();
   const nextPath = searchParams.get("next") || "/dashboard";
@@ -74,19 +75,29 @@ function LoginContent() {
       return;
     }
 
+    if (!auth) {
+      setError("Firebase is not configured.");
+      return;
+    }
+
     setLoading(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 600));
-
-      const account = findPurchasedAccount(trimmedIdentifier, trimmedPassword);
-      if (!account) {
-        setError(t.login_page.invalid);
-        return;
-      }
-
-      loginWithPurchasedAccount(account);
+      await signInWithEmailAndPassword(auth, trimmedIdentifier, trimmedPassword);
+      // AppContext's onAuthStateChanged listener loads the user data from Firestore
       setSuccess(t.login_page.success);
       router.push(nextPath);
+    } catch (err: unknown) {
+      const code = (err as { code?: string })?.code;
+      if (
+        code === "auth/user-not-found" ||
+        code === "auth/wrong-password" ||
+        code === "auth/invalid-credential" ||
+        code === "auth/invalid-email"
+      ) {
+        setError(t.login_page.invalid);
+      } else {
+        setError("An error occurred. Please try again.");
+      }
     } finally {
       setLoading(false);
     }
@@ -115,10 +126,18 @@ function LoginContent() {
       return;
     }
 
+    if (!auth) {
+      setError("Firebase is not configured.");
+      return;
+    }
+
     setLoading(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 800));
+      // Create Firebase Auth user (this also signs them in automatically)
+      await createUserWithEmailAndPassword(auth, registerEmail.trim(), registerPassword.trim());
 
+      // Write plan + profile to Firestore via AppContext
+      // auth.currentUser is set at this point so startPlan can resolve the uid
       const result = startPlan({
         activationMode: registrationMode,
         billingCycle: "monthly",
@@ -131,6 +150,15 @@ function LoginContent() {
 
       setSuccess(result.phase === "trial" ? t.login_page.register_success_trial : t.login_page.register_success_paid);
       router.push(nextPath);
+    } catch (err: unknown) {
+      const code = (err as { code?: string })?.code;
+      if (code === "auth/email-already-in-use") {
+        setError("This email is already registered. Please sign in instead.");
+      } else if (code === "auth/weak-password") {
+        setError("Password must be at least 6 characters.");
+      } else {
+        setError("Registration failed. Please try again.");
+      }
     } finally {
       setLoading(false);
     }
@@ -328,20 +356,20 @@ function LoginContent() {
 
                 <div>
                   <label className="block text-sm font-semibold text-neutral-400 mb-2">
-                    Firma Adı <span className="text-red-400">*</span>
+                    Company Name <span className="text-red-400">*</span>
                   </label>
                   <input
                     type="text"
                     value={companyName}
                     onChange={(event) => setCompanyName(event.target.value)}
-                    placeholder="Şirket / Ajans adınız"
+                    placeholder="Your company / agency name"
                     className="w-full bg-black/40 border border-white/10 rounded-xl px-5 py-3.5 text-white placeholder-neutral-600 font-medium focus:outline-none focus:border-violet-500/50 focus:bg-white/5 transition-all"
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-semibold text-neutral-400 mb-2">
-                    Telefon Numarası <span className="text-red-400">*</span>
+                    Phone Number <span className="text-red-400">*</span>
                   </label>
                   <input
                     type="tel"

@@ -1,6 +1,9 @@
 "use client";
-import React, { createContext, useContext, useSyncExternalStore } from "react";
-import { PurchasedAccount } from "@/lib/purchasedAccounts";
+import React, { createContext, useContext, useEffect, useRef, useState } from "react";
+import { onAuthStateChanged, signOut } from "firebase/auth";
+import { doc, onSnapshot, setDoc } from "firebase/firestore";
+import { auth, db } from "@/lib/firebase";
+import { getSeedForEmail } from "@/lib/purchasedAccounts";
 import {
   PendingPlanChange,
   SubscriptionRecord,
@@ -53,8 +56,7 @@ interface AppContextType {
   subscription: SubscriptionRecord | null;
   userProfile: UserProfile | null;
   login: (input: { email: string; fullName: string; userType: UserType }) => void;
-  loginWithPurchasedAccount: (account: PurchasedAccount) => void;
-  logout: () => void;
+  logout: () => Promise<void>;
   startPlan: (input: {
     activationMode?: ActivationMode;
     billingCycle: BillingCycle;
@@ -77,7 +79,6 @@ interface AppContextType {
 
 // Sentinel: used as fallback when no client workspaces exist
 const defaultClient: Client = { id: "", name: "" };
-const APP_SESSION_STORAGE_KEY = "nexopost-app-session";
 
 const defaultSession: AppSession = {
   activeClientId: "",
@@ -90,66 +91,11 @@ const defaultSession: AppSession = {
   userType: "basic",
 };
 
-let currentSessionSnapshot: AppSession = defaultSession;
-let sessionSnapshotInitialized = false;
-const sessionListeners = new Set<() => void>();
-
-function getIsClientSnapshot() {
-  return true;
-}
-
-function getServerHydrationSnapshot() {
-  return false;
-}
-
-function subscribeHydration() {
-  return () => {};
-}
-
-function readStoredSession(): AppSession {
-  if (typeof window === "undefined") {
-    return defaultSession;
-  }
-
-  try {
-    const raw = window.localStorage.getItem(APP_SESSION_STORAGE_KEY);
-    if (!raw) return defaultSession;
-
-    const parsed = JSON.parse(raw) as Partial<AppSession>;
-
-    // Migrate: remove legacy auto-created "self" workspace (id: "default_user")
-    // so the logged-in user no longer appears as their own client.
-    const rawClients = parsed.clients ?? [];
-    const clients = rawClients.filter((c) => c.id !== "default_user");
-
-    const activeClientId = clients.some((client) => client.id === parsed.activeClientId)
-      ? parsed.activeClientId!
-      : clients[0]?.id ?? "";
-
-    return {
-      activeClientId,
-      clients,
-      connectedAccounts: parsed.connectedAccounts ?? defaultSession.connectedAccounts,
-      isLoggedIn: parsed.isLoggedIn ?? false,
-      pendingChange: parsed.pendingChange ?? null,
-      subscription: parsed.subscription ?? null,
-      userProfile: parsed.userProfile ?? null,
-      userType: parsed.userType ?? "basic",
-    };
-  } catch {
-    return defaultSession;
-  }
-}
-
 function resolveSessionDates(session: AppSession): AppSession {
-  if (!session.pendingChange) {
-    return session;
-  }
+  if (!session.pendingChange) return session;
 
   const effectiveAt = new Date(session.pendingChange.effectiveAt);
-  if (effectiveAt.getTime() > Date.now()) {
-    return session;
-  }
+  if (effectiveAt.getTime() > Date.now()) return session;
 
   const expiresAt = addPaidDuration(effectiveAt, session.pendingChange.billingCycle);
 
@@ -168,52 +114,6 @@ function resolveSessionDates(session: AppSession): AppSession {
   };
 }
 
-function getClientSessionSnapshot() {
-  if (!sessionSnapshotInitialized) {
-    currentSessionSnapshot = resolveSessionDates(readStoredSession());
-    sessionSnapshotInitialized = true;
-  }
-  return currentSessionSnapshot;
-}
-
-function getServerSessionSnapshot() {
-  return defaultSession;
-}
-
-function subscribeSession(listener: () => void) {
-  sessionListeners.add(listener);
-
-  if (typeof window === "undefined") {
-    return () => {
-      sessionListeners.delete(listener);
-    };
-  }
-
-  const onStorage = (event: StorageEvent) => {
-    if (event.key === APP_SESSION_STORAGE_KEY) {
-      currentSessionSnapshot = resolveSessionDates(readStoredSession());
-      listener();
-    }
-  };
-
-  window.addEventListener("storage", onStorage);
-
-  return () => {
-    sessionListeners.delete(listener);
-    window.removeEventListener("storage", onStorage);
-  };
-}
-
-function writeSession(nextSession: AppSession) {
-  currentSessionSnapshot = nextSession;
-
-  if (typeof window !== "undefined") {
-    window.localStorage.setItem(APP_SESSION_STORAGE_KEY, JSON.stringify(nextSession));
-  }
-
-  sessionListeners.forEach((listener) => listener());
-}
-
 const defaultContextValue: AppContextType = {
   isHydrated: false,
   userType: "basic",
@@ -224,13 +124,12 @@ const defaultContextValue: AppContextType = {
   subscription: null,
   userProfile: null,
   login: () => {},
-  loginWithPurchasedAccount: () => {},
-  logout: () => {},
+  logout: async () => {},
   startPlan: () => ({ effectiveAt: "", phase: "paid", scheduled: false }),
   updateUserProfile: () => {},
   activeClient: defaultClient,
   setActiveClient: () => {},
-  clients: [defaultClient],
+  clients: [],
   addClient: () => {},
   removeClient: () => {},
   renameClient: () => {},
@@ -242,38 +141,101 @@ const defaultContextValue: AppContextType = {
 const AppContext = createContext<AppContextType>(defaultContextValue);
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
-  const session = useSyncExternalStore(
-    subscribeSession,
-    getClientSessionSnapshot,
-    getServerSessionSnapshot
-  );
-  const isHydrated = useSyncExternalStore(
-    subscribeHydration,
-    getIsClientSnapshot,
-    getServerHydrationSnapshot
-  );
-  const activeClient =
-    session.clients.find((client) => client.id === session.activeClientId) ??
-    session.clients[0] ??
-    defaultClient;
+  const [session, setSession] = useState<AppSession>(defaultSession);
+  const [isHydrated, setIsHydrated] = useState(false);
+  // Tracks the Firebase Auth UID of the signed-in user
+  const uidRef = useRef<string | null>(null);
 
-  const setUserType = (type: UserType) => {
-    writeSession({
-      ...session,
-      userType: type,
-    });
-  };
-
-  const setIsLoggedIn = (status: boolean) => {
-    if (!status) {
-      writeSession(defaultSession);
+  useEffect(() => {
+    if (!auth) {
+      setIsHydrated(true);
       return;
     }
 
-    writeSession({
-      ...session,
-      isLoggedIn: true,
+    let unsubFirestore: (() => void) | null = null;
+
+    const unsubAuth = onAuthStateChanged(auth, (firebaseUser) => {
+      // Cancel previous Firestore listener whenever auth state changes
+      if (unsubFirestore) {
+        unsubFirestore();
+        unsubFirestore = null;
+      }
+
+      if (!firebaseUser || !db) {
+        uidRef.current = null;
+        setSession(defaultSession);
+        setIsHydrated(true);
+        return;
+      }
+
+      uidRef.current = firebaseUser.uid;
+
+      // Real-time listener on the user's Firestore document
+      unsubFirestore = onSnapshot(doc(db, "users", firebaseUser.uid), async (snap) => {
+        if (snap.exists()) {
+          const data = snap.data() as AppSession;
+          const resolved = resolveSessionDates({
+            activeClientId: data.activeClientId ?? "",
+            clients: data.clients ?? [],
+            connectedAccounts: data.connectedAccounts ?? {},
+            isLoggedIn: true,
+            pendingChange: data.pendingChange ?? null,
+            subscription: data.subscription ?? null,
+            userProfile: data.userProfile ?? null,
+            userType: data.userType ?? "basic",
+          });
+          setSession(resolved);
+
+          // If pendingChange just resolved, write the clean state back to Firestore
+          if (data.pendingChange && !resolved.pendingChange) {
+            await setDoc(
+              doc(db!, "users", firebaseUser.uid),
+              { pendingChange: null, subscription: resolved.subscription, userType: resolved.userType },
+              { merge: true }
+            ).catch(console.error);
+          }
+        } else {
+          // First login — bootstrap Firestore doc from seed data (existing customers)
+          const seed = getSeedForEmail(firebaseUser.email ?? "");
+          const userProfile: UserProfile = {
+            companyName: "",
+            email: firebaseUser.email ?? "",
+            fullName: seed?.fullName ?? firebaseUser.displayName ?? "",
+            phone: "",
+            sessionId:
+              typeof crypto !== "undefined" && "randomUUID" in crypto
+                ? crypto.randomUUID()
+                : `${Date.now()}`,
+            signedInAt: new Date().toISOString(),
+          };
+          const bootstrapped: AppSession = {
+            activeClientId: seed?.workspaces?.[0]?.id ?? "",
+            clients: seed?.workspaces ?? [],
+            connectedAccounts: seed?.connectedAccounts ?? {},
+            isLoggedIn: true,
+            pendingChange: seed?.pendingChange ?? null,
+            subscription: seed?.subscription ?? null,
+            userProfile,
+            userType: seed?.userType ?? "basic",
+          };
+          // Write to Firestore — onSnapshot will fire again and setSession
+          await setDoc(doc(db!, "users", firebaseUser.uid), bootstrapped).catch(console.error);
+        }
+        setIsHydrated(true);
+      });
     });
+
+    return () => {
+      unsubAuth();
+      if (unsubFirestore) unsubFirestore();
+    };
+  }, []);
+
+  // Writes a partial update to the current user's Firestore document
+  const persist = (updates: Partial<AppSession>) => {
+    const uid = uidRef.current;
+    if (!db || !uid) return;
+    setDoc(doc(db, "users", uid), updates, { merge: true }).catch(console.error);
   };
 
   const buildUserProfile = (
@@ -290,38 +252,36 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     signedInAt: existingProfile?.signedInAt ?? new Date().toISOString(),
   });
 
-  const login = ({ email, fullName, userType }: { email: string; fullName: string; userType: UserType }) => {
-    writeSession({
-      ...session,
-      isLoggedIn: true,
-      userProfile: buildUserProfile({ email, fullName }, session.userProfile),
-      userType,
-    });
+  const setUserType = (type: UserType) => {
+    setSession((prev) => ({ ...prev, userType: type }));
+    persist({ userType: type });
   };
 
-  const loginWithPurchasedAccount = (account: PurchasedAccount) => {
-    const workspaces = account.workspaces ?? [];
-    const activeClientId = workspaces[0]?.id ?? "";
-    const connectedAccounts = account.connectedAccounts ?? {};
+  const setIsLoggedIn = (status: boolean) => {
+    if (!status) {
+      logout();
+      return;
+    }
+    setSession((prev) => ({ ...prev, isLoggedIn: true }));
+  };
 
-    writeSession({
-      activeClientId,
-      clients: workspaces,
-      connectedAccounts,
-      isLoggedIn: true,
-      pendingChange: account.pendingChange ?? null,
-      subscription: account.subscription,
-      userProfile: buildUserProfile(
-        { email: account.email, fullName: account.fullName },
-        session.userProfile
-      ),
-      userType: account.userType,
-    });
+  const login = ({ email, fullName, userType }: { email: string; fullName: string; userType: UserType }) => {
+    const userProfile = buildUserProfile({ email, fullName }, session.userProfile);
+    setSession((prev) => ({ ...prev, isLoggedIn: true, userProfile, userType }));
+    persist({ isLoggedIn: true, userProfile, userType });
+  };
+
+  const logout = async () => {
+    if (auth) await signOut(auth).catch(console.error);
+    uidRef.current = null;
+    setSession(defaultSession);
   };
 
   const updateUserProfile = (updates: { fullName?: string; companyName?: string; phone?: string; email?: string }) => {
     if (!session.userProfile) return;
-    writeSession({ ...session, userProfile: { ...session.userProfile, ...updates } });
+    const userProfile = { ...session.userProfile, ...updates };
+    setSession((prev) => ({ ...prev, userProfile }));
+    persist({ userProfile });
   };
 
   const startPlan = ({
@@ -354,23 +314,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       (currentSubscription.plan !== plan || currentSubscription.billingCycle !== billingCycle)
     ) {
       const effectiveAt = getNextMonthStart(now).toISOString();
-
-      writeSession({
-        ...session,
-        isLoggedIn: true,
-        pendingChange: {
-          billingCycle,
-          effectiveAt,
-          plan,
-        },
-        userProfile: buildUserProfile({ email, fullName, companyName, phone }, session.userProfile),
-      });
-
-      return {
-        effectiveAt,
-        phase: "paid",
-        scheduled: true,
-      };
+      const pendingChange: PendingPlanChange = { billingCycle, effectiveAt, plan };
+      const userProfile = buildUserProfile({ email, fullName, companyName, phone }, session.userProfile);
+      setSession((prev) => ({ ...prev, isLoggedIn: true, pendingChange, userProfile }));
+      persist({ isLoggedIn: true, pendingChange, userProfile });
+      return { effectiveAt, phase: "paid", scheduled: true };
     }
 
     const phase: SubscriptionRecord["phase"] =
@@ -381,111 +329,104 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           : hasUsedTrial
             ? "paid"
             : "trial";
-    const startAt = now;
+
     const expiresAt =
       phase === "trial"
-        ? new Date(startAt.getTime() + 15 * 24 * 60 * 60 * 1000)
-        : addPaidDuration(startAt, billingCycle);
+        ? new Date(now.getTime() + 15 * 24 * 60 * 60 * 1000)
+        : addPaidDuration(now, billingCycle);
 
-    writeSession({
+    const subscription: SubscriptionRecord = {
+      billingCycle,
+      expiresAt: expiresAt.toISOString(),
+      hasUsedTrial: true,
+      phase,
+      plan,
+      startedAt: now.toISOString(),
+    };
+
+    const userProfile = buildUserProfile({ email, fullName, companyName, phone }, session.userProfile);
+
+    const nextSession: AppSession = {
       ...session,
-      activeClientId: session.activeClientId,
-      clients: session.clients,
-      connectedAccounts: session.connectedAccounts,
       isLoggedIn: true,
       pendingChange: null,
-      subscription: {
-        billingCycle,
-        expiresAt: expiresAt.toISOString(),
-        hasUsedTrial: true,
-        phase,
-        plan,
-        startedAt: startAt.toISOString(),
-      },
-      userProfile: buildUserProfile({ email, fullName, companyName, phone }, session.userProfile),
+      subscription,
+      userProfile,
       userType: plan,
-    });
-
-    return {
-      effectiveAt: startAt.toISOString(),
-      phase,
-      scheduled: false,
     };
-  };
 
-  const logout = () => {
-    writeSession(defaultSession);
+    setSession(nextSession);
+
+    // Use auth.currentUser as fallback in case uidRef hasn't been set yet
+    // (e.g. fresh registration where onAuthStateChanged fires concurrently)
+    const uid = uidRef.current ?? auth?.currentUser?.uid;
+    if (db && uid) {
+      setDoc(
+        doc(db, "users", uid),
+        {
+          activeClientId: nextSession.activeClientId,
+          clients: nextSession.clients,
+          connectedAccounts: nextSession.connectedAccounts,
+          isLoggedIn: true,
+          pendingChange: null,
+          subscription,
+          userProfile,
+          userType: plan,
+        },
+        { merge: true }
+      ).catch(console.error);
+    }
+
+    return { effectiveAt: now.toISOString(), phase, scheduled: false };
   };
 
   const toggleAccount = (clientId: string, platformId: string) => {
     const current = session.connectedAccounts[clientId] || [];
-
-    writeSession({
-      ...session,
-      connectedAccounts: {
-        ...session.connectedAccounts,
-        [clientId]: current.includes(platformId)
-          ? current.filter((id) => id !== platformId)
-          : [...current, platformId],
-      },
-    });
+    const next = current.includes(platformId)
+      ? current.filter((id) => id !== platformId)
+      : [...current, platformId];
+    const connectedAccounts = { ...session.connectedAccounts, [clientId]: next };
+    setSession((prev) => ({ ...prev, connectedAccounts }));
+    persist({ connectedAccounts });
   };
 
   const addClient = (name: string) => {
     const newClient: Client = { id: Date.now().toString(), name };
-    writeSession({
-      ...session,
-      activeClientId: newClient.id,
-      clients: [...session.clients, newClient],
-      connectedAccounts: {
-        ...session.connectedAccounts,
-        [newClient.id]: [],
-      },
-    });
+    const clients = [...session.clients, newClient];
+    const connectedAccounts = { ...session.connectedAccounts, [newClient.id]: [] };
+    setSession((prev) => ({ ...prev, activeClientId: newClient.id, clients, connectedAccounts }));
+    persist({ activeClientId: newClient.id, clients, connectedAccounts });
   };
 
   const renameClient = (clientId: string, name: string) => {
     const trimmedName = name.trim();
-    if (!trimmedName) {
-      return;
-    }
-
-    writeSession({
-      ...session,
-      clients: session.clients.map((client) =>
-        client.id === clientId ? { ...client, name: trimmedName } : client
-      ),
-    });
+    if (!trimmedName) return;
+    const clients = session.clients.map((c) => c.id === clientId ? { ...c, name: trimmedName } : c);
+    setSession((prev) => ({ ...prev, clients }));
+    persist({ clients });
   };
 
   const removeClient = (clientId: string) => {
-    if (session.clients.length === 1) {
-      return;
-    }
-
-    const nextClients = session.clients.filter((client) => client.id !== clientId);
-    if (nextClients.length === session.clients.length) {
-      return;
-    }
-
-    const nextConnectedAccounts = { ...session.connectedAccounts };
-    delete nextConnectedAccounts[clientId];
-
-    writeSession({
-      ...session,
-      activeClientId:
-        session.activeClientId === clientId ? nextClients[0].id : session.activeClientId,
-      clients: nextClients,
-      connectedAccounts: nextConnectedAccounts,
-    });
+    if (session.clients.length === 1) return;
+    const clients = session.clients.filter((c) => c.id !== clientId);
+    if (clients.length === session.clients.length) return;
+    const connectedAccounts = { ...session.connectedAccounts };
+    delete connectedAccounts[clientId];
+    const activeClientId =
+      session.activeClientId === clientId ? clients[0].id : session.activeClientId;
+    setSession((prev) => ({ ...prev, activeClientId, clients, connectedAccounts }));
+    persist({ activeClientId, clients, connectedAccounts });
   };
 
   const setActiveClient = (client: Client) => {
-    writeSession({
-      ...session,
-      activeClientId: client.id,
-    });
+    setSession((prev) => ({ ...prev, activeClientId: client.id }));
+    persist({ activeClientId: client.id });
   };
+
+  const activeClient =
+    session.clients.find((c) => c.id === session.activeClientId) ??
+    session.clients[0] ??
+    defaultClient;
 
   return (
     <AppContext.Provider
@@ -499,13 +440,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         subscription: session.subscription,
         userProfile: session.userProfile,
         login,
-        loginWithPurchasedAccount,
         logout,
         startPlan,
+        updateUserProfile,
         activeClient,
         setActiveClient,
         clients: session.clients,
-        updateUserProfile,
         addClient,
         removeClient,
         renameClient,

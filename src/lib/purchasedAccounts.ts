@@ -2,28 +2,22 @@ import { PendingPlanChange, SubscriptionRecord } from "@/lib/subscription";
 
 type UserType = "basic" | "pro" | "agency";
 
-export interface PurchasedAccount {
-  connectedAccounts?: Record<string, string[]>;
-  email: string;
+export interface UserSeed {
   fullName: string;
-  password: string;
-  pendingChange?: PendingPlanChange | null;
-  subscription: SubscriptionRecord;
-  username?: string;
   userType: UserType;
-  workspaces?: Array<{
-    id: string;
-    name: string;
-  }>;
+  subscription: SubscriptionRecord;
+  pendingChange?: PendingPlanChange | null;
+  workspaces?: Array<{ id: string; name: string }>;
+  connectedAccounts?: Record<string, string[]>;
 }
 
-// Add purchased users here. Credentials listed in this file can log in directly
-// and their saved plan/session state will be restored in the admin panel.
-export const purchasedAccounts: PurchasedAccount[] = [
-  {
-    email: "serkan@serkan.com",
+// Seed data for bootstrapping Firestore user documents on first login.
+// Passwords are managed entirely in Firebase Authentication Console — NOT stored here.
+// To add a new customer: (1) create them in Firebase Console > Authentication,
+// (2) add their plan info below keyed by email.
+export const userSeeds: Record<string, UserSeed> = {
+  "serkan@serkan.com": {
     fullName: "Serkan",
-    password: "Trabzon61!",
     userType: "basic",
     subscription: {
       plan: "basic",
@@ -34,10 +28,8 @@ export const purchasedAccounts: PurchasedAccount[] = [
       hasUsedTrial: true,
     },
   },
-  {
-    email: "serkangunacti@gmail.com",
+  "serkangunacti@gmail.com": {
     fullName: "Serkan Günaktı",
-    password: "Trabzon61!",
     userType: "basic",
     subscription: {
       plan: "basic",
@@ -48,10 +40,8 @@ export const purchasedAccounts: PurchasedAccount[] = [
       hasUsedTrial: false,
     },
   },
-  {
-    email: "serkan@nexopost.com",
+  "serkan@nexopost.com": {
     fullName: "Serkan NexoPost",
-    password: "Trabzon61!",
     userType: "pro",
     subscription: {
       plan: "pro",
@@ -62,10 +52,8 @@ export const purchasedAccounts: PurchasedAccount[] = [
       hasUsedTrial: false,
     },
   },
-  {
-    email: "admin@nexopost.com",
+  "admin@nexopost.com": {
     fullName: "NexoPost Admin",
-    password: "Trabzon61!",
     userType: "agency",
     subscription: {
       plan: "agency",
@@ -76,19 +64,8 @@ export const purchasedAccounts: PurchasedAccount[] = [
       hasUsedTrial: false,
     },
   },
-];
+};
 
-export function findPurchasedAccount(identifier: string, password: string): PurchasedAccount | null {
-  const normalizedIdentifier = identifier.trim().toLowerCase();
-  const normalizedPassword = password.trim();
-
-  return (
-    purchasedAccounts.find((account) => {
-      const matchesIdentifier =
-        account.email.toLowerCase() === normalizedIdentifier ||
-        account.username?.toLowerCase() === normalizedIdentifier;
-
-      return matchesIdentifier && account.password === normalizedPassword;
-    }) ?? null
-  );
+export function getSeedForEmail(email: string): UserSeed | null {
+  return userSeeds[email.trim().toLowerCase()] ?? null;
 }
