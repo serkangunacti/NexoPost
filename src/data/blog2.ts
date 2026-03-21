@@ -6,7 +6,7 @@ export const postsPart2: BlogPost[] = [
     slug: "how-consistent-posting-skyrockets-engagement",
     date: "2026-03-10",
     readTime: "6 min read",
-    coverImage: "/blog/bg-6.jpg",
+    coverImage: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1000&auto=format&fit=crop",
     en: {
       title: "How Consistent Posting Skyrockets Your Engagement Rate",
       excerpt: "The algorithms reward one thing above all: consistency. Discover why scheduling is your best friend.",
@@ -43,7 +43,7 @@ export const postsPart2: BlogPost[] = [
     slug: "simplifying-client-reporting-white-label",
     date: "2026-03-08",
     readTime: "5 min read",
-    coverImage: "/blog/bg-7.jpg",
+    coverImage: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=1000&auto=format&fit=crop",
     en: {
       title: "Simplifying Client Reporting with White-Label Dashboards",
       excerpt: "Stop painstakingly building Excel spreadsheets. Generate beautiful PDF analytics reports with your absolute own branding.",
@@ -80,7 +80,7 @@ export const postsPart2: BlogPost[] = [
     slug: "best-times-to-post-x-instagram-linkedin",
     date: "2026-03-05",
     readTime: "7 min read",
-    coverImage: "/blog/bg-8.jpg",
+    coverImage: "https://images.unsplash.com/photo-1507206130118-b5907f817163?q=80&w=1000&auto=format&fit=crop",
     en: {
       title: "The Best Times to Post on X, Instagram, and LinkedIn",
       excerpt: "Stop guessing. We analyzed billions of impressions to find the golden hours of social media publishing.",
@@ -123,7 +123,7 @@ export const postsPart2: BlogPost[] = [
     slug: "how-evergreen-content-drives-traffic-autopilot",
     date: "2026-03-03",
     readTime: "6 min read",
-    coverImage: "/blog/bg-9.jpg",
+    coverImage: "https://images.unsplash.com/photo-1499951360447-b19be8fe80f5?q=80&w=1000&auto=format&fit=crop",
     en: {
       title: "How Evergreen Content Can Drive Traffic on Autopilot",
       excerpt: "Why create a post just for it to die in 24 hours? Let your best content cycle endlessly and build perpetual traffic.",
@@ -160,7 +160,7 @@ export const postsPart2: BlogPost[] = [
     slug: "transitioning-manual-to-centralized-social-tool",
     date: "2026-03-01",
     readTime: "9 min read",
-    coverImage: "/blog/bg-10.jpg",
+    coverImage: "https://images.unsplash.com/photo-1531403009284-440f080d1e12?q=80&w=1000&auto=format&fit=crop",
     en: {
       title: "Transitioning from Manual Posting to a Centralized Social Tool",
       excerpt: "The exact blueprint for migrating your team from chaotic mobile notifications to a streamlined web-based workflow.",

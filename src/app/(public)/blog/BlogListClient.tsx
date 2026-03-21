@@ -3,6 +3,7 @@
 import { useLanguage } from "@/context/LanguageContext";
 import { allBlogs } from "@/data/blog";
 import Link from "next/link";
+import Image from "next/image";
 import { Calendar, Clock, ChevronRight } from "lucide-react";
 
 export default function BlogListClient() {
@@ -33,11 +34,16 @@ export default function BlogListClient() {
                 href={"/blog/" + post.slug}
                 className="group flex flex-col glass rounded-3xl overflow-hidden hover:-translate-y-2 transition-transform duration-500 border border-white/5 shadow-lg"
               >
-                {/* Decorative Cover (Glass gradients instead of heavy images for abstract tech feel) */}
-                <div className="h-48 w-full relative bg-gradient-to-br from-white/5 to-white/0 flex items-center justify-center overflow-hidden border-b border-white/5">
-                  <div className="absolute inset-0 bg-gradient-to-tr from-violet-500/20 to-sky-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-                  <div className="w-20 h-20 rounded-full bg-white/5 blur-xl absolute -top-10 -right-10 group-hover:bg-violet-500/40 transition-colors duration-700" />
-                  <div className="w-24 h-24 rounded-full bg-white/5 blur-xl absolute -bottom-10 -left-10 group-hover:bg-sky-500/40 transition-colors duration-700" />
+                {/* Real Image Cover */}
+                <div className="h-56 w-full relative bg-neutral-900 border-b border-white/5 overflow-hidden">
+                  <Image 
+                    src={post.coverImage} 
+                    alt={content.title} 
+                    fill 
+                    unoptimized
+                    className="object-cover group-hover:scale-105 transition-transform duration-700 opacity-90 group-hover:opacity-100"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0f] to-transparent opacity-80" />
                 </div>
                 
                 <div className="p-8 flex-1 flex flex-col">

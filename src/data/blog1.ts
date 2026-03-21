@@ -6,7 +6,7 @@ export const postsPart1: BlogPost[] = [
     slug: "ultimate-guide-social-media-automation-2026",
     date: "2026-03-21",
     readTime: "6 min read",
-    coverImage: "/blog/bg-1.jpg",
+    coverImage: "https://images.unsplash.com/photo-1611162617474-5b21e879e113?q=80&w=1000&auto=format&fit=crop",
     en: {
       title: "The Ultimate Guide to Social Media Automation in 2026",
       excerpt: "Discover the cutting-edge strategies and tools to fully automate your social presence effortlessly across all networks.",
@@ -57,7 +57,7 @@ export const postsPart1: BlogPost[] = [
     slug: "how-to-manage-multiple-brands-from-single-dashboard",
     date: "2026-03-20",
     readTime: "5 min read",
-    coverImage: "/blog/bg-2.jpg",
+    coverImage: "https://images.unsplash.com/photo-1432888117246-4138e0bbf4de?q=80&w=1000&auto=format&fit=crop",
     en: {
       title: "How to Manage Multiple Brands from a Single Dashboard",
       excerpt: "Learn the secrets of high-performing digital agencies that manage dozens of brands without losing their sanity.",
@@ -94,7 +94,7 @@ export const postsPart1: BlogPost[] = [
     slug: "importance-of-cross-platform-sync-for-agencies",
     date: "2026-03-18",
     readTime: "7 min read",
-    coverImage: "/blog/bg-3.jpg",
+    coverImage: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000&auto=format&fit=crop",
     en: {
       title: "The Importance of Cross-Platform Sync for Digital Agencies",
       excerpt: "Why posting natively to each platform is severely limiting your agency's growth and operational scalability.",
@@ -131,7 +131,7 @@ export const postsPart1: BlogPost[] = [
     slug: "why-auto-scaling-media-is-the-future",
     date: "2026-03-15",
     readTime: "4 min read",
-    coverImage: "/blog/bg-4.jpg",
+    coverImage: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?q=80&w=1000&auto=format&fit=crop",
     en: {
       title: "Why Auto-Scaling Media is the Future of Social Posting",
       excerpt: "Stop wasting hours adjusting aspect ratios for different platforms. Let AI format your media natively.",
@@ -166,7 +166,7 @@ export const postsPart1: BlogPost[] = [
     slug: "top-5-metrics-meta-tiktok-analytics",
     date: "2026-03-12",
     readTime: "8 min read",
-    coverImage: "/blog/bg-5.jpg",
+    coverImage: "https://images.unsplash.com/photo-1556155092-490a1ba16284?q=80&w=1000&auto=format&fit=crop",
     en: {
       title: "Top 5 Metrics to Track in Meta and TikTok Analytics",
       excerpt: "Likes are vanity. Understand the real data that drives growth, conversions, and long-term brand equity.",

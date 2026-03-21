@@ -4,6 +4,7 @@ import { BlogPost } from "@/data/blog";
 import { useLanguage } from "@/context/LanguageContext";
 import { Calendar, Clock, ArrowLeft } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 
 export default function BlogPostClient({ post }: { post: BlogPost }) {
   const { lang } = useLanguage();
@@ -42,19 +43,25 @@ export default function BlogPostClient({ post }: { post: BlogPost }) {
           </p>
         </header>
         
-        {/* Featured Image Replacement - Interactive Glass block */}
-        <div className="w-full h-64 md:h-80 rounded-3xl mb-16 relative overflow-hidden glass border border-white/10 flex items-center justify-center">
-           <div className="absolute inset-0 bg-gradient-to-tr from-violet-600/20 to-sky-600/20 opacity-50" />
-           <div className="w-64 h-64 rounded-full bg-white/5 blur-3xl absolute -top-20 -right-20" />
-           <div className="w-64 h-64 rounded-full bg-white/5 blur-3xl absolute -bottom-20 -left-20" />
-           <p className="text-white/10 font-black text-6xl md:text-8xl tracking-widest absolute uppercase rotate-6 scale-125 select-none pointer-events-none">NexoPost</p>
+        {/* Real Featured Image */}
+        <div className="w-full h-64 md:h-96 rounded-3xl mb-16 relative overflow-hidden glass border border-white/10 shadow-2xl">
+          <Image 
+            src={post.coverImage} 
+            alt={content.title} 
+            fill 
+            unoptimized
+            className="object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0f] to-transparent opacity-60" />
         </div>
         
-        {/* Content */}
-        <div 
-          className="article-content"
-          dangerouslySetInnerHTML={{ __html: content.content }}
-        />
+        {/* Content Wrapper for safety */}
+        <div className="relative z-20 bg-[#0a0a0f]/50 backdrop-blur-md p-8 md:p-12 rounded-3xl border border-white/5 shadow-2xl">
+          <div 
+            className="article-content"
+            dangerouslySetInnerHTML={{ __html: content.content }}
+          />
+        </div>
         
         {/* Keywords */}
         <div className="mt-16 pt-8 border-t border-white/10 flex flex-wrap gap-2">
