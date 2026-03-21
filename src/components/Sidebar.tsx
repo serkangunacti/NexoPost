@@ -12,7 +12,8 @@ import {
   Users, 
   Settings,
   LogOut,
-  Plus
+  Plus,
+  BarChart3
 } from "lucide-react";
 
 interface SidebarProps {
@@ -25,6 +26,7 @@ export default function Sidebar({ className }: SidebarProps) {
 
   const navLinks = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+    { name: "Analytics", href: "/analytics", icon: BarChart3 },
     { name: "Composer", href: "/compose", icon: PenSquare },
     { name: "Scheduled", href: "/scheduled", icon: CalendarDays },
     { name: "Accounts", href: "/accounts", icon: Users },
