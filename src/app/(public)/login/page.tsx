@@ -25,6 +25,35 @@ function LoginContent() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState("");
+  const planFeatureMap = {
+    basic: [
+      t.pricing.basic_perk1,
+      t.pricing.basic_perk2,
+      t.pricing.basic_perk3,
+      t.pricing.basic_perk5,
+      t.pricing.basic_perk6,
+      t.pricing.basic_perk7,
+    ],
+    pro: [
+      t.pricing.pro_perk1,
+      t.pricing.pro_perk2,
+      t.pricing.pro_perk3,
+      t.pricing.pro_perk4,
+      t.pricing.pro_perk5,
+      t.pricing.pro_perk6,
+      t.pricing.pro_perk7,
+    ],
+    agency: [
+      t.pricing.agency_perk1,
+      t.pricing.agency_perk2,
+      t.pricing.agency_perk3,
+      t.pricing.agency_perk4,
+      t.pricing.agency_perk5,
+      t.pricing.agency_perk6,
+      t.pricing.agency_perk7,
+    ],
+  } as const;
+  const selectedPlanFeatures = planFeatureMap[trialPlan];
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -116,6 +145,26 @@ function LoginContent() {
                     Nothing you don&apos;t.
                   </>
                 </p>
+                <div className="relative z-10 mt-8 w-full max-w-md rounded-[1.5rem] border border-white/10 bg-black/20 p-5 text-left">
+                  <p className="text-xs font-bold uppercase tracking-[0.24em] text-violet-300">
+                    {trialPlan === "agency" ? t.pricing.agency : trialPlan === "pro" ? t.pricing.pro : t.pricing.basic}
+                  </p>
+                  <p className="mt-2 text-sm font-medium text-neutral-400">
+                    {trialPlan === "agency"
+                      ? t.pricing.agency_desc
+                      : trialPlan === "pro"
+                        ? t.pricing.pro_desc
+                        : t.pricing.basic_desc}
+                  </p>
+                  <div className="mt-4 space-y-3">
+                    {selectedPlanFeatures.slice(0, 4).map((feature) => (
+                      <div key={feature} className="flex items-start gap-3">
+                        <div className="mt-1 h-2 w-2 rounded-full bg-violet-400" />
+                        <p className="text-sm font-medium text-white">{feature}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
 
