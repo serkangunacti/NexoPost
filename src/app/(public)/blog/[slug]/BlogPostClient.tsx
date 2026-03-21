@@ -1,4 +1,5 @@
 "use client";
+import React, { useEffect, useState } from "react";
 
 import { BlogPost, allBlogs } from "@/data/blog";
 import { useLanguage } from "@/context/LanguageContext";
@@ -12,10 +13,36 @@ export default function BlogPostClient({ post }: { post: BlogPost }) {
   // Exclude current post and get all other posts for the sidebar
   const relatedPosts = allBlogs.filter(p => p.id !== post.id);
   
+  const [progress, setProgress] = useState(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+      if (scrollHeight <= 0) return;
+      const scrolled = (document.documentElement.scrollTop / scrollHeight) * 100;
+      setProgress(scrolled);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  const currentIndex = allBlogs.findIndex(p => p.id === post.id);
+  const nextPost = allBlogs[(currentIndex + 1) % allBlogs.length];
+  const nextContent = lang === "tr" ? nextPost.tr : nextPost.en;
+  
   return (
-    <main className="w-full flex-1 flex flex-col relative pt-32 pb-24 px-6 min-h-screen">
-      {/* Background Gradients */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-violet-600/10 blur-[120px] rounded-full pointer-events-none -translate-y-1/2" />
+    <>
+      {/* Reading Progress Bar */}
+      <div className="fixed top-0 left-0 w-full h-1.5 bg-neutral-900 z-50">
+        <div 
+          className="h-full bg-gradient-to-r from-violet-600 to-sky-400 ease-out transition-[width] duration-300"
+          style={{ width: `${progress}%` }}
+        />
+      </div>
+
+      <main className="w-full flex-1 flex flex-col relative pt-32 pb-24 px-6 min-h-screen">
+        {/* Background Gradients */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-violet-600/10 blur-[120px] rounded-full pointer-events-none -translate-y-1/2" />
       
       <div className="max-w-7xl mx-auto w-full relative z-10 flex flex-col lg:flex-row gap-12">
         
@@ -75,6 +102,51 @@ export default function BlogPostClient({ post }: { post: BlogPost }) {
               </span>
             ))}
           </div>
+
+          {/* Infinite Scroll Illusion: Next Article Preview */}
+          <div className="mt-24 pt-16 border-t border-white/10 relative">
+            <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-[#0a0a0f] px-6 text-sm font-bold text-neutral-500 uppercase tracking-widest border border-white/5 rounded-full py-1.5 shine">
+              {lang === "tr" ? "Sıradaki Makale" : "Up Next"}
+            </div>
+            
+            <Link href={"/blog/" + nextPost.slug} className="group block">
+              <h2 className="text-3xl md:text-4xl font-black text-white leading-tight mb-8 group-hover:text-violet-400 transition-colors">
+                {nextContent.title}
+              </h2>
+              
+              <div className="w-full h-48 md:h-64 rounded-3xl mb-8 relative overflow-hidden glass border border-white/10 shadow-lg">
+                <img 
+                  key={nextPost.coverImage + "-next"}
+                  src={nextPost.coverImage} 
+                  alt={nextContent.title} 
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 opacity-80 group-hover:opacity-100"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0f] to-transparent opacity-80" />
+                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                   <div className="bg-white/10 backdrop-blur-md px-6 py-3 rounded-full text-white font-bold border border-white/20 shadow-2xl flex items-center gap-2">
+                     {lang === "tr" ? "Hemen Oku" : "Keep Reading"}
+                     <ChevronRight className="w-4 h-4" />
+                   </div>
+                </div>
+              </div>
+            </Link>
+            
+            <div className="relative z-20 bg-[#0a0a0f]/30 backdrop-blur-sm p-6 md:p-10 rounded-3xl border border-white/5 mt-8 overflow-hidden select-none">
+              <div className="article-content opacity-40">
+                 <p>{nextContent.excerpt}</p>
+                 <br />
+                 <p className="blur-[2px]">Otomasyon araçlarının yükselişiyle birlikte markaların büyümesi hız kazandı. Dijital ajanslar bu sistemleri kurarak 10 kat daha hızlı içerik üretiyor... Gelişen yapılar incelendiğinde...</p>
+                 <p className="blur-sm mt-4">Merkezi yönetim sistemleri sadece vakit kazandırmaz aynı zamanda güvenliği de en üst seviyeye taşır. Analizler gösteriyor ki...</p>
+              </div>
+              
+              <div className="absolute bottom-0 left-0 w-full h-56 bg-gradient-to-t from-[#0a0a0f] via-[#0a0a0f]/90 to-transparent flex items-end justify-center pb-10">
+                 <Link href={"/blog/" + nextPost.slug} className="bg-violet-600 hover:bg-violet-500 text-white px-8 py-4 rounded-xl font-bold shadow-2xl transition-all hover:scale-105 hover:shadow-violet-600/30 flex items-center gap-2">
+                    {lang === "tr" ? "Okumaya Devam Et" : "Continue Reading"}
+                    <ChevronRight className="w-5 h-5" />
+                 </Link>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Sidebar: Related Posts */}
@@ -84,7 +156,7 @@ export default function BlogPostClient({ post }: { post: BlogPost }) {
               {lang === "tr" ? "İlginizi Çekebilir" : "Related Articles"}
             </h3>
             
-            <div className="flex flex-col gap-6 max-h-[60vh] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
+            <div className="flex flex-col gap-6">
               {relatedPosts.map((related) => {
                 const relContent = lang === "tr" ? related.tr : related.en;
                 return (
@@ -127,8 +199,8 @@ export default function BlogPostClient({ post }: { post: BlogPost }) {
             </div>
           </div>
         </aside>
-
       </div>
     </main>
+  </>
   );
 }
