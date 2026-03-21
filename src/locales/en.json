@@ -129,6 +129,20 @@
     "form_submit": "Send Message",
     "info": "Contact Info"
   },
+  "login_page": {
+    "title": "Sign in to your dashboard",
+    "subtitle": "Use the purchased account credentials assigned to your package. If the plan matches, your session starts with that package immediately.",
+    "identifier": "Email or Username",
+    "identifier_placeholder": "hello@nexopost.com",
+    "password": "Password",
+    "password_placeholder": "Enter your password",
+    "submit": "Sign In",
+    "processing": "Signing in...",
+    "invalid": "We could not match these credentials to a purchased plan.",
+    "hint": "No active account yet?",
+    "go_checkout": "Buy a package",
+    "success": "Signed in successfully. Redirecting to your dashboard..."
+  },
   "footer": {
     "copyright": "NexoPost is a brand of Uptexx Information Technologies.",
     "uptexx": "Uptexx Information Technologies",

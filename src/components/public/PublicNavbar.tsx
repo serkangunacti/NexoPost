@@ -3,14 +3,15 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useLanguage } from "@/context/LanguageContext";
-import { useCtaHref } from "@/hooks/useCtaHref";
+import { useApp } from "@/context/AppContext";
 import { Globe, User, ArrowRight } from "lucide-react";
 import { SiX, SiFacebook, SiInstagram, SiTiktok } from "react-icons/si";
 import { FaLinkedin } from "react-icons/fa6";
 
 export default function PublicNavbar() {
   const { lang, setLang, t } = useLanguage();
-  const ctaHref = useCtaHref();
+  const { isLoggedIn } = useApp();
+  const loginHref = isLoggedIn ? "/dashboard" : "/login";
 
   return (
     <nav className="w-full fixed top-0 left-0 z-50 border-b border-white/5 bg-[#0a0a0f]/80 backdrop-blur-md">
@@ -76,7 +77,7 @@ export default function PublicNavbar() {
 
           {/* Login / Dashboard */}
           <Link 
-            href={ctaHref}
+            href={loginHref}
             className="flex items-center gap-2 bg-white/10 hover:bg-white/15 border border-white/10 text-white text-sm font-bold py-2.5 px-6 rounded-full transition-all group shadow-lg hover:shadow-[0_0_20px_rgba(255,255,255,0.1)]"
           >
             <User className="w-4 h-4 text-violet-400" />

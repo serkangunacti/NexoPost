@@ -12,7 +12,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
 
   useEffect(() => {
     if (isHydrated && !isLoggedIn) {
-      router.replace(`/checkout?next=${encodeURIComponent(pathname || "/dashboard")}`);
+      router.replace(`/login?next=${encodeURIComponent(pathname || "/dashboard")}`);
     }
   }, [isHydrated, isLoggedIn, pathname, router]);
 

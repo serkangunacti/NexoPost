@@ -129,6 +129,20 @@
     "form_submit": "Mesajı Gönder",
     "info": "İletişim Bilgileri"
   },
+  "login_page": {
+    "title": "Panelinize giriş yapın",
+    "subtitle": "Paketinize tanımlanan satın alınmış hesap bilgilerini kullanın. Eşleşme sağlanırsa oturumunuz o paket üzerinden hemen başlatılır.",
+    "identifier": "E-posta veya Kullanıcı Adı",
+    "identifier_placeholder": "hello@nexopost.com",
+    "password": "Şifre",
+    "password_placeholder": "Şifrenizi girin",
+    "submit": "Giriş Yap",
+    "processing": "Giriş yapılıyor...",
+    "invalid": "Bu bilgiler satın alınmış bir paket ile eşleşmedi.",
+    "hint": "Henüz aktif hesabınız yok mu?",
+    "go_checkout": "Paket satın al",
+    "success": "Giriş başarılı. Panelinize yönlendiriliyorsunuz..."
+  },
   "footer": {
     "copyright": "NexoPost bir Uptexx Bilgi Teknolojileri markasıdır.",
     "uptexx": "Uptexx Bilgi Teknolojileri",

@@ -1,5 +1,6 @@
 "use client";
 import React, { createContext, useContext, useSyncExternalStore } from "react";
+import { PurchasedAccount } from "@/lib/purchasedAccounts";
 import {
   PendingPlanChange,
   SubscriptionRecord,
@@ -49,6 +50,7 @@ interface AppContextType {
   subscription: SubscriptionRecord | null;
   userProfile: UserProfile | null;
   login: (input: { email: string; fullName: string; userType: UserType }) => void;
+  loginWithPurchasedAccount: (account: PurchasedAccount) => void;
   logout: () => void;
   startPlan: (input: {
     billingCycle: BillingCycle;
@@ -205,6 +207,7 @@ const defaultContextValue: AppContextType = {
   subscription: null,
   userProfile: null,
   login: () => {},
+  loginWithPurchasedAccount: () => {},
   logout: () => {},
   startPlan: () => ({ effectiveAt: "", phase: "paid", scheduled: false }),
   activeClient: defaultClient,
@@ -270,6 +273,28 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       isLoggedIn: true,
       userProfile: buildUserProfile({ email, fullName }, session.userProfile),
       userType,
+    });
+  };
+
+  const loginWithPurchasedAccount = (account: PurchasedAccount) => {
+    const workspaces = account.workspaces?.length ? account.workspaces : [defaultClient];
+    const activeClientId = workspaces[0]?.id ?? defaultClient.id;
+    const connectedAccounts = account.connectedAccounts ?? {
+      [activeClientId]: ["twitter", "facebook"],
+    };
+
+    writeSession({
+      activeClientId,
+      clients: workspaces,
+      connectedAccounts,
+      isLoggedIn: true,
+      pendingChange: account.pendingChange ?? null,
+      subscription: account.subscription,
+      userProfile: buildUserProfile(
+        { email: account.email, fullName: account.fullName },
+        session.userProfile
+      ),
+      userType: account.userType,
     });
   };
 
@@ -438,6 +463,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         subscription: session.subscription,
         userProfile: session.userProfile,
         login,
+        loginWithPurchasedAccount,
         logout,
         startPlan,
         activeClient,
