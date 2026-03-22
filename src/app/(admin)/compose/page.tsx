@@ -146,11 +146,30 @@ export default function ComposePage() {
     }
   }, []);
 
-  // Load post from Firestore when ?edit=POST_ID is in the URL.
-  // Read directly from window.location.search to avoid SSR searchParams timing issues.
+  // Load post for editing — reads from localStorage (set by scheduled page on navigate),
+  // falls back to Firestore getDoc if localStorage entry is missing or mismatched.
   useEffect(() => {
     const editId = new URLSearchParams(window.location.search).get("edit");
-    if (!editId || !db) return;
+    if (!editId) return;
+
+    // Try localStorage first — avoids an extra Firestore round-trip and permission issues
+    try {
+      const cached = localStorage.getItem("nexopost_edit_post");
+      if (cached) {
+        const data = JSON.parse(cached) as { id: string; content?: string; platforms?: string[]; mediaUrls?: string[] };
+        if (data.id === editId) {
+          localStorage.removeItem("nexopost_edit_post");
+          setEditingPostId(editId);
+          if (data.content) setText(data.content);
+          if (data.platforms?.length) setSelectedPlatforms(data.platforms);
+          if (data.mediaUrls?.length) setExistingMediaUrls(data.mediaUrls);
+          return;
+        }
+      }
+    } catch {}
+
+    // Fallback: fetch directly from Firestore
+    if (!db) return;
     const activeDb = db;
     setEditingPostId(editId);
     (async () => {

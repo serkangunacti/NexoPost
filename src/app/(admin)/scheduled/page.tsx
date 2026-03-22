@@ -17,6 +17,7 @@ interface Post {
   time: string;
   platforms: string[];
   status: string;
+  mediaUrls?: string[];
   createdAt?: Timestamp | null;
 }
 
@@ -366,7 +367,15 @@ export default function ScheduledPage() {
                     {/* Edit in Composer — for Draft and Scheduled posts */}
                     {(post.status === 'Draft' || post.status === 'Scheduled') && (
                       <button
-                        onClick={() => router.push(`/compose?edit=${post.id}`)}
+                        onClick={() => {
+                          localStorage.setItem("nexopost_edit_post", JSON.stringify({
+                            id: post.id,
+                            content: post.content,
+                            platforms: post.platforms,
+                            mediaUrls: post.mediaUrls ?? [],
+                          }));
+                          router.push(`/compose?edit=${post.id}`);
+                        }}
                         className="w-12 h-12 rounded-xl bg-violet-500/10 hover:bg-violet-500/20 flex items-center justify-center text-violet-400 transition-colors border border-transparent hover:border-violet-500/20"
                         title="Edit in Composer"
                       >
