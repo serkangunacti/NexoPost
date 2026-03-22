@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { useSearchParams } from "next/navigation";
 import { Send, Smile, Type, Clock, Loader2, Wand2, ImagePlus, X, ChevronDown, AlertTriangle, Pencil, Check, Layers } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { db, storage } from "@/lib/firebase";
@@ -78,7 +77,6 @@ const MAX_MEDIA = 10;
 const RECENT_STORAGE_KEY = "nexopost_recent_emojis";
 
 export default function ComposePage() {
-  const searchParams = useSearchParams();
   const { subscription, activeClient } = useApp();
   const [text, setText] = useState("");
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>(["twitter"]);
@@ -148,24 +146,26 @@ export default function ComposePage() {
     }
   }, []);
 
-  // Load post from Firestore when ?edit=POST_ID is in the URL
+  // Load post from Firestore when ?edit=POST_ID is in the URL.
+  // Read directly from window.location.search to avoid SSR searchParams timing issues.
   useEffect(() => {
-    const editId = searchParams.get("edit");
+    const editId = new URLSearchParams(window.location.search).get("edit");
     if (!editId || !db) return;
+    const activeDb = db;
     setEditingPostId(editId);
     (async () => {
       try {
-        const snap = await getDoc(doc(db, "posts", editId));
+        const snap = await getDoc(doc(activeDb, "posts", editId));
         if (!snap.exists()) { setEditLoadError(true); return; }
         const data = snap.data() as { content?: string; platforms?: string[]; mediaUrls?: string[] };
         if (data.content) setText(data.content);
         if (data.platforms?.length) setSelectedPlatforms(data.platforms);
         if (data.mediaUrls?.length) setExistingMediaUrls(data.mediaUrls);
-      } catch {
+      } catch (e) {
+        console.error("Edit load error:", e);
         setEditLoadError(true);
       }
     })();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const showToast = useCallback((msg: string, type: "success" | "error" | "info" = "error") => {
