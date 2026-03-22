@@ -122,6 +122,9 @@ export default function ComposePage() {
   const [toast, setToast] = useState<string | null>(null);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Submission guard ref — set synchronously to prevent double-fire before state update lands
+  const isSubmittingRef = useRef(false);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const platformTextareaRef = useRef<HTMLTextAreaElement>(null);
@@ -320,7 +323,8 @@ export default function ComposePage() {
 
   // Show no-caption warning for media-only posts, then proceed
   const triggerPost = (status: "Scheduled" | "Published" | "Draft", date?: string, time?: string) => {
-    if (!text.trim() && mediaFiles.length > 0 && status !== "Draft") {
+    if (isSubmittingRef.current || showSchedulePicker) return;
+    if (!text.trim() && (mediaFiles.length > 0 || existingMediaUrls.length > 0) && status !== "Draft") {
       setPendingAction({ status, date, time });
       setShowNoCaptionWarning(true);
       return;
@@ -329,12 +333,13 @@ export default function ComposePage() {
   };
 
   const handleSavePost = async (status: "Scheduled" | "Published" | "Draft", overrideDate?: string, overrideTime?: string) => {
-    if (!hasContent || selectedPlatforms.length === 0) return;
+    if (isSubmittingRef.current || !hasContent || selectedPlatforms.length === 0) return;
     if ((status === "Scheduled" || status === "Published") && !subscriptionSnapshot.canPublish) {
       showToast("Your package has expired. Renew your subscription to schedule or publish new posts.");
       return;
     }
     if (!db) { showToast("Firebase configuration is missing."); return; }
+    isSubmittingRef.current = true;
     setIsSubmitting(true);
     try {
       const now = new Date();
@@ -383,11 +388,14 @@ export default function ComposePage() {
       }
 
       setText(""); setMediaFiles([]); setMediaPreviews([]); setExistingMediaUrls([]);
+      if (status === "Scheduled") { setScheduleDate(""); setScheduleTime(""); }
+      setPendingAction(null);
       showToast(status === "Published" ? "Post published!" : status === "Scheduled" ? `Post scheduled for ${displayDate} at ${displayTime}` : "Draft saved.");
     } catch (error) {
       console.error(error);
       showToast("Error saving post. Please try again.");
     } finally {
+      isSubmittingRef.current = false;
       setIsSubmitting(false);
     }
   };
@@ -883,7 +891,7 @@ export default function ComposePage() {
 
       {/* No-Caption Warning Modal */}
       {showNoCaptionWarning && pendingAction && (
-        <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/70 backdrop-blur-sm" onClick={() => setShowNoCaptionWarning(false)}>
+        <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/70 backdrop-blur-sm" onClick={() => { setShowNoCaptionWarning(false); setPendingAction(null); }}>
           <div className="glass p-8 rounded-[2rem] border border-amber-500/20 shadow-2xl w-full max-w-sm mx-4 animate-in fade-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0">
