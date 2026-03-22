@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Send, Smile, Type, Clock, Loader2, Wand2, ImagePlus, X, ChevronDown, AlertTriangle, Pencil, Check, Layers } from "lucide-react";
+import { Send, Smile, Type, Clock, Loader2, Wand2, ImagePlus, X, ChevronDown, AlertTriangle, Pencil, Check, Layers, BookmarkPlus } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { db, storage } from "@/lib/firebase";
 import { getSubscriptionSnapshot } from "@/lib/subscription";
@@ -86,8 +86,7 @@ export default function ComposePage() {
   const [submittingAction, setSubmittingAction] = useState<"Published" | "Scheduled" | "Draft" | null>(null);
   const [autoOptimize, setAutoOptimize] = useState(true);
 
-  // Schedule date/time picker
-  const [showSchedulePicker, setShowSchedulePicker] = useState(false);
+  // Schedule date/time (inline in footer)
   const [scheduleDate, setScheduleDate] = useState("");
   const [scheduleTime, setScheduleTime] = useState("");
 
@@ -414,6 +413,9 @@ export default function ComposePage() {
         time: displayTime,
         autoOptimize,
         mediaUrls: allMediaUrls,
+        ...(status === "Scheduled" && overrideDate && overrideTime
+          ? { scheduledAt: new Date(`${overrideDate}T${overrideTime}`).toISOString() }
+          : {}),
       };
 
       const activeDb = db;
@@ -598,6 +600,19 @@ export default function ComposePage() {
                 )}
               </div>
 
+              <div className="w-px h-5 bg-white/10 mx-1" />
+
+              {/* Save as Draft */}
+              <button
+                title="Save as Draft"
+                onClick={() => triggerPost("Draft")}
+                disabled={submittingAction !== null || !hasContent}
+                className="flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 hover:border-emerald-500/40 text-emerald-400 hover:text-emerald-300 transition-all duration-200 group disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {submittingAction === "Draft" ? <Loader2 className="w-4 h-4 animate-spin" /> : <BookmarkPlus className="w-4 h-4 group-hover:scale-110 transition-transform" />}
+                <span className="text-xs font-bold hidden sm:inline">Save Draft</span>
+              </button>
+
               {/* Char count */}
               <span className="ml-auto text-xs font-bold text-neutral-500 bg-white/5 px-4 py-1.5 rounded-full border border-white/10">
                 <span className={text.length > 2800 ? "text-red-400" : "text-white"}>{text.length}</span> / 2800
@@ -706,21 +721,35 @@ export default function ComposePage() {
               </div>
             </div>
 
-            <div className="flex justify-end gap-3 flex-wrap ml-auto">
+            <div className="flex flex-wrap items-center gap-2 ml-auto">
+              {/* Inline date + time for scheduling */}
+              <input
+                type="date"
+                value={scheduleDate}
+                onChange={e => setScheduleDate(e.target.value)}
+                min={new Date().toISOString().split("T")[0]}
+                className="bg-black/30 border border-white/10 rounded-xl px-3 py-2.5 text-white text-sm font-medium focus:outline-none focus:border-sky-500/50 transition-colors"
+                style={{ colorScheme: "dark" }}
+              />
+              <input
+                type="time"
+                value={scheduleTime}
+                onChange={e => setScheduleTime(e.target.value)}
+                className="bg-black/30 border border-white/10 rounded-xl px-3 py-2.5 text-white text-sm font-medium focus:outline-none focus:border-sky-500/50 transition-colors"
+                style={{ colorScheme: "dark" }}
+              />
               <button
                 onClick={() => {
-                  const d = new Date(); d.setDate(d.getDate() + 1);
-                  setScheduleDate(d.toISOString().split("T")[0]);
-                  setScheduleTime("09:00");
-                  setShowSchedulePicker(true);
+                  if (!scheduleDate || !scheduleTime) { showToast("Please select a date and time to schedule."); return; }
+                  triggerPost("Scheduled", scheduleDate, scheduleTime);
                 }}
                 disabled={submittingAction !== null || !hasContent || selectedPlatforms.length === 0 || !subscriptionSnapshot.canPublish}
-                className="glass py-3.5 px-6 rounded-full font-bold text-white hover:bg-white/10 transition-all border border-white/10 flex items-center gap-2.5 group disabled:opacity-50 disabled:cursor-not-allowed text-sm shadow-md">
-                <Clock className="w-4 h-4 text-sky-400 group-hover:rotate-12 transition-transform" />
+                className="glass py-3 px-5 rounded-full font-bold text-white hover:bg-white/10 transition-all border border-white/10 flex items-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed text-sm shadow-md">
+                {submittingAction === "Scheduled" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Clock className="w-4 h-4 text-sky-400 group-hover:rotate-12 transition-transform" />}
                 Schedule
               </button>
               <button onClick={() => triggerPost("Published")} disabled={submittingAction !== null || !hasContent || selectedPlatforms.length === 0 || !subscriptionSnapshot.canPublish}
-                className="bg-violet-600 py-3.5 px-8 rounded-full font-bold text-white hover:bg-violet-500 transition-all shadow-[0_0_20px_rgba(139,92,246,0.5)] hover:shadow-[0_0_35px_rgba(139,92,246,0.7)] flex items-center gap-2.5 group hover:-translate-y-0.5 active:translate-y-0 border border-violet-400/50 disabled:opacity-50 disabled:cursor-not-allowed text-sm">
+                className="bg-violet-600 py-3 px-7 rounded-full font-bold text-white hover:bg-violet-500 transition-all shadow-[0_0_20px_rgba(139,92,246,0.5)] hover:shadow-[0_0_35px_rgba(139,92,246,0.7)] flex items-center gap-2 group hover:-translate-y-0.5 active:translate-y-0 border border-violet-400/50 disabled:opacity-50 disabled:cursor-not-allowed text-sm">
                 {submittingAction === "Published" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />}
                 Post Now
               </button>
@@ -976,89 +1005,6 @@ export default function ComposePage() {
         </div>
       )}
 
-      {/* Schedule Date/Time Picker Modal */}
-      {showSchedulePicker && (
-        <div
-          className="fixed inset-0 z-[300] flex items-center justify-center bg-black/70 backdrop-blur-sm"
-          onClick={() => setShowSchedulePicker(false)}
-        >
-          <div
-            className="glass p-8 rounded-[2rem] border border-white/10 shadow-2xl w-full max-w-sm mx-4 animate-in fade-in zoom-in-95 duration-200"
-            onClick={e => e.stopPropagation()}
-          >
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 rounded-xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center">
-                <Clock className="w-5 h-5 text-sky-400" />
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-white leading-tight">Schedule Post</h3>
-                <p className="text-neutral-500 text-xs">Choose the date and time to publish</p>
-              </div>
-            </div>
-
-            <div className="h-px bg-white/5 my-6" />
-
-            <div className="space-y-4">
-              <div>
-                <label className="text-xs font-bold text-neutral-400 uppercase tracking-wider mb-2 block">Date</label>
-                <input
-                  type="date"
-                  value={scheduleDate}
-                  onChange={e => setScheduleDate(e.target.value)}
-                  min={new Date().toISOString().split("T")[0]}
-                  className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-violet-500/50 transition-colors font-medium text-sm"
-                  style={{ colorScheme: "dark" }}
-                />
-              </div>
-              <div>
-                <label className="text-xs font-bold text-neutral-400 uppercase tracking-wider mb-2 block">Time</label>
-                <input
-                  type="time"
-                  value={scheduleTime}
-                  onChange={e => setScheduleTime(e.target.value)}
-                  className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-violet-500/50 transition-colors font-medium text-sm"
-                  style={{ colorScheme: "dark" }}
-                />
-              </div>
-
-              {scheduleDate && scheduleTime && (
-                <div className="bg-sky-500/5 border border-sky-500/20 rounded-xl px-4 py-3 text-sm text-sky-300 font-medium">
-                  📅 {new Date(scheduleDate + "T12:00:00").toLocaleDateString("en-US", { weekday: "long", day: "numeric", month: "long", year: "numeric" })} at {scheduleTime}
-                </div>
-              )}
-
-              <div className="space-y-2 pt-2">
-                {/* Primary: Schedule */}
-                <button
-                  onClick={() => { setShowSchedulePicker(false); handleSavePost("Scheduled", scheduleDate, scheduleTime); }}
-                  disabled={!scheduleDate || !scheduleTime || submittingAction !== null}
-                  className="w-full py-3.5 rounded-2xl bg-sky-600 hover:bg-sky-500 text-white font-bold transition-all text-sm shadow-[0_0_15px_rgba(14,165,233,0.3)] hover:shadow-[0_0_25px_rgba(14,165,233,0.4)] disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2.5"
-                >
-                  {submittingAction === "Scheduled" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Clock className="w-4 h-4" />}
-                  Schedule Post
-                </button>
-                {/* Secondary row: Cancel | Save as Draft */}
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setShowSchedulePicker(false)}
-                    className="flex-1 py-3 rounded-xl border border-white/10 text-neutral-400 hover:text-white hover:bg-white/5 font-semibold transition-all text-sm"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={() => { setShowSchedulePicker(false); handleSavePost("Draft", scheduleDate || undefined, scheduleTime || undefined); }}
-                    disabled={submittingAction !== null}
-                    className="flex-1 py-3 rounded-xl border border-amber-500/25 bg-amber-500/8 text-amber-400 hover:bg-amber-500/15 font-semibold transition-all text-sm disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
-                  >
-                    <Pencil className="w-3.5 h-3.5" />
-                    Save as Draft
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

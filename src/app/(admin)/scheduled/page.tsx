@@ -296,7 +296,7 @@ export default function ScheduledPage() {
                         </span>
                       ))}
                       <span className={`ml-3 px-3 py-1.5 rounded-md text-xs font-bold uppercase tracking-wider ${post.status === 'Scheduled' ? 'bg-sky-500/10 text-sky-400 border border-sky-500/20' : post.status === 'Published' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'}`}>
-                        {post.status}
+                        {post.status === 'Scheduled' ? 'Planned' : post.status}
                       </span>
                     </div>
 
