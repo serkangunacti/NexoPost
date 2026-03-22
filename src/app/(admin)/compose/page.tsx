@@ -331,10 +331,10 @@ export default function ComposePage() {
   const handleSavePost = async (status: "Scheduled" | "Published" | "Draft", overrideDate?: string, overrideTime?: string) => {
     if (!hasContent || selectedPlatforms.length === 0) return;
     if ((status === "Scheduled" || status === "Published") && !subscriptionSnapshot.canPublish) {
-      alert("Your package has expired. Renew your subscription to schedule or publish new posts.");
+      showToast("Your package has expired. Renew your subscription to schedule or publish new posts.");
       return;
     }
-    if (!db) { alert("Firebase configuration is missing."); return; }
+    if (!db) { showToast("Firebase configuration is missing."); return; }
     setIsSubmitting(true);
     try {
       const now = new Date();
@@ -386,7 +386,7 @@ export default function ComposePage() {
       showToast(status === "Published" ? "Post published!" : status === "Scheduled" ? `Post scheduled for ${displayDate} at ${displayTime}` : "Draft saved.");
     } catch (error) {
       console.error(error);
-      alert("Error saving post to backend.");
+      showToast("Error saving post. Please try again.");
     } finally {
       setIsSubmitting(false);
     }

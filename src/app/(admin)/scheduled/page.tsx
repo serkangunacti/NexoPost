@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Timestamp, collection, onSnapshot, query, orderBy, deleteDoc, doc, updateDoc } from "firebase/firestore";
-import { Calendar as CalendarIcon, Send, Loader2, Trash2, Pencil, Check, X, Clock, ExternalLink } from "lucide-react";
+import { Calendar as CalendarIcon, Send, Loader2, Trash2, Pencil, Check, X, Clock, ExternalLink, AlertTriangle } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { db } from "@/lib/firebase";
 import { getSubscriptionSnapshot } from "@/lib/subscription";
@@ -20,6 +20,11 @@ interface Post {
   createdAt?: Timestamp | null;
 }
 
+interface ConfirmModal {
+  message: string;
+  onConfirm: () => void;
+}
+
 export default function ScheduledPage() {
   const router = useRouter();
   const { subscription } = useApp();
@@ -27,6 +32,20 @@ export default function ScheduledPage() {
   const [loading, setLoading] = useState(() => Boolean(db));
   const [activeTab, setActiveTab] = useState('Upcoming');
   const subscriptionSnapshot = getSubscriptionSnapshot(subscription);
+
+  // Toast
+  const [toast, setToast] = useState<{ message: string; type: 'error' | 'info' } | null>(null);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const showToast = useCallback((message: string, type: 'error' | 'info' = 'error') => {
+    setToast({ message, type });
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = setTimeout(() => setToast(null), 3500);
+  }, []);
+
+  // Confirm modal
+  const [confirmModal, setConfirmModal] = useState<ConfirmModal | null>(null);
+  const openConfirm = (message: string, onConfirm: () => void) => setConfirmModal({ message, onConfirm });
+  const closeConfirm = () => setConfirmModal(null);
 
   // Draft content editing
   const [editingDraftId, setEditingDraftId] = useState<string | null>(null);
@@ -55,22 +74,24 @@ export default function ScheduledPage() {
     return () => unsubscribe();
   }, []);
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = (id: string) => {
     if (!db) return;
-    if (confirm("Are you sure you want to delete this post?")) {
-      await deleteDoc(doc(db, "posts", id));
-    }
+    const database = db;
+    openConfirm("Are you sure you want to delete this post?", async () => {
+      await deleteDoc(doc(database, "posts", id));
+    });
   };
 
-  const handlePublishDraft = async (id: string) => {
+  const handlePublishDraft = (id: string) => {
     if (!db) return;
     if (!subscriptionSnapshot.canPublish) {
-      alert("Your package has expired. Renew your subscription to publish queued content.");
+      showToast("Your package has expired. Renew your subscription to publish queued content.", "error");
       return;
     }
-    if (confirm("Publish this post now?")) {
-      await updateDoc(doc(db, "posts", id), { status: "Published" });
-    }
+    const database = db;
+    openConfirm("Publish this post now?", async () => {
+      await updateDoc(doc(database, "posts", id), { status: "Published" });
+    });
   };
 
   const handleStartTimeEdit = (post: Post) => {
@@ -94,7 +115,7 @@ export default function ScheduledPage() {
       setEditingTimeId(null);
     } catch (e) {
       console.error(e);
-      alert("Error saving schedule.");
+      showToast("Error saving schedule. Please try again.", "error");
     } finally {
       setSavingTime(false);
     }
@@ -119,7 +140,7 @@ export default function ScheduledPage() {
       setEditingContent("");
     } catch (e) {
       console.error(e);
-      alert("Error saving changes.");
+      showToast("Error saving changes. Please try again.", "error");
     } finally {
       setSavingDraft(false);
     }
@@ -148,6 +169,38 @@ export default function ScheduledPage() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
+
+      {/* Toast */}
+      {toast && (
+        <div className={`fixed bottom-8 left-1/2 -translate-x-1/2 z-[200] flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-2xl shadow-black/60 text-sm font-bold animate-in slide-in-from-bottom-4 duration-300 max-w-sm text-center ${toast.type === 'error' ? 'bg-[#1a0909] border border-red-500/50 text-red-200' : 'bg-[#0d0d1a] border border-violet-500/50 text-violet-200'}`}>
+          <AlertTriangle className={`w-4 h-4 shrink-0 ${toast.type === 'error' ? 'text-red-400' : 'text-violet-400'}`} />
+          {toast.message}
+        </div>
+      )}
+
+      {/* Confirm Modal */}
+      {confirmModal && (
+        <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={closeConfirm}>
+          <div className="glass border border-white/10 rounded-3xl p-8 max-w-sm w-full mx-4 shadow-2xl" onClick={e => e.stopPropagation()}>
+            <p className="text-white font-bold text-lg mb-6 text-center leading-snug">{confirmModal.message}</p>
+            <div className="flex gap-3">
+              <button
+                onClick={closeConfirm}
+                className="flex-1 py-3 rounded-xl border border-white/10 text-neutral-400 hover:text-white hover:bg-white/10 font-bold text-sm transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => { confirmModal.onConfirm(); closeConfirm(); }}
+                className="flex-1 py-3 rounded-xl bg-violet-600 hover:bg-violet-500 text-white font-bold text-sm transition-all shadow-[0_0_15px_rgba(139,92,246,0.3)]"
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <header className="mb-8 pl-4">
         <h1 className="text-4xl font-extrabold text-white mb-3 tracking-tight">Scheduled Pipeline</h1>
         <p className="text-neutral-400 text-lg font-medium">Review and manage your upcoming content schedule directly from Firestore.</p>

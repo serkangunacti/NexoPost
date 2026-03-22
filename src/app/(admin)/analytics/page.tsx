@@ -1,13 +1,23 @@
 "use client";
 
+import { useState, useRef, useCallback } from "react";
 import { useApp } from "@/context/AppContext";
 import { getAnalyticsOverview } from "@/lib/adminAnalytics";
-import { BarChart3, Lock, TrendingUp, Users, Eye, ArrowUpRight, Link as LinkIcon } from "lucide-react";
+import { BarChart3, Lock, TrendingUp, Users, Eye, ArrowUpRight, Link as LinkIcon, Info } from "lucide-react";
 import { SiYoutube, SiTiktok, SiMeta } from "react-icons/si";
 import Link from "next/link";
 
 export default function AnalyticsPage() {
   const { userType, activeClient, connectedAccounts } = useApp();
+
+  // Toast
+  const [toast, setToast] = useState<string | null>(null);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const showToast = useCallback((message: string) => {
+    setToast(message);
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = setTimeout(() => setToast(null), 3500);
+  }, []);
 
   const currentConnectedIds = connectedAccounts[activeClient.id] || [];
   const isMetaConnected = currentConnectedIds.includes('facebook') || currentConnectedIds.includes('instagram');
@@ -17,7 +27,15 @@ export default function AnalyticsPage() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
-      
+
+      {/* Toast */}
+      {toast && (
+        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[200] flex items-center gap-3 bg-[#0d0d1a] border border-violet-500/50 text-violet-200 px-5 py-3.5 rounded-2xl shadow-2xl shadow-black/60 text-sm font-bold animate-in slide-in-from-bottom-4 duration-300 max-w-sm text-center">
+          <Info className="w-4 h-4 text-violet-400 shrink-0" />
+          {toast}
+        </div>
+      )}
+
       <header className="mb-6 pl-2">
         <h1 className="text-4xl font-extrabold text-white mb-3 tracking-tight">Social Analytics</h1>
         <p className="text-neutral-400 text-lg font-medium">Track your brand&apos;s cross-platform performance.</p>
@@ -65,7 +83,7 @@ export default function AnalyticsPage() {
                   <h3 className="text-xl font-bold text-white">Meta Suite</h3>
                 </div>
                 {isMetaConnected ? (
-                  <button onClick={() => alert("Full Report module will be available soon in next update.")} className="text-sm text-neutral-400 hover:text-white flex items-center gap-1 transition-colors px-3 py-1 hover:bg-white/5 rounded-lg"><ArrowUpRight className="w-4 h-4" /> Full Report</button>
+                  <button onClick={() => showToast("Full Report module will be available soon in the next update.")} className="text-sm text-neutral-400 hover:text-white flex items-center gap-1 transition-colors px-3 py-1 hover:bg-white/5 rounded-lg"><ArrowUpRight className="w-4 h-4" /> Full Report</button>
                 ) : (
                   <Link href="/accounts" className="text-sm text-violet-400 hover:text-violet-300 flex items-center gap-1 transition-colors font-bold px-3 py-1 bg-violet-500/10 rounded-lg hover:bg-violet-500/20"><LinkIcon className="w-4 h-4" /> Connect Meta</Link>
                 )}
@@ -106,7 +124,7 @@ export default function AnalyticsPage() {
                   <h3 className="text-xl font-bold text-white">TikTok For Business</h3>
                 </div>
                 {isTikTokConnected ? (
-                  <button onClick={() => alert("Full Report module will be available soon in next update.")} className="text-sm text-neutral-400 hover:text-white flex items-center gap-1 transition-colors px-3 py-1 hover:bg-white/5 rounded-lg"><ArrowUpRight className="w-4 h-4" /> Full Report</button>
+                  <button onClick={() => showToast("Full Report module will be available soon in the next update.")} className="text-sm text-neutral-400 hover:text-white flex items-center gap-1 transition-colors px-3 py-1 hover:bg-white/5 rounded-lg"><ArrowUpRight className="w-4 h-4" /> Full Report</button>
                 ) : (
                   <Link href="/accounts" className="text-sm text-violet-400 hover:text-violet-300 flex items-center gap-1 transition-colors font-bold px-3 py-1 bg-violet-500/10 rounded-lg hover:bg-violet-500/20"><LinkIcon className="w-4 h-4" /> Connect TikTok</Link>
                 )}
@@ -148,7 +166,7 @@ export default function AnalyticsPage() {
                     <h3 className="text-xl font-bold text-white">YouTube Studio Analytics</h3>
                   </div>
                   {isYouTubeConnected ? (
-                    <button onClick={() => alert("Full Report module will be available soon in next update.")} className="text-sm text-neutral-400 hover:text-white flex items-center gap-1 transition-colors px-3 py-1 hover:bg-white/5 rounded-lg"><ArrowUpRight className="w-4 h-4" /> Full Report</button>
+                    <button onClick={() => showToast("Full Report module will be available soon in the next update.")} className="text-sm text-neutral-400 hover:text-white flex items-center gap-1 transition-colors px-3 py-1 hover:bg-white/5 rounded-lg"><ArrowUpRight className="w-4 h-4" /> Full Report</button>
                   ) : (
                     <Link href="/accounts" className="text-sm text-violet-400 hover:text-violet-300 flex items-center gap-1 transition-colors font-bold px-3 py-1 bg-violet-500/10 rounded-lg hover:bg-violet-500/20"><LinkIcon className="w-4 h-4" /> Connect YouTube</Link>
                   )}

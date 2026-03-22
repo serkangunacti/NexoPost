@@ -1,10 +1,15 @@
 "use client";
 
-import { useState } from "react";
-import { Check, AlertCircle, Building2, Pencil, Trash2 } from "lucide-react";
+import { useState, useRef, useCallback } from "react";
+import { Check, AlertCircle, Building2, Pencil, Trash2, AlertTriangle } from "lucide-react";
 import { SiX, SiFacebook, SiInstagram, SiTiktok, SiBluesky, SiThreads, SiPinterest, SiYoutube } from "react-icons/si";
 import { FaLinkedin } from "react-icons/fa6";
 import { useApp } from "@/context/AppContext";
+
+interface ConfirmModal {
+  message: string;
+  onConfirm: () => void;
+}
 
 export default function AccountsPage() {
   const {
@@ -18,6 +23,20 @@ export default function AccountsPage() {
   } = useApp();
   const [editingClientId, setEditingClientId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState("");
+
+  // Toast
+  const [toast, setToast] = useState<string | null>(null);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const showToast = useCallback((message: string) => {
+    setToast(message);
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = setTimeout(() => setToast(null), 3500);
+  }, []);
+
+  // Confirm modal
+  const [confirmModal, setConfirmModal] = useState<ConfirmModal | null>(null);
+  const openConfirm = (message: string, onConfirm: () => void) => setConfirmModal({ message, onConfirm });
+  const closeConfirm = () => setConfirmModal(null);
   
   const defaultPlatforms = [
     { id: "twitter", name: "Twitter/X", icon: <SiX className="w-6 h-6" />, color: "bg-neutral-900 border border-neutral-700" },
@@ -54,20 +73,52 @@ export default function AccountsPage() {
 
   const handleDelete = (clientId: string, clientName: string) => {
     if (clients.length === 1) {
+      showToast("You cannot delete your only workspace.");
       return;
     }
-
-    if (window.confirm(`Delete "${clientName}" workspace? Connected accounts in this workspace will also be removed.`)) {
+    openConfirm(`Delete "${clientName}" workspace? Connected accounts in this workspace will also be removed.`, () => {
       removeClient(clientId);
       if (editingClientId === clientId) {
         setEditingClientId(null);
         setEditingName("");
       }
-    }
+    });
   };
 
   return (
     <div className="max-w-5xl mx-auto space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
+
+      {/* Toast */}
+      {toast && (
+        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[200] flex items-center gap-3 bg-[#1a0909] border border-red-500/50 text-red-200 px-5 py-3.5 rounded-2xl shadow-2xl shadow-black/60 text-sm font-bold animate-in slide-in-from-bottom-4 duration-300 max-w-sm text-center">
+          <AlertTriangle className="w-4 h-4 text-red-400 shrink-0" />
+          {toast}
+        </div>
+      )}
+
+      {/* Confirm Modal */}
+      {confirmModal && (
+        <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={closeConfirm}>
+          <div className="glass border border-white/10 rounded-3xl p-8 max-w-sm w-full mx-4 shadow-2xl" onClick={e => e.stopPropagation()}>
+            <p className="text-white font-bold text-lg mb-6 text-center leading-snug">{confirmModal.message}</p>
+            <div className="flex gap-3">
+              <button
+                onClick={closeConfirm}
+                className="flex-1 py-3 rounded-xl border border-white/10 text-neutral-400 hover:text-white hover:bg-white/10 font-bold text-sm transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => { confirmModal.onConfirm(); closeConfirm(); }}
+                className="flex-1 py-3 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-sm transition-all"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <header className="mb-6 pl-2 flex flex-col md:flex-row md:items-start justify-between gap-4">
         <div>
           <h1 className="text-4xl font-extrabold text-white mb-3 tracking-tight">Social Accounts</h1>
