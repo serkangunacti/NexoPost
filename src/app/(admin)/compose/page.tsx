@@ -119,7 +119,7 @@ export default function ComposePage() {
   const [dragOverPlatform, setDragOverPlatform] = useState<string | null>(null);
 
   // Toast
-  const [toast, setToast] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Submission guard ref — set synchronously to prevent double-fire before state update lands
@@ -168,8 +168,8 @@ export default function ComposePage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const showToast = useCallback((msg: string) => {
-    setToast(msg);
+  const showToast = useCallback((msg: string, type: "success" | "error" | "info" = "error") => {
+    setToast({ message: msg, type });
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
     toastTimerRef.current = setTimeout(() => setToast(null), 3500);
   }, []);
@@ -323,7 +323,7 @@ export default function ComposePage() {
 
   // Show no-caption warning for media-only posts, then proceed
   const triggerPost = (status: "Scheduled" | "Published" | "Draft", date?: string, time?: string) => {
-    if (isSubmittingRef.current || showSchedulePicker) return;
+    if (isSubmittingRef.current) return;
     if (!text.trim() && (mediaFiles.length > 0 || existingMediaUrls.length > 0) && status !== "Draft") {
       setPendingAction({ status, date, time });
       setShowNoCaptionWarning(true);
@@ -390,7 +390,9 @@ export default function ComposePage() {
       setText(""); setMediaFiles([]); setMediaPreviews([]); setExistingMediaUrls([]);
       if (status === "Scheduled") { setScheduleDate(""); setScheduleTime(""); }
       setPendingAction(null);
-      showToast(status === "Published" ? "Post published!" : status === "Scheduled" ? `Post scheduled for ${displayDate} at ${displayTime}` : "Draft saved.");
+      if (status === "Published") showToast("Post published successfully!", "success");
+      else if (status === "Scheduled") showToast(`Scheduled for ${displayDate} at ${displayTime}`, "info");
+      else showToast("Draft saved. You can edit it anytime in Scheduled Pipeline.", "success");
     } catch (error) {
       console.error(error);
       showToast("Error saving post. Please try again.");
@@ -412,9 +414,15 @@ export default function ComposePage() {
 
       {/* Toast */}
       {toast && (
-        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[200] flex items-center gap-3 bg-[#1a1209] border border-amber-500/50 text-amber-200 px-5 py-3.5 rounded-2xl shadow-2xl shadow-black/60 text-sm font-bold animate-in slide-in-from-bottom-4 duration-300 max-w-sm text-center">
-          <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
-          {toast}
+        <div className={`fixed bottom-8 left-1/2 -translate-x-1/2 z-[200] flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-2xl shadow-black/60 text-sm font-bold animate-in slide-in-from-bottom-4 duration-300 max-w-sm text-center ${
+          toast.type === "success" ? "bg-[#091a0f] border border-emerald-500/50 text-emerald-200" :
+          toast.type === "info"    ? "bg-[#0d0d1a] border border-sky-500/50 text-sky-200" :
+                                     "bg-[#1a1209] border border-amber-500/50 text-amber-200"
+        }`}>
+          {toast.type === "success" ? <Check className="w-4 h-4 text-emerald-400 shrink-0" /> :
+           toast.type === "info"    ? <Clock className="w-4 h-4 text-sky-400 shrink-0" /> :
+                                      <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />}
+          {toast.message}
         </div>
       )}
 
@@ -980,7 +988,7 @@ export default function ComposePage() {
                 </div>
               )}
 
-              <div className="flex gap-3 pt-2">
+              <div className="flex gap-3 pt-2 flex-wrap">
                 <button
                   onClick={() => setShowSchedulePicker(false)}
                   className="flex-1 py-3 rounded-xl border border-white/10 text-neutral-300 hover:text-white hover:bg-white/10 font-bold transition-all text-sm"
@@ -988,7 +996,15 @@ export default function ComposePage() {
                   Cancel
                 </button>
                 <button
-                  onClick={() => { setShowSchedulePicker(false); triggerPost("Scheduled", scheduleDate, scheduleTime); }}
+                  onClick={() => { setShowSchedulePicker(false); handleSavePost("Draft", scheduleDate || undefined, scheduleTime || undefined); }}
+                  disabled={isSubmitting}
+                  className="flex-1 py-3 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 font-bold transition-all text-sm disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Pencil className="w-4 h-4" />}
+                  Save as Draft
+                </button>
+                <button
+                  onClick={() => { setShowSchedulePicker(false); handleSavePost("Scheduled", scheduleDate, scheduleTime); }}
                   disabled={!scheduleDate || !scheduleTime || isSubmitting}
                   className="flex-1 py-3 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold transition-all text-sm shadow-[0_0_15px_rgba(14,165,233,0.3)] disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
