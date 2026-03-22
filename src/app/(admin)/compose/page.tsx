@@ -664,10 +664,6 @@ export default function ComposePage() {
             </div>
 
             <div className="flex justify-end gap-3 flex-wrap ml-auto">
-              <button onClick={() => handleSavePost("Draft")} disabled={isSubmitting || !hasContent || selectedPlatforms.length === 0}
-                className="glass py-3.5 px-6 rounded-full font-bold text-neutral-300 hover:text-white hover:bg-white/10 transition-all border border-white/10 flex items-center gap-2.5 disabled:opacity-50 disabled:cursor-not-allowed text-sm">
-                Save Draft
-              </button>
               <button
                 onClick={() => {
                   const d = new Date(); d.setDate(d.getDate() + 1);
@@ -677,7 +673,7 @@ export default function ComposePage() {
                 }}
                 disabled={isSubmitting || !hasContent || selectedPlatforms.length === 0 || !subscriptionSnapshot.canPublish}
                 className="glass py-3.5 px-6 rounded-full font-bold text-white hover:bg-white/10 transition-all border border-white/10 flex items-center gap-2.5 group disabled:opacity-50 disabled:cursor-not-allowed text-sm shadow-md">
-                {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin text-sky-400" /> : <Clock className="w-4 h-4 text-sky-400 group-hover:rotate-12 transition-transform" />}
+                <Clock className="w-4 h-4 text-sky-400 group-hover:rotate-12 transition-transform" />
                 Schedule
               </button>
               <button onClick={() => triggerPost("Published")} disabled={isSubmitting || !hasContent || selectedPlatforms.length === 0 || !subscriptionSnapshot.canPublish}
@@ -988,29 +984,33 @@ export default function ComposePage() {
                 </div>
               )}
 
-              <div className="flex gap-3 pt-2 flex-wrap">
-                <button
-                  onClick={() => setShowSchedulePicker(false)}
-                  className="flex-1 py-3 rounded-xl border border-white/10 text-neutral-300 hover:text-white hover:bg-white/10 font-bold transition-all text-sm"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => { setShowSchedulePicker(false); handleSavePost("Draft", scheduleDate || undefined, scheduleTime || undefined); }}
-                  disabled={isSubmitting}
-                  className="flex-1 py-3 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 font-bold transition-all text-sm disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                >
-                  {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Pencil className="w-4 h-4" />}
-                  Save as Draft
-                </button>
+              <div className="space-y-2 pt-2">
+                {/* Primary: Schedule */}
                 <button
                   onClick={() => { setShowSchedulePicker(false); handleSavePost("Scheduled", scheduleDate, scheduleTime); }}
                   disabled={!scheduleDate || !scheduleTime || isSubmitting}
-                  className="flex-1 py-3 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold transition-all text-sm shadow-[0_0_15px_rgba(14,165,233,0.3)] disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className="w-full py-3.5 rounded-2xl bg-sky-600 hover:bg-sky-500 text-white font-bold transition-all text-sm shadow-[0_0_15px_rgba(14,165,233,0.3)] hover:shadow-[0_0_25px_rgba(14,165,233,0.4)] disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2.5"
                 >
                   {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Clock className="w-4 h-4" />}
-                  Schedule
+                  Schedule Post
                 </button>
+                {/* Secondary row: Cancel | Save as Draft */}
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setShowSchedulePicker(false)}
+                    className="flex-1 py-3 rounded-xl border border-white/10 text-neutral-400 hover:text-white hover:bg-white/5 font-semibold transition-all text-sm"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => { setShowSchedulePicker(false); handleSavePost("Draft", scheduleDate || undefined, scheduleTime || undefined); }}
+                    disabled={isSubmitting}
+                    className="flex-1 py-3 rounded-xl border border-amber-500/25 bg-amber-500/8 text-amber-400 hover:bg-amber-500/15 font-semibold transition-all text-sm disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
+                  >
+                    <Pencil className="w-3.5 h-3.5" />
+                    Save as Draft
+                  </button>
+                </div>
               </div>
             </div>
           </div>
