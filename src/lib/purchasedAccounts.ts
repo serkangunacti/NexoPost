@@ -64,6 +64,18 @@ export const userSeeds: Record<string, UserSeed> = {
       hasUsedTrial: false,
     },
   },
+  "test@test.com": {
+    fullName: "Test User",
+    userType: "agency",
+    subscription: {
+      plan: "agency",
+      billingCycle: "monthly",
+      phase: "paid",
+      startedAt: "2026-03-22T00:00:00.000Z",
+      expiresAt: "2026-04-22T00:00:00.000Z",
+      hasUsedTrial: false,
+    },
+  },
 };
 
 export function getSeedForEmail(email: string): UserSeed | null {

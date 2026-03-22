@@ -96,10 +96,10 @@ export default function AnimatedShowcase() {
           </div>
 
           {/* Main Layout */}
-          <div className="flex flex-col lg:flex-row p-6 md:p-8 gap-8 items-stretch">
-            
-            {/* 1) Compose Area (Dims when in preview loop) */}
-            <div className={`flex-1 bg-black/40 rounded-[2rem] border border-white/5 p-8 shadow-inner flex flex-col transition-all duration-1000 ${step >= 9 ? 'opacity-20 blur-sm brightness-50 pointer-events-none scale-[0.98]' : 'opacity-100 scale-100'}`}>
+          <div className="flex flex-col lg:flex-row p-4 sm:p-6 md:p-8 gap-6 md:gap-8 items-stretch">
+
+            {/* 1) Compose Area — hidden on mobile when preview starts */}
+            <div className={`flex-1 bg-black/40 rounded-[2rem] border border-white/5 p-5 sm:p-8 shadow-inner flex flex-col transition-all duration-1000 ${step >= 9 ? 'opacity-20 blur-sm brightness-50 pointer-events-none scale-[0.98] lg:flex hidden' : 'opacity-100 scale-100 flex'}`}>
               <h3 className="text-xl font-bold text-white mb-8 flex items-center gap-3">
                 <div className="p-2.5 rounded-xl bg-violet-500/10 text-violet-400 border border-violet-500/20">
                   <PenLine className="w-5 h-5" />
@@ -108,19 +108,19 @@ export default function AnimatedShowcase() {
               </h3>
 
               {/* Platform Selector */}
-              <div className="flex flex-wrap gap-4 mb-8">
+              <div className="flex gap-2 sm:gap-3 md:gap-4 mb-6 sm:mb-8">
                 {[
-                  { id: 'x', icon: <SiX className="w-6 h-6" />, color: 'bg-white text-black', defaultActive: step >= 1 },
-                  { id: 'linkedin', icon: <FaLinkedin className="w-6 h-6" />, color: 'bg-[#0A66C2] text-white', defaultActive: step >= 2 },
-                  { id: 'facebook', icon: <SiFacebook className="w-6 h-6" />, color: 'bg-[#1877F2] text-white', defaultActive: step >= 3 },
-                  { id: 'instagram', icon: <SiInstagram className="w-6 h-6" />, color: 'bg-gradient-to-tr from-[#fd5949] to-[#d6249f] text-white', defaultActive: step >= 4 },
-                  { id: 'tiktok', icon: <SiTiktok className="w-6 h-6" />, color: 'bg-black text-white shadow-[0_0_10px_rgba(254,9,121,0.5)] border border-neutral-700', defaultActive: step >= 5 },
+                  { id: 'x', icon: <SiX className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6" />, color: 'bg-white text-black', defaultActive: step >= 1 },
+                  { id: 'linkedin', icon: <FaLinkedin className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6" />, color: 'bg-[#0A66C2] text-white', defaultActive: step >= 2 },
+                  { id: 'facebook', icon: <SiFacebook className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6" />, color: 'bg-[#1877F2] text-white', defaultActive: step >= 3 },
+                  { id: 'instagram', icon: <SiInstagram className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6" />, color: 'bg-gradient-to-tr from-[#fd5949] to-[#d6249f] text-white', defaultActive: step >= 4 },
+                  { id: 'tiktok', icon: <SiTiktok className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6" />, color: 'bg-black text-white shadow-[0_0_10px_rgba(254,9,121,0.5)] border border-neutral-700', defaultActive: step >= 5 },
                 ].map((platform) => (
-                  <div 
+                  <div
                     key={platform.id}
-                    className={`w-14 h-14 rounded-2xl border flex items-center justify-center transition-all duration-300 ${
-                      platform.defaultActive 
-                        ? `${platform.color} border-transparent scale-105 shadow-[0_0_20px_rgba(255,255,255,0.15)]` 
+                    className={`w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-xl md:rounded-2xl border flex items-center justify-center transition-all duration-300 ${
+                      platform.defaultActive
+                        ? `${platform.color} border-transparent scale-105 shadow-[0_0_20px_rgba(255,255,255,0.15)]`
                         : 'border-white/10 bg-white/5 text-neutral-500 scale-100'
                     }`}
                   >
@@ -169,15 +169,15 @@ export default function AnimatedShowcase() {
               </div>
             </div>
 
-            {/* 2) Phone Preview Area (Fixed Structure) */}
-            <div className="hidden lg:flex flex-col items-center justify-center shrink-0 mx-4 relative overflow-visible">
-               <h4 className={`text-xs font-bold uppercase tracking-widest mb-6 flex items-center gap-2 transition-colors duration-500 ${step >= 9 ? 'text-violet-400' : 'text-neutral-500'}`}>
+            {/* 2) Phone Preview Area — always on desktop, step>=9 on mobile */}
+            <div className={`${step >= 9 ? 'flex' : 'hidden'} lg:flex flex-col items-center justify-center shrink-0 lg:mx-4 relative overflow-visible w-full lg:w-auto`}>
+               <h4 className={`text-xs font-bold uppercase tracking-widest mb-4 lg:mb-6 flex items-center gap-2 transition-colors duration-500 ${step >= 9 ? 'text-violet-400' : 'text-neutral-500'}`}>
                   <div className={`w-2 h-2 rounded-full ${step >= 9 ? 'bg-violet-400 animate-pulse' : 'bg-neutral-600'}`} />
                   {step >= 9 ? t.showcase.live_networks : t.showcase.live_preview}
                </h4>
 
-               {/* Rigorous Hardware Phone Shell */}
-               <div className="w-[300px] h-[600px] bg-black rounded-[2.5rem] border-[8px] border-[#18181b] relative shadow-2xl overflow-hidden ring-1 ring-white/10 z-10">
+               {/* Phone Shell — slightly smaller on mobile */}
+               <div className="w-[240px] sm:w-[270px] lg:w-[300px] h-[480px] sm:h-[540px] lg:h-[600px] bg-black rounded-[2.5rem] border-[8px] border-[#18181b] relative shadow-2xl overflow-hidden ring-1 ring-white/10 z-10">
                   {/* Elegant Hardware Notch */}
                   <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-[#18181b] rounded-b-xl flex items-center justify-center gap-2 z-50">
                      <div className="w-10 h-1.5 bg-black/40 rounded-full" />

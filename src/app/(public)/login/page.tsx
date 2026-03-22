@@ -171,7 +171,7 @@ function LoginContent() {
       <div className="absolute bottom-0 left-0 w-[24rem] h-[24rem] bg-violet-600/10 blur-[130px] rounded-full pointer-events-none" />
 
       <div className="max-w-6xl mx-auto relative z-10 grid grid-cols-1 xl:grid-cols-2 gap-8 items-stretch">
-        <section className="relative min-h-[620px] overflow-hidden rounded-[2.75rem] border border-white/10 bg-[linear-gradient(145deg,rgba(18,18,28,0.95),rgba(7,7,12,0.92))] p-7 md:p-9 shadow-[0_30px_100px_rgba(0,0,0,0.45)]">
+        <section className="hidden xl:block relative min-h-[620px] overflow-hidden rounded-[2.75rem] border border-white/10 bg-[linear-gradient(145deg,rgba(18,18,28,0.95),rgba(7,7,12,0.92))] p-7 md:p-9 shadow-[0_30px_100px_rgba(0,0,0,0.45)]">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(56,189,248,0.12),transparent_28%),radial-gradient(circle_at_bottom_left,rgba(139,92,246,0.16),transparent_32%)] pointer-events-none" />
 
           <div className="relative z-10 h-full">

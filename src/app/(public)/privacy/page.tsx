@@ -21,7 +21,7 @@ export default function PrivacyPage() {
           <ArrowLeft className="w-4 h-4" /> {t.common.go_back}
         </Link>
         
-        <div className="relative glass p-10 md:p-16 rounded-[3rem] border border-white/10 shadow-2xl overflow-hidden">
+        <div className="relative glass p-6 md:p-10 lg:p-16 rounded-[2rem] md:rounded-[3rem] border border-white/10 shadow-2xl overflow-hidden">
           <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-emerald-600/10 rounded-full blur-[120px] pointer-events-none" />
           
           <div className="relative z-10 text-center border-b border-white/10 pb-10 mb-10">

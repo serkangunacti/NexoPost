@@ -100,7 +100,7 @@ export default function ContactPage() {
         </div>
 
         {/* Google Maps Embed */}
-        <div className="w-full h-[450px] rounded-[3rem] overflow-hidden border border-white/10 shadow-2xl relative group">
+        <div className="w-full h-[220px] sm:h-[320px] md:h-[450px] rounded-[2rem] md:rounded-[3rem] overflow-hidden border border-white/10 shadow-2xl relative group">
           <div className="absolute inset-0 border-[3px] border-white/5 pointer-events-none z-10 rounded-[3rem]" />
           <iframe 
             src="https://maps.google.com/maps?width=100%25&amp;height=600&amp;hl=en&amp;q=One%20Block%20Plaza,%20Fatih%20Sultan%20Mehmet%20Mah.%20Depoyolu%20Sk.%20No:16%20%C3%9Cmraniye/%C4%B0stanbul+(NexoPost)&amp;t=&amp;z=14&amp;ie=UTF8&amp;iwloc=B&amp;output=embed" 

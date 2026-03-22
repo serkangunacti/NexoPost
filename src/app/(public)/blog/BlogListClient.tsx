@@ -15,7 +15,7 @@ export default function BlogListClient() {
       
       <div className="max-w-7xl mx-auto w-full relative z-10">
         <div className="text-center mb-20">
-          <h1 className="text-5xl md:text-6xl font-black text-white mb-6 tracking-tight">
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-white mb-6 tracking-tight">
             {t.blog_index.title}
           </h1>
           <div className="w-24 h-1.5 bg-gradient-to-r from-violet-500 to-sky-500 mx-auto rounded-full mb-6" />

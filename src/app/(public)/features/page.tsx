@@ -90,124 +90,164 @@ function FeaturesContent() {
 
   const currentTabData = tabs.find(tab => tab.id === activeTab) || tabs[0];
 
+  const colorMap = {
+    violet: {
+      theme: "text-violet-400 bg-violet-500/10 border-violet-500/20",
+      line: "bg-violet-500",
+    },
+    indigo: {
+      theme: "text-indigo-400 bg-indigo-500/10 border-indigo-500/20",
+      line: "bg-indigo-500",
+    },
+    sky: {
+      theme: "text-sky-400 bg-sky-500/10 border-sky-500/20",
+      line: "bg-sky-500",
+    },
+    fuchsia: {
+      theme: "text-fuchsia-400 bg-fuchsia-500/10 border-fuchsia-500/20",
+      line: "bg-fuchsia-500",
+    },
+    amber: {
+      theme: "text-amber-400 bg-amber-500/10 border-amber-500/20",
+      line: "bg-amber-500",
+    },
+    rose: {
+      theme: "text-rose-400 bg-rose-500/10 border-rose-500/20",
+      line: "bg-rose-500",
+    },
+  };
+
   return (
-    <div className="min-h-screen bg-[#050508] relative overflow-hidden pt-24 pb-32">
+    <div className="min-h-screen bg-[#050508] relative overflow-x-hidden pt-20 md:pt-24 pb-20 md:pb-32">
       {/* Background Ambience */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-5xl h-[800px] bg-violet-600/10 blur-[150px] rounded-full pointer-events-none opacity-50" />
       <div className="absolute top-1/2 -left-32 w-96 h-96 bg-sky-500/10 blur-[120px] rounded-full pointer-events-none" />
       <div className="absolute bottom-0 -right-32 w-96 h-96 bg-fuchsia-500/10 blur-[120px] rounded-full pointer-events-none" />
 
-      <div className="max-w-7xl mx-auto px-6 relative z-10">
-        
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 relative z-10">
+
         {/* Header */}
-        <div className="text-center mb-16 animate-in fade-in slide-in-from-bottom-8 duration-700">
+        <div className="text-center mb-8 md:mb-16 animate-in fade-in slide-in-from-bottom-8 duration-700">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass border border-white/10 text-violet-400 font-bold text-sm mb-6 uppercase tracking-widest shadow-lg shadow-violet-500/10">
             <Workflow className="w-4 h-4" /> {t.features_page.badge}
           </div>
-          <h1 className="text-4xl md:text-5xl lg:text-7xl font-extrabold text-transparent bg-clip-text bg-gradient-to-br from-white via-white to-neutral-500 tracking-tight leading-tight mb-6">
-            {t.features_page.title_main} <br className="hidden md:block" />
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-extrabold text-transparent bg-clip-text bg-gradient-to-br from-white via-white to-neutral-500 tracking-tight leading-tight mb-4 md:mb-6">
+            {t.features_page.title_main}{" "}
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-sky-400">{t.features_page.title_highlight}</span>
           </h1>
-          <p className="text-lg md:text-xl text-neutral-400 max-w-2xl mx-auto font-medium">
+          <p className="text-base md:text-xl text-neutral-400 max-w-2xl mx-auto font-medium">
             {t.features_page.subtitle}
           </p>
         </div>
 
         {/* Tab Selector & Content Container */}
-        <div id="feature-tabs" className="flex flex-col lg:flex-row shadow-2xl rounded-[3rem] border border-white/5 glass overflow-hidden animate-in fade-in zoom-in-95 duration-700 delay-150 relative">
-          
-          {/* Side Nav for desktop (Top nav for mobile) */}
-          <div className="flex flex-row lg:flex-col lg:w-1/3 border-b lg:border-b-0 lg:border-r border-white/5 p-4 md:p-6 gap-2 bg-black/40 lg:bg-transparent overflow-x-auto lg:overflow-visible">
-             {tabs.map((tab) => {
-               const isActive = activeTab === tab.id;
-               const ColorTheme = {
-                 violet: "text-violet-400 bg-violet-500/10 border-violet-500/20 shadow-[0_0_20px_rgba(139,92,246,0.15)]",
-                 indigo: "text-indigo-400 bg-indigo-500/10 border-indigo-500/20 shadow-[0_0_20px_rgba(99,102,241,0.15)]",
-                 sky: "text-sky-400 bg-sky-500/10 border-sky-500/20 shadow-[0_0_20px_rgba(14,165,233,0.15)]",
-                 fuchsia: "text-fuchsia-400 bg-fuchsia-500/10 border-fuchsia-500/20 shadow-[0_0_20px_rgba(217,70,239,0.15)]",
-                 amber: "text-amber-400 bg-amber-500/10 border-amber-500/20 shadow-[0_0_20px_rgba(245,158,11,0.15)]",
-                 rose: "text-rose-400 bg-rose-500/10 border-rose-500/20 shadow-[0_0_20px_rgba(244,63,94,0.15)]",
-               }[tab.color as "violet" | "indigo" | "sky" | "fuchsia" | "amber" | "rose"];
+        <div id="feature-tabs" className="flex flex-col lg:flex-row shadow-2xl rounded-2xl md:rounded-[3rem] border border-white/5 glass overflow-hidden animate-in fade-in duration-700 delay-150 relative">
 
-               const ActiveLineColor = {
-                 violet: "bg-violet-500",
-                 indigo: "bg-indigo-500",
-                 sky: "bg-sky-500",
-                 fuchsia: "bg-fuchsia-500",
-                 amber: "bg-amber-500",
-                 rose: "bg-rose-500",
-               }[tab.color as "violet" | "indigo" | "sky" | "fuchsia" | "amber" | "rose"];
-
-               return (
-                 <button
-                   key={tab.id}
-                    onClick={() => router.replace(`/features?tab=${tab.id}`, { scroll: false })}
-                   className={`flex items-start text-left gap-4 p-5 rounded-2xl transition-all duration-300 relative group overflow-hidden whitespace-nowrap lg:whitespace-normal shrink-0 lg:shrink w-auto lg:w-full
-                     ${isActive ? `glass border border-white/10 ${ColorTheme}` : 'hover:bg-white/5 border border-transparent'}
-                   `}
-                 >
-                    {/* Active Indicator Line */}
-                    {isActive && (
-                      <div className={`absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-10 rounded-r-full ${ActiveLineColor} shadow-[0_0_10px_currentColor] hidden lg:block`} />
-                    )}
-                    {isActive && (
-                      <div className={`absolute bottom-0 left-1/2 -translate-x-1/2 w-10 h-1.5 rounded-t-full ${ActiveLineColor} shadow-[0_0_10px_currentColor] lg:hidden`} />
-                    )}
-
-                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 transition-transform duration-300 ${isActive ? 'bg-white/10 scale-110' : 'bg-black/30 group-hover:scale-110'}`}>
-                      {tab.icon}
-                    </div>
-                    <div>
-                       <h3 className={`text-lg font-bold transition-colors ${isActive ? 'text-white' : 'text-neutral-400 group-hover:text-white'}`}>
-                          {tab.title}
-                       </h3>
-                       <p className={`text-sm hidden lg:block mt-1 line-clamp-2 ${isActive ? 'text-neutral-300' : 'text-neutral-500'}`}>
-                          {tab.summary}
-                       </p>
-                    </div>
-                 </button>
-               );
-             })}
+          {/* ── Mobile tab grid (3×2) — hidden on lg+ ── */}
+          <div className="lg:hidden grid grid-cols-3 border-b border-white/5 bg-black/40 p-2 gap-1.5">
+            {tabs.map((tab) => {
+              const isActive = activeTab === tab.id;
+              const colors = colorMap[tab.color as keyof typeof colorMap];
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => router.replace(`/features?tab=${tab.id}`, { scroll: false })}
+                  className={`relative flex flex-col items-center justify-center gap-1.5 p-3 rounded-xl transition-all duration-200 ${
+                    isActive
+                      ? `glass border ${colors.theme}`
+                      : "border border-transparent hover:bg-white/5"
+                  }`}
+                >
+                  {/* active underline */}
+                  {isActive && (
+                    <div className={`absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-1 rounded-t-full ${colors.line}`} />
+                  )}
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-transform duration-200 ${isActive ? "bg-white/15 scale-110" : "bg-black/30"}`}>
+                    {tab.icon}
+                  </div>
+                  <span className={`text-[10px] font-bold text-center leading-tight line-clamp-2 w-full ${isActive ? "text-white" : "text-neutral-400"}`}>
+                    {tab.title}
+                  </span>
+                </button>
+              );
+            })}
           </div>
 
-          {/* Right Content Details */}
-          <div className="lg:w-2/3 p-8 md:p-12 lg:p-16 relative bg-gradient-to-br from-white/[0.02] to-transparent">
-             <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-             
-             {/* Key content rendering bound by activeTab */}
-             <div key={activeTab} className="animate-in slide-in-from-right-8 fade-in duration-500 fill-mode-both">
-               <div className="flex items-center gap-5 mb-8">
-                 <div className="inline-flex items-center justify-center w-16 h-16 shrink-0 rounded-2xl bg-white/5 border border-white/10 shadow-inner shadow-white/5">
-                   <div className={`text-${currentTabData.color}-400`}>
-                     {currentTabData.icon}
-                   </div>
-                 </div>
-                 <h2 className="text-3xl md:text-5xl font-extrabold text-white tracking-tight">
-                   {currentTabData.title}
-                 </h2>
-               </div>
+          {/* ── Desktop sidebar nav — hidden on mobile ── */}
+          <div className="hidden lg:flex lg:flex-col lg:w-1/3 border-r border-white/5 p-6 gap-2">
+            {tabs.map((tab) => {
+              const isActive = activeTab === tab.id;
+              const colors = colorMap[tab.color as keyof typeof colorMap];
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => router.replace(`/features?tab=${tab.id}`, { scroll: false })}
+                  className={`flex items-start text-left gap-4 p-5 rounded-2xl transition-all duration-300 relative group overflow-hidden w-full ${
+                    isActive ? `glass border border-white/10 ${colors.theme}` : "hover:bg-white/5 border border-transparent"
+                  }`}
+                >
+                  {isActive && (
+                    <div className={`absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-10 rounded-r-full ${colors.line}`} />
+                  )}
+                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 transition-transform duration-300 ${isActive ? "bg-white/10 scale-110" : "bg-black/30 group-hover:scale-110"}`}>
+                    {tab.icon}
+                  </div>
+                  <div className="min-w-0">
+                    <h3 className={`text-lg font-bold transition-colors ${isActive ? "text-white" : "text-neutral-400 group-hover:text-white"}`}>
+                      {tab.title}
+                    </h3>
+                    <p className={`text-sm mt-1 line-clamp-2 ${isActive ? "text-neutral-300" : "text-neutral-500"}`}>
+                      {tab.summary}
+                    </p>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
 
-               <p className="text-xl text-neutral-400 font-medium leading-relaxed mb-10">
-                 {currentTabData.summary} {t.features_page.detail_text}
-               </p>
+          {/* ── Content Panel ── */}
+          <div className="w-full lg:w-2/3 p-5 sm:p-8 lg:p-12 xl:p-16 relative bg-gradient-to-br from-white/[0.02] to-transparent">
+            <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
 
-               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-12">
-                 {currentTabData.points.map((point: string, index: number) => (
-                   <div key={index} className="flex gap-4">
-                      <div className="shrink-0 mt-1">
-                        <CheckCircle2 className={`w-6 h-6 text-${currentTabData.color}-400`} />
-                      </div>
-                      <p className="text-neutral-300 leading-relaxed text-[15px] font-medium">
-                        {point}
-                      </p>
-                   </div>
-                 ))}
-               </div>
+            <div key={activeTab} className="animate-in fade-in slide-in-from-bottom-3 duration-300">
+              {/* Title row */}
+              <div className="flex items-center gap-3 mb-4 md:mb-6">
+                <div className="inline-flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 shrink-0 rounded-xl sm:rounded-2xl bg-white/5 border border-white/10 shadow-inner shadow-white/5">
+                  <div className={`text-${currentTabData.color}-400`}>
+                    {currentTabData.icon}
+                  </div>
+                </div>
+                <h2 className="text-lg sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-extrabold text-white tracking-tight leading-tight break-words min-w-0 flex-1">
+                  {currentTabData.title}
+                </h2>
+              </div>
 
-               <Link href={ctaHref} className="inline-flex items-center gap-2 text-white font-bold bg-white/10 hover:bg-white/20 border border-white/10 rounded-full px-8 py-4 transition-all hover:scale-105 active:scale-95 group">
-                 {t.features_page.cta} <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-               </Link>
-             </div>
+              {/* Summary */}
+              <p className="text-sm sm:text-base lg:text-lg xl:text-xl text-neutral-400 font-medium leading-relaxed mb-5 md:mb-8">
+                {currentTabData.summary} {t.features_page.detail_text}
+              </p>
+
+              {/* Feature points */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-5 mb-6 md:mb-10">
+                {currentTabData.points.map((point: string, index: number) => (
+                  <div key={index} className="flex gap-3 items-start">
+                    <CheckCircle2 className={`w-4 h-4 sm:w-5 sm:h-5 text-${currentTabData.color}-400 shrink-0 mt-0.5`} />
+                    <p className="text-neutral-300 leading-relaxed text-sm font-medium">
+                      {point}
+                    </p>
+                  </div>
+                ))}
+              </div>
+
+              {/* CTA */}
+              <Link
+                href={ctaHref}
+                className="inline-flex w-full sm:w-auto items-center justify-center gap-2 text-white font-bold bg-white/10 hover:bg-white/20 border border-white/10 rounded-full px-6 py-3 sm:py-4 transition-all hover:scale-105 active:scale-95 group text-sm sm:text-base"
+              >
+                {t.features_page.cta}
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              </Link>
+            </div>
           </div>
         </div>
 
