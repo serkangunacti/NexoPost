@@ -339,8 +339,17 @@ export default function ComposePage() {
       return;
     }
     if (!db) { showToast("Firebase configuration is missing."); return; }
+
     isSubmittingRef.current = true;
     setIsSubmitting(true);
+
+    // Safety timeout — always resets isSubmitting after 20s if something hangs
+    const safetyTimer = setTimeout(() => {
+      isSubmittingRef.current = false;
+      setIsSubmitting(false);
+      showToast("Request timed out. Please check your connection and try again.");
+    }, 20000);
+
     try {
       const now = new Date();
       const displayDate = overrideDate
@@ -348,43 +357,45 @@ export default function ComposePage() {
         : now.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
       const displayTime = overrideTime || now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false });
 
-      // Upload new media files to Firebase Storage
+      // Upload new media files to Firebase Storage — non-blocking; falls back to no media on failure
       let uploadedUrls: string[] = [];
       const activeStorage = storage;
       if (activeStorage && mediaFiles.length > 0) {
-        uploadedUrls = await Promise.all(
-          mediaFiles.map(async (file) => {
-            const path = `posts/${Date.now()}_${file.name}`;
-            const storageRef = ref(activeStorage, path);
-            await uploadBytes(storageRef, file);
-            return getDownloadURL(storageRef);
-          })
-        );
+        try {
+          uploadedUrls = await Promise.race([
+            Promise.all(
+              mediaFiles.map(async (file) => {
+                const path = `posts/${Date.now()}_${file.name}`;
+                const storageRef = ref(activeStorage, path);
+                await uploadBytes(storageRef, file);
+                return getDownloadURL(storageRef);
+              })
+            ),
+            new Promise<never>((_, reject) =>
+              setTimeout(() => reject(new Error("Storage upload timed out")), 15000)
+            ),
+          ]);
+        } catch (storageErr) {
+          console.warn("Media upload failed, saving without media:", storageErr);
+        }
       }
       const allMediaUrls = [...existingMediaUrls, ...uploadedUrls];
 
+      const payload = {
+        content: text,
+        platforms: selectedPlatforms,
+        status,
+        date: displayDate,
+        time: displayTime,
+        autoOptimize,
+        mediaUrls: allMediaUrls,
+      };
+
       if (editingPostId) {
-        await updateDoc(doc(db, "posts", editingPostId), {
-          content: text,
-          platforms: selectedPlatforms,
-          status,
-          date: displayDate,
-          time: displayTime,
-          autoOptimize,
-          mediaUrls: allMediaUrls,
-        });
+        await updateDoc(doc(db, "posts", editingPostId), payload);
         setEditingPostId(null);
       } else {
-        await addDoc(collection(db, "posts"), {
-          content: text,
-          platforms: selectedPlatforms,
-          status,
-          createdAt: serverTimestamp(),
-          date: displayDate,
-          time: displayTime,
-          autoOptimize,
-          mediaUrls: allMediaUrls,
-        });
+        await addDoc(collection(db, "posts"), { ...payload, createdAt: serverTimestamp() });
       }
 
       setText(""); setMediaFiles([]); setMediaPreviews([]); setExistingMediaUrls([]);
@@ -394,9 +405,10 @@ export default function ComposePage() {
       else if (status === "Scheduled") showToast(`Scheduled for ${displayDate} at ${displayTime}`, "info");
       else showToast("Draft saved. You can edit it anytime in Scheduled Pipeline.", "success");
     } catch (error) {
-      console.error(error);
-      showToast("Error saving post. Please try again.");
+      console.error("handleSavePost error:", error);
+      showToast("Error saving post. Please check your connection and try again.");
     } finally {
+      clearTimeout(safetyTimer);
       isSubmittingRef.current = false;
       setIsSubmitting(false);
     }
