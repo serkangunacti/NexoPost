@@ -34,7 +34,7 @@ export default function ContactPage() {
                 <label className="block text-sm font-semibold text-neutral-400 mb-2">{t.contact.form_name}</label>
                 <input 
                   type="text" 
-                  placeholder={t.contact.form_name === "Ad Soyad" ? "Serkan Günacti" : "John Doe"}
+                  placeholder={t.contact.form_name === "Ad Soyad" ? "Ahmet Yılmaz" : "John Doe"}
                   className="w-full bg-black/40 border border-white/10 rounded-xl px-5 py-3.5 text-white placeholder-neutral-600 font-medium focus:outline-none focus:border-violet-500/50 focus:bg-white/5 transition-all" 
                 />
               </div>

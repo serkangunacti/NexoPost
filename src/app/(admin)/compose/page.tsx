@@ -1,11 +1,13 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Send, Smile, Type, Clock, Loader2, Wand2, ImagePlus, X, ChevronDown, AlertTriangle } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import { Send, Smile, Type, Clock, Loader2, Wand2, ImagePlus, X, ChevronDown, AlertTriangle, Pencil, Check, Layers } from "lucide-react";
 import { useApp } from "@/context/AppContext";
-import { db } from "@/lib/firebase";
+import { db, storage } from "@/lib/firebase";
 import { getSubscriptionSnapshot } from "@/lib/subscription";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { collection, addDoc, serverTimestamp, doc, getDoc, updateDoc } from "firebase/firestore";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { SiX, SiFacebook, SiInstagram, SiTiktok, SiBluesky, SiThreads, SiPinterest, SiYoutube } from "react-icons/si";
 import { FaLinkedin } from "react-icons/fa6";
 
@@ -76,22 +78,45 @@ const MAX_MEDIA = 10;
 const RECENT_STORAGE_KEY = "nexopost_recent_emojis";
 
 export default function ComposePage() {
+  const searchParams = useSearchParams();
   const { subscription, activeClient } = useApp();
   const [text, setText] = useState("");
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>(["twitter"]);
+  const [editingPostId, setEditingPostId] = useState<string | null>(null);
+  const [editLoadError, setEditLoadError] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [autoOptimize, setAutoOptimize] = useState(true);
+
+  // Schedule date/time picker
+  const [showSchedulePicker, setShowSchedulePicker] = useState(false);
+  const [scheduleDate, setScheduleDate] = useState("");
+  const [scheduleTime, setScheduleTime] = useState("");
+
+  // No-caption warning
+  const [showNoCaptionWarning, setShowNoCaptionWarning] = useState(false);
+  const [pendingAction, setPendingAction] = useState<{ status: "Scheduled" | "Published" | "Draft"; date?: string; time?: string } | null>(null);
 
   // Emoji picker
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [activeEmojiCategory, setActiveEmojiCategory] = useState("recent");
   const [recentEmojis, setRecentEmojis] = useState<string[]>([]);
 
+  // Per-platform caption overrides & edit mode
+  const [platformTexts, setPlatformTexts] = useState<Record<string, string>>({});
+  const [editingPlatform, setEditingPlatform] = useState<string | null>(null);
+  const [platformEmojiOpen, setPlatformEmojiOpen] = useState<string | null>(null);
+
   // Media
   const [mediaFiles, setMediaFiles] = useState<File[]>([]);
   const [mediaPreviews, setMediaPreviews] = useState<string[]>([]);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  // Already-uploaded media from Firestore (edit mode)
+  const [existingMediaUrls, setExistingMediaUrls] = useState<string[]>([]);
+
+  // Per-platform media management
+  const [platformMediaIndexes, setPlatformMediaIndexes] = useState<Record<string, number[]>>({});
+  const [dragOverPlatform, setDragOverPlatform] = useState<string | null>(null);
 
   // Toast
   const [toast, setToast] = useState<string | null>(null);
@@ -99,6 +124,7 @@ export default function ComposePage() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const platformTextareaRef = useRef<HTMLTextAreaElement>(null);
   const highlightRef = useRef<HTMLDivElement>(null);
   const subscriptionSnapshot = getSubscriptionSnapshot(subscription);
 
@@ -117,6 +143,26 @@ export default function ComposePage() {
     } catch {
       setActiveEmojiCategory("smileys");
     }
+  }, []);
+
+  // Load post from Firestore when ?edit=POST_ID is in the URL
+  useEffect(() => {
+    const editId = searchParams.get("edit");
+    if (!editId || !db) return;
+    setEditingPostId(editId);
+    (async () => {
+      try {
+        const snap = await getDoc(doc(db, "posts", editId));
+        if (!snap.exists()) { setEditLoadError(true); return; }
+        const data = snap.data() as { content?: string; platforms?: string[]; mediaUrls?: string[] };
+        if (data.content) setText(data.content);
+        if (data.platforms?.length) setSelectedPlatforms(data.platforms);
+        if (data.mediaUrls?.length) setExistingMediaUrls(data.mediaUrls);
+      } catch {
+        setEditLoadError(true);
+      }
+    })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const showToast = useCallback((msg: string) => {
@@ -138,7 +184,16 @@ export default function ComposePage() {
   ];
 
   const handleToggle = (id: string) => {
-    setSelectedPlatforms(prev => prev.includes(id) ? prev.filter(p => p !== id) : [...prev, id]);
+    if (selectedPlatforms.includes(id)) {
+      setSelectedPlatforms(prev => prev.filter(p => p !== id));
+      setPlatformTexts(prev => { const n = { ...prev }; delete n[id]; return n; });
+      setPlatformMediaIndexes(prev => { const n = { ...prev }; delete n[id]; return n; });
+      if (editingPlatform === id) setEditingPlatform(null);
+    } else {
+      setSelectedPlatforms(prev => [...prev, id]);
+      // Initialize with all current media indexes
+      setPlatformMediaIndexes(prev => ({ ...prev, [id]: mediaFiles.map((_, i) => i) }));
+    }
   };
 
   // Sync textarea scroll → highlight layer
@@ -148,16 +203,28 @@ export default function ComposePage() {
     }
   };
 
-  // Insert emoji at cursor, update recents
+  // Insert emoji at cursor — supports both main textarea and platform-specific textarea
   const insertEmoji = (emoji: string) => {
-    const ta = textareaRef.current;
-    const start = ta?.selectionStart ?? text.length;
-    const end = ta?.selectionEnd ?? text.length;
-    const newText = text.slice(0, start) + emoji + text.slice(end);
-    setText(newText);
-    setTimeout(() => {
-      if (ta) { ta.selectionStart = ta.selectionEnd = start + emoji.length; ta.focus(); }
-    }, 0);
+    if (editingPlatform) {
+      const ta = platformTextareaRef.current;
+      const currentText = platformTexts[editingPlatform] ?? text;
+      const start = ta?.selectionStart ?? currentText.length;
+      const end = ta?.selectionEnd ?? currentText.length;
+      const newText = currentText.slice(0, start) + emoji + currentText.slice(end);
+      setPlatformTexts(prev => ({ ...prev, [editingPlatform]: newText }));
+      setTimeout(() => {
+        if (ta) { ta.selectionStart = ta.selectionEnd = start + emoji.length; ta.focus(); }
+      }, 0);
+    } else {
+      const ta = textareaRef.current;
+      const start = ta?.selectionStart ?? text.length;
+      const end = ta?.selectionEnd ?? text.length;
+      const newText = text.slice(0, start) + emoji + text.slice(end);
+      setText(newText);
+      setTimeout(() => {
+        if (ta) { ta.selectionStart = ta.selectionEnd = start + emoji.length; ta.focus(); }
+      }, 0);
+    }
     // Update recents
     setRecentEmojis(prev => {
       const next = [emoji, ...prev.filter(e => e !== emoji)].slice(0, 40);
@@ -171,18 +238,30 @@ export default function ComposePage() {
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
     if (mediaFiles.length >= MAX_MEDIA) {
-      showToast(`Maksimum ${MAX_MEDIA} dosya ekleyebilirsiniz. Mevcut limitinize ulaştınız.`);
+      showToast(`Maximum ${MAX_MEDIA} files allowed. You've reached your limit.`);
       e.target.value = "";
       return;
     }
     const remaining = MAX_MEDIA - mediaFiles.length;
     const toAdd = files.slice(0, remaining);
     const overflow = files.length - toAdd.length;
+    const prevLen = mediaFiles.length;
     const newFiles = [...mediaFiles, ...toAdd];
     setMediaFiles(newFiles);
     setMediaPreviews(newFiles.map((f, i) => i < mediaFiles.length ? mediaPreviews[i] : URL.createObjectURL(f)));
+    // Add new media indexes to ALL selected platforms (including pre-selected ones not yet in map)
+    const newIndexes = Array.from({ length: toAdd.length }, (_, i) => prevLen + i);
+    const allExistingIdxs = Array.from({ length: prevLen }, (_, i) => i);
+    setPlatformMediaIndexes(prev => {
+      const updated = { ...prev };
+      selectedPlatforms.forEach(pid => {
+        const existing = updated[pid] ?? allExistingIdxs;
+        updated[pid] = [...existing, ...newIndexes];
+      });
+      return updated;
+    });
     if (overflow > 0) {
-      showToast(`${overflow} dosya eklenmedi — maksimum ${MAX_MEDIA} dosya sınırına ulaşıldı.`);
+      showToast(`${overflow} file(s) not added — maximum ${MAX_MEDIA} file limit reached.`);
     }
     e.target.value = "";
   };
@@ -190,6 +269,14 @@ export default function ComposePage() {
   const removeMedia = (index: number) => {
     setMediaFiles(prev => prev.filter((_, i) => i !== index));
     setMediaPreviews(prev => prev.filter((_, i) => i !== index));
+    // Remap platform media indexes: drop removed index, shift higher indexes down
+    setPlatformMediaIndexes(prev => {
+      const updated: Record<string, number[]> = {};
+      Object.entries(prev).forEach(([pid, indexes]) => {
+        updated[pid] = indexes.filter(i => i !== index).map(i => i > index ? i - 1 : i);
+      });
+      return updated;
+    });
   };
 
   // Drag-and-drop reordering
@@ -212,10 +299,37 @@ export default function ComposePage() {
     setMediaPreviews(newPreviews);
     setDragIndex(null); setDragOverIndex(null);
   };
-  const handleDragEnd = () => { setDragIndex(null); setDragOverIndex(null); };
+  const handleDragEnd = () => { setDragIndex(null); setDragOverIndex(null); setDragOverPlatform(null); };
 
-  const handleSavePost = async (status: "Scheduled" | "Published" | "Draft") => {
-    if (!text.trim() || selectedPlatforms.length === 0) return;
+  const removePlatformMedia = (platformId: string, mediaIdx: number) => {
+    setPlatformMediaIndexes(prev => ({
+      ...prev,
+      [platformId]: (prev[platformId] || []).filter(i => i !== mediaIdx),
+    }));
+  };
+
+  const addMediaToPlatform = (platformId: string, mediaIdx: number) => {
+    setPlatformMediaIndexes(prev => {
+      const current = prev[platformId] || [];
+      if (current.includes(mediaIdx)) return prev;
+      return { ...prev, [platformId]: [...current, mediaIdx].sort((a, b) => a - b) };
+    });
+  };
+
+  const hasContent = text.trim().length > 0 || mediaFiles.length > 0 || existingMediaUrls.length > 0;
+
+  // Show no-caption warning for media-only posts, then proceed
+  const triggerPost = (status: "Scheduled" | "Published" | "Draft", date?: string, time?: string) => {
+    if (!text.trim() && mediaFiles.length > 0 && status !== "Draft") {
+      setPendingAction({ status, date, time });
+      setShowNoCaptionWarning(true);
+      return;
+    }
+    handleSavePost(status, date, time);
+  };
+
+  const handleSavePost = async (status: "Scheduled" | "Published" | "Draft", overrideDate?: string, overrideTime?: string) => {
+    if (!hasContent || selectedPlatforms.length === 0) return;
     if ((status === "Scheduled" || status === "Published") && !subscriptionSnapshot.canPublish) {
       alert("Your package has expired. Renew your subscription to schedule or publish new posts.");
       return;
@@ -223,17 +337,53 @@ export default function ComposePage() {
     if (!db) { alert("Firebase configuration is missing."); return; }
     setIsSubmitting(true);
     try {
-      await addDoc(collection(db, "posts"), {
-        content: text,
-        platforms: selectedPlatforms,
-        status,
-        createdAt: serverTimestamp(),
-        date: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
-        time: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false }),
-        autoOptimize,
-      });
-      setText(""); setMediaFiles([]); setMediaPreviews([]);
-      alert(status === "Published" ? "Post published successfully!" : "Post saved successfully!");
+      const now = new Date();
+      const displayDate = overrideDate
+        ? new Date(overrideDate + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+        : now.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+      const displayTime = overrideTime || now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false });
+
+      // Upload new media files to Firebase Storage
+      let uploadedUrls: string[] = [];
+      const activeStorage = storage;
+      if (activeStorage && mediaFiles.length > 0) {
+        uploadedUrls = await Promise.all(
+          mediaFiles.map(async (file) => {
+            const path = `posts/${Date.now()}_${file.name}`;
+            const storageRef = ref(activeStorage, path);
+            await uploadBytes(storageRef, file);
+            return getDownloadURL(storageRef);
+          })
+        );
+      }
+      const allMediaUrls = [...existingMediaUrls, ...uploadedUrls];
+
+      if (editingPostId) {
+        await updateDoc(doc(db, "posts", editingPostId), {
+          content: text,
+          platforms: selectedPlatforms,
+          status,
+          date: displayDate,
+          time: displayTime,
+          autoOptimize,
+          mediaUrls: allMediaUrls,
+        });
+        setEditingPostId(null);
+      } else {
+        await addDoc(collection(db, "posts"), {
+          content: text,
+          platforms: selectedPlatforms,
+          status,
+          createdAt: serverTimestamp(),
+          date: displayDate,
+          time: displayTime,
+          autoOptimize,
+          mediaUrls: allMediaUrls,
+        });
+      }
+
+      setText(""); setMediaFiles([]); setMediaPreviews([]); setExistingMediaUrls([]);
+      showToast(status === "Published" ? "Post published!" : status === "Scheduled" ? `Post scheduled for ${displayDate} at ${displayTime}` : "Draft saved.");
     } catch (error) {
       console.error(error);
       alert("Error saving post to backend.");
@@ -267,6 +417,17 @@ export default function ComposePage() {
         {!subscriptionSnapshot.canPublish && (
           <div className="mt-4 inline-flex items-center gap-2 rounded-2xl border border-amber-400/30 bg-amber-500/10 px-4 py-3 text-sm font-semibold text-amber-200">
             Your package is expired. You can still draft content, but scheduling and publishing are locked until renewal.
+          </div>
+        )}
+        {editingPostId && !editLoadError && (
+          <div className="mt-4 inline-flex items-center gap-2 rounded-2xl border border-violet-400/30 bg-violet-500/10 px-4 py-3 text-sm font-semibold text-violet-200">
+            <Pencil className="w-4 h-4 text-violet-400 shrink-0" />
+            Editing an existing post — saving will update the original.
+          </div>
+        )}
+        {editLoadError && (
+          <div className="mt-4 inline-flex items-center gap-2 rounded-2xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm font-semibold text-red-200">
+            Could not load the post for editing. It may have been deleted.
           </div>
         )}
       </header>
@@ -306,7 +467,7 @@ export default function ComposePage() {
                 title={`Add photo or video (${mediaFiles.length}/${MAX_MEDIA})`}
                 onClick={() => {
                   if (mediaFiles.length >= MAX_MEDIA) {
-                    showToast(`Maksimum ${MAX_MEDIA} dosya sınırına ulaştınız.`);
+                    showToast(`Maximum ${MAX_MEDIA} file limit reached.`);
                     return;
                   }
                   fileInputRef.current?.click();
@@ -355,13 +516,13 @@ export default function ComposePage() {
                       <div className="px-3 pt-2 pb-1 flex items-center justify-between">
                         <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">{activeCategory.name}</p>
                         {activeCategory.id === "recent" && activeCategory.emojis.length === 0 && (
-                          <p className="text-[10px] text-neutral-600">Henüz kullanılmadı</p>
+                          <p className="text-[10px] text-neutral-600">None yet</p>
                         )}
                       </div>
                       {/* Emoji grid */}
                       {activeCategory.emojis.length === 0 ? (
                         <div className="px-4 pb-6 pt-2 text-center text-neutral-600 text-sm">
-                          Emoji kullanmaya başladıkça burada görünür.
+                          Start using emojis and they'll appear here.
                         </div>
                       ) : (
                         <div className="grid grid-cols-8 gap-0 px-1.5 pb-2 max-h-[260px] overflow-y-auto">
@@ -427,8 +588,8 @@ export default function ComposePage() {
             {mediaPreviews.length > 0 && (
               <div className="px-5 pb-5 border-t border-white/5 pt-4">
                 <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-600 mb-3 flex items-center gap-2">
-                  <span>Medya ({mediaFiles.length}/{MAX_MEDIA})</span>
-                  <span className="font-normal normal-case tracking-normal text-neutral-700">— sürükleyerek sıralayabilirsiniz</span>
+                  <span>Media ({mediaFiles.length}/{MAX_MEDIA})</span>
+                  <span className="font-normal normal-case tracking-normal text-neutral-700">— drag to reorder · drop onto preview to add</span>
                 </p>
                 <div className="flex gap-3 flex-wrap">
                   {mediaPreviews.map((src, i) => (
@@ -487,16 +648,23 @@ export default function ComposePage() {
             </div>
 
             <div className="flex justify-end gap-3 flex-wrap ml-auto">
-              <button onClick={() => handleSavePost("Draft")} disabled={isSubmitting || !text || selectedPlatforms.length === 0}
+              <button onClick={() => handleSavePost("Draft")} disabled={isSubmitting || !hasContent || selectedPlatforms.length === 0}
                 className="glass py-3.5 px-6 rounded-full font-bold text-neutral-300 hover:text-white hover:bg-white/10 transition-all border border-white/10 flex items-center gap-2.5 disabled:opacity-50 disabled:cursor-not-allowed text-sm">
                 Save Draft
               </button>
-              <button onClick={() => handleSavePost("Scheduled")} disabled={isSubmitting || !text || selectedPlatforms.length === 0 || !subscriptionSnapshot.canPublish}
+              <button
+                onClick={() => {
+                  const d = new Date(); d.setDate(d.getDate() + 1);
+                  setScheduleDate(d.toISOString().split("T")[0]);
+                  setScheduleTime("09:00");
+                  setShowSchedulePicker(true);
+                }}
+                disabled={isSubmitting || !hasContent || selectedPlatforms.length === 0 || !subscriptionSnapshot.canPublish}
                 className="glass py-3.5 px-6 rounded-full font-bold text-white hover:bg-white/10 transition-all border border-white/10 flex items-center gap-2.5 group disabled:opacity-50 disabled:cursor-not-allowed text-sm shadow-md">
                 {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin text-sky-400" /> : <Clock className="w-4 h-4 text-sky-400 group-hover:rotate-12 transition-transform" />}
                 Schedule
               </button>
-              <button onClick={() => handleSavePost("Published")} disabled={isSubmitting || !text || selectedPlatforms.length === 0 || !subscriptionSnapshot.canPublish}
+              <button onClick={() => triggerPost("Published")} disabled={isSubmitting || !hasContent || selectedPlatforms.length === 0 || !subscriptionSnapshot.canPublish}
                 className="bg-violet-600 py-3.5 px-8 rounded-full font-bold text-white hover:bg-violet-500 transition-all shadow-[0_0_20px_rgba(139,92,246,0.5)] hover:shadow-[0_0_35px_rgba(139,92,246,0.7)] flex items-center gap-2.5 group hover:-translate-y-0.5 active:translate-y-0 border border-violet-400/50 disabled:opacity-50 disabled:cursor-not-allowed text-sm">
                 {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />}
                 Post Now
@@ -508,53 +676,202 @@ export default function ComposePage() {
         {/* Live Preview Sidebar */}
         <div className="lg:col-span-1 mt-8 lg:mt-0 relative">
           <div className="sticky top-10">
-            <h3 className="text-xs font-bold text-neutral-400 uppercase tracking-wider mb-6 flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" /> Live Previews
-            </h3>
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xs font-bold text-neutral-400 uppercase tracking-wider flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" /> Live Previews
+              </h3>
+              {selectedPlatforms.length > 0 && (
+                <button
+                  onClick={() => triggerPost("Published")}
+                  disabled={isSubmitting || !text || !subscriptionSnapshot.canPublish}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold transition-all shadow-[0_0_15px_rgba(139,92,246,0.4)] hover:shadow-[0_0_25px_rgba(139,92,246,0.6)] disabled:opacity-40 disabled:cursor-not-allowed border border-violet-400/40"
+                >
+                  <Layers className="w-3 h-3" />
+                  Bulk Share
+                </button>
+              )}
+            </div>
+
             {selectedPlatforms.length === 0 ? (
               <div className="glass p-8 rounded-3xl text-center border-dashed border-white/10 flex flex-col items-center justify-center gap-4">
                 <ImagePlus className="w-10 h-10 text-neutral-600" />
-                <p className="text-neutral-500 text-sm font-medium">Select a platform to see how your post will look like.</p>
+                <p className="text-neutral-500 text-sm font-medium">Select a platform to start previewing.</p>
               </div>
             ) : (
-              <div className="space-y-6 max-h-[700px] overflow-y-auto pr-2 pb-4">
+              <div className="space-y-4 max-h-[800px] overflow-y-auto pr-1 pb-4">
                 {selectedPlatforms.map(id => {
                   const p = platforms.find(x => x.id === id);
+                  const displayText = platformTexts[id] ?? text;
+                  const isEditing = editingPlatform === id;
                   return (
-                    <div key={id} className="glass p-6 rounded-[2rem] border border-white/5 space-y-4 hover:border-white/10 transition-colors shadow-xl">
-                      <div className="flex items-center gap-3">
-                        <div className={`w-11 h-11 rounded-full flex items-center justify-center font-bold text-lg shadow-inner ${p?.activeColor}`}>{p?.icon}</div>
-                        <div>
-                          <div className="font-bold text-white text-sm">NexoPost App</div>
-                          <div className="text-xs text-neutral-400 font-medium">Just now · {p?.name}</div>
+                    <div key={id} className="glass rounded-[1.75rem] border border-white/5 hover:border-white/10 transition-colors shadow-xl overflow-hidden">
+                      {/* Card header */}
+                      <div className="px-4 pt-4 pb-3 flex items-center gap-3 border-b border-white/5">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-base shadow-inner shrink-0 ${p?.activeColor}`}>{p?.icon}</div>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-bold text-white text-sm leading-tight">NexoPost App</div>
+                          <div className="text-[11px] text-neutral-500 font-medium">Just now · {p?.name}</div>
                         </div>
+                        {/* Edit toggle */}
+                        <button
+                          onClick={() => setEditingPlatform(isEditing ? null : id)}
+                          title={isEditing ? "Done editing" : `Edit for ${p?.name}`}
+                          className={`p-1.5 rounded-lg transition-colors ${isEditing ? "bg-emerald-500/20 text-emerald-400" : "hover:bg-white/10 text-neutral-500 hover:text-white"}`}
+                        >
+                          {isEditing ? <Check className="w-3.5 h-3.5" /> : <Pencil className="w-3.5 h-3.5" />}
+                        </button>
+                        {/* Remove platform */}
+                        <button
+                          onClick={() => handleToggle(id)}
+                          title={`Remove ${p?.name} from post`}
+                          className="p-1.5 rounded-lg hover:bg-red-500/20 text-neutral-500 hover:text-red-400 transition-colors"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
                       </div>
-                      {/* Preview text with hashtag styling */}
-                      <p className="text-sm leading-relaxed whitespace-pre-wrap font-medium break-words">
-                        {text ? (
-                          text.split(/((?<!\w)#[\w\u0080-\uFFFF]+|(?<!\w)@[\w.]+)/g).map((part, i) =>
-                            /^#[\w\u0080-\uFFFF]+$/.test(part)
-                              ? <span key={i} className="text-violet-400 font-bold">{part}</span>
-                              : /^@[\w.]+$/.test(part)
-                              ? <span key={i} className="text-sky-400 font-bold">{part}</span>
-                              : <span key={i} className="text-white">{part}</span>
-                          )
+
+                      {/* Card body */}
+                      <div className="p-4 space-y-3">
+                        {isEditing ? (
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                              <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-600">
+                                Custom content for {p?.name}
+                              </p>
+                              {/* Inline emoji button for platform edit */}
+                              <div className="relative">
+                                <button
+                                  onClick={() => setPlatformEmojiOpen(platformEmojiOpen === id ? null : id)}
+                                  className={`flex items-center gap-1 px-2 py-1 rounded-lg border text-[11px] font-bold transition-all ${platformEmojiOpen === id ? "bg-amber-500/20 border-amber-500/40 text-amber-300" : "bg-white/5 border-white/10 text-neutral-400 hover:text-amber-300 hover:border-amber-500/30"}`}
+                                >
+                                  <Smile className="w-3 h-3" /> Emoji
+                                </button>
+                                {platformEmojiOpen === id && (
+                                  <>
+                                    <div className="fixed inset-0 z-40" onClick={() => setPlatformEmojiOpen(null)} />
+                                    <div className="absolute right-0 top-full mt-1 z-50 w-[280px] bg-[#111114]/96 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl shadow-black/70 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
+                                      {/* Category tabs */}
+                                      <div className="flex border-b border-white/10 bg-black/50 overflow-x-auto" style={{ scrollbarWidth: "none" }}>
+                                        {allCategories.map(cat => (
+                                          <button key={cat.id} onClick={() => setActiveEmojiCategory(cat.id)} title={cat.name}
+                                            className={`flex-shrink-0 px-2 py-2 text-base transition-colors hover:bg-white/10 relative ${activeEmojiCategory === cat.id ? "bg-white/5" : ""}`}>
+                                            {cat.label}
+                                            {activeEmojiCategory === cat.id && (
+                                              <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-4 h-0.5 bg-amber-400 rounded-t-full" />
+                                            )}
+                                          </button>
+                                        ))}
+                                      </div>
+                                      <div className="px-2 pt-1.5 pb-0.5">
+                                        <p className="text-[9px] font-bold uppercase tracking-widest text-neutral-600">{activeCategory.name}</p>
+                                      </div>
+                                      <div className="grid grid-cols-8 gap-0 px-1 pb-2 max-h-[200px] overflow-y-auto">
+                                        {activeCategory.emojis.map((emoji, i) => (
+                                          <button key={i}
+                                            onClick={() => { insertEmoji(emoji); setPlatformEmojiOpen(null); }}
+                                            className="text-lg p-1 rounded-lg hover:bg-white/10 active:scale-90 transition-all duration-100 flex items-center justify-center aspect-square leading-none">
+                                            {emoji}
+                                          </button>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                            <textarea
+                              ref={platformTextareaRef}
+                              value={platformTexts[id] ?? text}
+                              onChange={e => setPlatformTexts(prev => ({ ...prev, [id]: e.target.value }))}
+                              className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-sm text-white resize-none focus:outline-none focus:border-violet-500/50 transition-colors font-medium placeholder:text-neutral-600"
+                              rows={5}
+                              placeholder="Write custom content for this platform..."
+                            />
+                            {platformTexts[id] !== undefined && platformTexts[id] !== text && (
+                              <button
+                                onClick={() => setPlatformTexts(prev => { const n = { ...prev }; delete n[id]; return n; })}
+                                className="text-[10px] text-neutral-500 hover:text-red-400 transition-colors font-medium"
+                              >
+                                ↩ Reset to main text
+                              </button>
+                            )}
+                          </div>
                         ) : (
-                          <span className="text-neutral-600">Your awesome content goes here...</span>
-                        )}
-                      </p>
-                      {mediaPreviews.length > 0 && (
-                        <div className={`grid gap-1 rounded-xl overflow-hidden ${mediaPreviews.length === 1 ? "grid-cols-1" : mediaPreviews.length <= 4 ? "grid-cols-2" : "grid-cols-3"}`}>
-                          {mediaPreviews.slice(0, 9).map((src, i) =>
-                            mediaFiles[i]?.type.startsWith("video/") ? (
-                              <video key={i} src={src} className="w-full aspect-square object-cover" muted />
+                          <p className="text-sm leading-relaxed whitespace-pre-wrap font-medium break-words">
+                            {displayText ? (
+                              displayText.split(/((?<!\w)#[\w\u0080-\uFFFF]+|(?<!\w)@[\w.]+)/g).map((part, i) =>
+                                /^#[\w\u0080-\uFFFF]+$/.test(part)
+                                  ? <span key={i} className="text-violet-400 font-bold">{part}</span>
+                                  : /^@[\w.]+$/.test(part)
+                                  ? <span key={i} className="text-sky-400 font-bold">{part}</span>
+                                  : <span key={i} className="text-white">{part}</span>
+                              )
                             ) : (
-                              // eslint-disable-next-line @next/next/no-img-element
-                              <img key={i} src={src} alt="media" className={`w-full object-cover ${mediaPreviews.length === 1 ? "aspect-video" : "aspect-square"}`} />
-                            )
-                          )}
-                        </div>
-                      )}
+                              <span className="text-neutral-600">Your content will appear here...</span>
+                            )}
+                          </p>
+                        )}
+
+                        {/* Platform-specific override indicator */}
+                        {platformTexts[id] !== undefined && !isEditing && (
+                          <div className="flex items-center gap-1.5 text-[10px] text-amber-400/70 font-bold">
+                            <Pencil className="w-2.5 h-2.5" /> Customized for this platform
+                          </div>
+                        )}
+
+                        {/* Per-platform media grid with remove + drag-to-add */}
+                        {(() => {
+                          const platformIdxs = platformMediaIndexes[id] ?? mediaFiles.map((_, i) => i);
+                          const isDragTarget = dragIndex !== null && dragOverPlatform === id;
+                          const canDropHere = dragIndex !== null && !platformIdxs.includes(dragIndex);
+                          if (mediaPreviews.length === 0) return null;
+                          return (
+                            <div
+                              onDragOver={e => { e.preventDefault(); setDragOverPlatform(id); }}
+                              onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setDragOverPlatform(null); }}
+                              onDrop={e => { e.preventDefault(); if (dragIndex !== null) addMediaToPlatform(id, dragIndex); setDragOverPlatform(null); }}
+                              className={`rounded-xl transition-all ${isDragTarget && canDropHere ? "ring-2 ring-violet-400 ring-offset-1 ring-offset-black" : ""}`}
+                            >
+                              {platformIdxs.length > 0 ? (
+                                <div className={`grid gap-1 rounded-xl overflow-hidden ${platformIdxs.length === 1 ? "grid-cols-1" : platformIdxs.length <= 4 ? "grid-cols-2" : "grid-cols-3"}`}>
+                                  {platformIdxs.map(idx => {
+                                    const src = mediaPreviews[idx];
+                                    const file = mediaFiles[idx];
+                                    if (!src) return null;
+                                    return (
+                                      <div key={idx} className="relative group">
+                                        {file?.type.startsWith("video/") ? (
+                                          <video src={src} className={`w-full object-cover ${platformIdxs.length === 1 ? "aspect-video" : "aspect-square"}`} muted />
+                                        ) : (
+                                          // eslint-disable-next-line @next/next/no-img-element
+                                          <img src={src} alt="media" className={`w-full object-cover ${platformIdxs.length === 1 ? "aspect-video" : "aspect-square"}`} />
+                                        )}
+                                        <button
+                                          onClick={() => removePlatformMedia(id, idx)}
+                                          title="Remove from this platform"
+                                          className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/80 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500/90"
+                                        >
+                                          <X className="w-3 h-3" />
+                                        </button>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              ) : (
+                                <div className={`rounded-xl border border-dashed p-3 text-center transition-colors ${isDragTarget ? "border-violet-400 bg-violet-500/10" : "border-white/10"}`}>
+                                  <p className="text-[11px] text-neutral-600">No media — drag from the left panel</p>
+                                </div>
+                              )}
+                              {/* Drop hint when dragging a non-included media */}
+                              {canDropHere && (
+                                <div className={`mt-1 flex items-center justify-center gap-1.5 p-1.5 rounded-lg border border-dashed text-[10px] font-medium transition-colors ${isDragTarget ? "border-violet-400 bg-violet-500/10 text-violet-300" : "border-white/10 text-neutral-600"}`}>
+                                  <ImagePlus className="w-3 h-3" /> Drop here to add
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })()}
+                      </div>
                     </div>
                   );
                 })}
@@ -563,6 +880,118 @@ export default function ComposePage() {
           </div>
         </div>
       </div>
+
+      {/* No-Caption Warning Modal */}
+      {showNoCaptionWarning && pendingAction && (
+        <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/70 backdrop-blur-sm" onClick={() => setShowNoCaptionWarning(false)}>
+          <div className="glass p-8 rounded-[2rem] border border-amber-500/20 shadow-2xl w-full max-w-sm mx-4 animate-in fade-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-5 h-5 text-amber-400" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-white">No caption</h3>
+                <p className="text-neutral-500 text-xs">You're about to post without any text</p>
+              </div>
+            </div>
+            <p className="text-sm text-neutral-400 font-medium mb-6 leading-relaxed">
+              Your post will contain media only, with no caption. Some platforms may display it differently. Do you want to continue?
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => { setShowNoCaptionWarning(false); setPendingAction(null); }}
+                className="flex-1 py-3 rounded-xl border border-white/10 text-neutral-300 hover:text-white hover:bg-white/10 font-bold transition-all text-sm"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  setShowNoCaptionWarning(false);
+                  if (pendingAction) await handleSavePost(pendingAction.status, pendingAction.date, pendingAction.time);
+                  setPendingAction(null);
+                }}
+                disabled={isSubmitting}
+                className="flex-1 py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-bold transition-all text-sm disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                Post anyway
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Schedule Date/Time Picker Modal */}
+      {showSchedulePicker && (
+        <div
+          className="fixed inset-0 z-[300] flex items-center justify-center bg-black/70 backdrop-blur-sm"
+          onClick={() => setShowSchedulePicker(false)}
+        >
+          <div
+            className="glass p-8 rounded-[2rem] border border-white/10 shadow-2xl w-full max-w-sm mx-4 animate-in fade-in zoom-in-95 duration-200"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 rounded-xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center">
+                <Clock className="w-5 h-5 text-sky-400" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-white leading-tight">Schedule Post</h3>
+                <p className="text-neutral-500 text-xs">Choose the date and time to publish</p>
+              </div>
+            </div>
+
+            <div className="h-px bg-white/5 my-6" />
+
+            <div className="space-y-4">
+              <div>
+                <label className="text-xs font-bold text-neutral-400 uppercase tracking-wider mb-2 block">Date</label>
+                <input
+                  type="date"
+                  value={scheduleDate}
+                  onChange={e => setScheduleDate(e.target.value)}
+                  min={new Date().toISOString().split("T")[0]}
+                  className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-violet-500/50 transition-colors font-medium text-sm"
+                  style={{ colorScheme: "dark" }}
+                />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-neutral-400 uppercase tracking-wider mb-2 block">Time</label>
+                <input
+                  type="time"
+                  value={scheduleTime}
+                  onChange={e => setScheduleTime(e.target.value)}
+                  className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-violet-500/50 transition-colors font-medium text-sm"
+                  style={{ colorScheme: "dark" }}
+                />
+              </div>
+
+              {scheduleDate && scheduleTime && (
+                <div className="bg-sky-500/5 border border-sky-500/20 rounded-xl px-4 py-3 text-sm text-sky-300 font-medium">
+                  📅 {new Date(scheduleDate + "T12:00:00").toLocaleDateString("en-US", { weekday: "long", day: "numeric", month: "long", year: "numeric" })} at {scheduleTime}
+                </div>
+              )}
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={() => setShowSchedulePicker(false)}
+                  className="flex-1 py-3 rounded-xl border border-white/10 text-neutral-300 hover:text-white hover:bg-white/10 font-bold transition-all text-sm"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => { setShowSchedulePicker(false); triggerPost("Scheduled", scheduleDate, scheduleTime); }}
+                  disabled={!scheduleDate || !scheduleTime || isSubmitting}
+                  className="flex-1 py-3 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold transition-all text-sm shadow-[0_0_15px_rgba(14,165,233,0.3)] disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Clock className="w-4 h-4" />}
+                  Schedule
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

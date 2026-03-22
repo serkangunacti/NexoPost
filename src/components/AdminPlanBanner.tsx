@@ -21,7 +21,8 @@ export default function AdminPlanBanner() {
       <div className="glass border border-white/10 rounded-[2rem] p-6 md:p-7 shadow-2xl relative overflow-hidden">
         <div className="absolute -top-24 right-0 w-72 h-72 bg-violet-500/10 blur-[110px] pointer-events-none" />
         <div className="relative z-10 flex flex-col gap-6">
-          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-5">
+          <div className="relative flex flex-col lg:flex-row lg:items-start lg:justify-between gap-5">
+            {/* Left: plan info */}
             <div className="space-y-3">
               <div className={`inline-flex items-center gap-2 px-3 py-2 rounded-full border text-sm font-bold ${accentClass}`}>
                 <Icon className="w-4 h-4" />
@@ -38,14 +39,27 @@ export default function AdminPlanBanner() {
               </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-3">
-              <Link
-                href="/checkout"
-                className="bg-violet-600 hover:bg-violet-500 text-white font-bold px-5 py-3 rounded-2xl transition-all shadow-[0_0_20px_rgba(139,92,246,0.25)] text-center"
-              >
-                {snapshot.isExpired ? "Renew Package" : snapshot.isTrial ? "Upgrade to Paid" : "Change Package"}
-              </Link>
+            {/* Center: slogan — truly centered via absolute */}
+            <div className="hidden lg:block absolute left-1/2 -translate-x-1/2 top-0 text-center select-none pointer-events-none">
+              <p className="text-4xl xl:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-br from-white via-white to-neutral-500 tracking-tight leading-tight">
+                Everything you need.
+              </p>
+              <p className="text-3xl xl:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-sky-400 tracking-tight leading-tight mt-0.5">
+                Nothing you don&apos;t.
+              </p>
             </div>
+
+            {/* Right: CTA — hidden for Agency (top-tier plan) */}
+            {subscription?.plan !== "agency" && (
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Link
+                  href="/checkout"
+                  className="bg-violet-600 hover:bg-violet-500 text-white font-bold px-5 py-3 rounded-2xl transition-all shadow-[0_0_20px_rgba(139,92,246,0.25)] text-center"
+                >
+                  {snapshot.isExpired ? "Renew Package" : snapshot.isTrial ? "Upgrade to Paid" : "Change Plan"}
+                </Link>
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
