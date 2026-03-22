@@ -721,23 +721,26 @@ export default function ComposePage() {
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2 ml-auto">
-              {/* Inline date + time for scheduling */}
-              <input
-                type="date"
-                value={scheduleDate}
-                onChange={e => setScheduleDate(e.target.value)}
-                min={new Date().toISOString().split("T")[0]}
-                className="bg-black/30 border border-white/10 rounded-xl px-3 py-2.5 text-white text-sm font-medium focus:outline-none focus:border-sky-500/50 transition-colors"
-                style={{ colorScheme: "dark" }}
-              />
-              <input
-                type="time"
-                value={scheduleTime}
-                onChange={e => setScheduleTime(e.target.value)}
-                className="bg-black/30 border border-white/10 rounded-xl px-3 py-2.5 text-white text-sm font-medium focus:outline-none focus:border-sky-500/50 transition-colors"
-                style={{ colorScheme: "dark" }}
-              />
+            <div className="flex items-end gap-3 ml-auto">
+              {/* Date above time */}
+              <div className="flex flex-col gap-1.5">
+                <input
+                  type="date"
+                  value={scheduleDate}
+                  onChange={e => setScheduleDate(e.target.value)}
+                  min={new Date().toISOString().split("T")[0]}
+                  className="bg-black/30 border border-white/10 rounded-xl px-3 py-2.5 text-white text-sm font-medium focus:outline-none focus:border-sky-500/50 transition-colors"
+                  style={{ colorScheme: "dark" }}
+                />
+                <input
+                  type="time"
+                  value={scheduleTime}
+                  onChange={e => setScheduleTime(e.target.value)}
+                  className="bg-black/30 border border-white/10 rounded-xl px-3 py-2.5 text-white text-sm font-medium focus:outline-none focus:border-sky-500/50 transition-colors"
+                  style={{ colorScheme: "dark" }}
+                />
+              </div>
+              {/* Schedule then Post Now side by side */}
               <button
                 onClick={() => {
                   if (!scheduleDate || !scheduleTime) { showToast("Please select a date and time to schedule."); return; }
