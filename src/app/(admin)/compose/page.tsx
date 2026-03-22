@@ -84,7 +84,7 @@ export default function ComposePage() {
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>(["twitter"]);
   const [editingPostId, setEditingPostId] = useState<string | null>(null);
   const [editLoadError, setEditLoadError] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submittingAction, setSubmittingAction] = useState<"Published" | "Scheduled" | "Draft" | null>(null);
   const [autoOptimize, setAutoOptimize] = useState(true);
 
   // Schedule date/time picker
@@ -341,14 +341,14 @@ export default function ComposePage() {
     if (!db) { showToast("Firebase configuration is missing."); return; }
 
     isSubmittingRef.current = true;
-    setIsSubmitting(true);
+    setSubmittingAction(status);
 
-    // Safety timeout — always resets isSubmitting after 20s if something hangs
+    // Safety timeout — force-resets state after 10s if something hangs
     const safetyTimer = setTimeout(() => {
       isSubmittingRef.current = false;
-      setIsSubmitting(false);
+      setSubmittingAction(null);
       showToast("Request timed out. Please check your connection and try again.");
-    }, 20000);
+    }, 10000);
 
     try {
       const now = new Date();
@@ -372,7 +372,7 @@ export default function ComposePage() {
               })
             ),
             new Promise<never>((_, reject) =>
-              setTimeout(() => reject(new Error("Storage upload timed out")), 15000)
+              setTimeout(() => reject(new Error("Storage upload timed out")), 8000)
             ),
           ]);
         } catch (storageErr) {
@@ -391,11 +391,22 @@ export default function ComposePage() {
         mediaUrls: allMediaUrls,
       };
 
+      const activeDb = db;
       if (editingPostId) {
-        await updateDoc(doc(db, "posts", editingPostId), payload);
+        await Promise.race([
+          updateDoc(doc(activeDb, "posts", editingPostId), payload),
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error("Firestore update timed out")), 8000)
+          ),
+        ]);
         setEditingPostId(null);
       } else {
-        await addDoc(collection(db, "posts"), { ...payload, createdAt: serverTimestamp() });
+        await Promise.race([
+          addDoc(collection(activeDb, "posts"), { ...payload, createdAt: serverTimestamp() }),
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error("Firestore write timed out")), 8000)
+          ),
+        ]);
       }
 
       setText(""); setMediaFiles([]); setMediaPreviews([]); setExistingMediaUrls([]);
@@ -410,7 +421,7 @@ export default function ComposePage() {
     } finally {
       clearTimeout(safetyTimer);
       isSubmittingRef.current = false;
-      setIsSubmitting(false);
+      setSubmittingAction(null);
     }
   };
 
@@ -596,7 +607,7 @@ export default function ComposePage() {
                 value={text}
                 onChange={e => setText(e.target.value)}
                 onScroll={handleTextareaScroll}
-                disabled={isSubmitting}
+                disabled={submittingAction !== null}
                 placeholder="What do you want to share with your audience today?"
                 className="absolute inset-0 w-full h-full bg-transparent p-8 text-xl resize-none focus:outline-none placeholder:text-neutral-600 font-medium disabled:opacity-50"
                 style={{
@@ -683,14 +694,14 @@ export default function ComposePage() {
                   setScheduleTime("09:00");
                   setShowSchedulePicker(true);
                 }}
-                disabled={isSubmitting || !hasContent || selectedPlatforms.length === 0 || !subscriptionSnapshot.canPublish}
+                disabled={submittingAction !== null || !hasContent || selectedPlatforms.length === 0 || !subscriptionSnapshot.canPublish}
                 className="glass py-3.5 px-6 rounded-full font-bold text-white hover:bg-white/10 transition-all border border-white/10 flex items-center gap-2.5 group disabled:opacity-50 disabled:cursor-not-allowed text-sm shadow-md">
                 <Clock className="w-4 h-4 text-sky-400 group-hover:rotate-12 transition-transform" />
                 Schedule
               </button>
-              <button onClick={() => triggerPost("Published")} disabled={isSubmitting || !hasContent || selectedPlatforms.length === 0 || !subscriptionSnapshot.canPublish}
+              <button onClick={() => triggerPost("Published")} disabled={submittingAction !== null || !hasContent || selectedPlatforms.length === 0 || !subscriptionSnapshot.canPublish}
                 className="bg-violet-600 py-3.5 px-8 rounded-full font-bold text-white hover:bg-violet-500 transition-all shadow-[0_0_20px_rgba(139,92,246,0.5)] hover:shadow-[0_0_35px_rgba(139,92,246,0.7)] flex items-center gap-2.5 group hover:-translate-y-0.5 active:translate-y-0 border border-violet-400/50 disabled:opacity-50 disabled:cursor-not-allowed text-sm">
-                {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />}
+                {submittingAction === "Published" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />}
                 Post Now
               </button>
             </div>
@@ -707,7 +718,7 @@ export default function ComposePage() {
               {selectedPlatforms.length > 0 && (
                 <button
                   onClick={() => triggerPost("Published")}
-                  disabled={isSubmitting || !text || !subscriptionSnapshot.canPublish}
+                  disabled={submittingAction !== null || !text || !subscriptionSnapshot.canPublish}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold transition-all shadow-[0_0_15px_rgba(139,92,246,0.4)] hover:shadow-[0_0_25px_rgba(139,92,246,0.6)] disabled:opacity-40 disabled:cursor-not-allowed border border-violet-400/40"
                 >
                   <Layers className="w-3 h-3" />
@@ -934,10 +945,10 @@ export default function ComposePage() {
                   if (pendingAction) await handleSavePost(pendingAction.status, pendingAction.date, pendingAction.time);
                   setPendingAction(null);
                 }}
-                disabled={isSubmitting}
+                disabled={submittingAction !== null}
                 className="flex-1 py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-bold transition-all text-sm disabled:opacity-50 flex items-center justify-center gap-2"
               >
-                {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                {submittingAction !== null ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                 Post anyway
               </button>
             </div>
@@ -1000,10 +1011,10 @@ export default function ComposePage() {
                 {/* Primary: Schedule */}
                 <button
                   onClick={() => { setShowSchedulePicker(false); handleSavePost("Scheduled", scheduleDate, scheduleTime); }}
-                  disabled={!scheduleDate || !scheduleTime || isSubmitting}
+                  disabled={!scheduleDate || !scheduleTime || submittingAction !== null}
                   className="w-full py-3.5 rounded-2xl bg-sky-600 hover:bg-sky-500 text-white font-bold transition-all text-sm shadow-[0_0_15px_rgba(14,165,233,0.3)] hover:shadow-[0_0_25px_rgba(14,165,233,0.4)] disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2.5"
                 >
-                  {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Clock className="w-4 h-4" />}
+                  {submittingAction === "Scheduled" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Clock className="w-4 h-4" />}
                   Schedule Post
                 </button>
                 {/* Secondary row: Cancel | Save as Draft */}
@@ -1016,7 +1027,7 @@ export default function ComposePage() {
                   </button>
                   <button
                     onClick={() => { setShowSchedulePicker(false); handleSavePost("Draft", scheduleDate || undefined, scheduleTime || undefined); }}
-                    disabled={isSubmitting}
+                    disabled={submittingAction !== null}
                     className="flex-1 py-3 rounded-xl border border-amber-500/25 bg-amber-500/8 text-amber-400 hover:bg-amber-500/15 font-semibold transition-all text-sm disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
                   >
                     <Pencil className="w-3.5 h-3.5" />
