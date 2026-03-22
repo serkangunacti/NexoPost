@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { Send, Smile, Type, Clock, Loader2, Wand2, ImagePlus, X, ChevronDown, AlertTriangle, Pencil, Check, Layers } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { db, storage } from "@/lib/firebase";
@@ -77,11 +78,11 @@ const MAX_MEDIA = 10;
 const RECENT_STORAGE_KEY = "nexopost_recent_emojis";
 
 export default function ComposePage() {
+  const router = useRouter();
   const { subscription, activeClient } = useApp();
   const [text, setText] = useState("");
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>(["twitter"]);
   const [editingPostId, setEditingPostId] = useState<string | null>(null);
-  const [editLoadError, setEditLoadError] = useState(false);
   const [submittingAction, setSubmittingAction] = useState<"Published" | "Scheduled" | "Draft" | null>(null);
   const [autoOptimize, setAutoOptimize] = useState(true);
 
@@ -175,14 +176,19 @@ export default function ComposePage() {
     (async () => {
       try {
         const snap = await getDoc(doc(activeDb, "posts", editId));
-        if (!snap.exists()) { setEditLoadError(true); return; }
+        if (!snap.exists()) {
+          setEditingPostId(null);
+          router.replace("/compose");
+          return;
+        }
         const data = snap.data() as { content?: string; platforms?: string[]; mediaUrls?: string[] };
         if (data.content) setText(data.content);
         if (data.platforms?.length) setSelectedPlatforms(data.platforms);
         if (data.mediaUrls?.length) setExistingMediaUrls(data.mediaUrls);
       } catch (e) {
         console.error("Edit load error:", e);
-        setEditLoadError(true);
+        setEditingPostId(null);
+        router.replace("/compose");
       }
     })();
   }, []);
@@ -477,15 +483,10 @@ export default function ComposePage() {
             Your package is expired. You can still draft content, but scheduling and publishing are locked until renewal.
           </div>
         )}
-        {editingPostId && !editLoadError && (
+        {editingPostId && (
           <div className="mt-4 inline-flex items-center gap-2 rounded-2xl border border-violet-400/30 bg-violet-500/10 px-4 py-3 text-sm font-semibold text-violet-200">
             <Pencil className="w-4 h-4 text-violet-400 shrink-0" />
             Editing an existing post — saving will update the original.
-          </div>
-        )}
-        {editLoadError && (
-          <div className="mt-4 inline-flex items-center gap-2 rounded-2xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm font-semibold text-red-200">
-            Could not load the post for editing. It may have been deleted.
           </div>
         )}
       </header>
