@@ -5,7 +5,8 @@ import { useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useApp } from "@/context/AppContext";
 import { CheckCircle2, AlertCircle, Loader2, Link2, Unlink, Building2, ExternalLink } from "lucide-react";
-import { SiX, SiFacebook, SiInstagram, SiTiktok, SiLinkedin } from "react-icons/si";
+import { SiX, SiFacebook, SiInstagram, SiTiktok } from "react-icons/si";
+import { FaLinkedin } from "react-icons/fa6";
 
 // Redacted token info returned from GET /api/users/[id]/social-tokens
 interface SafeTokenData {
@@ -47,7 +48,7 @@ const PLATFORMS: PlatformDef[] = [
   {
     id: "linkedin",
     name: "LinkedIn",
-    icon: <SiLinkedin className="w-7 h-7" />,
+    icon: <FaLinkedin className="w-7 h-7" />,
     gradient: "from-[#0A66C2] to-[#004182]",
     ring: "ring-[#0A66C2]/50",
     bg: "bg-[#0A66C2]",
