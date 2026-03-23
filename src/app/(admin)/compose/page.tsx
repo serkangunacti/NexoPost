@@ -565,16 +565,29 @@ export default function ComposePage() {
         ]);
         setEditingPostId(null);
       } else {
-        await Promise.race([
-          fetch("/api/posts", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ ...payload, userId }),
-          }).then(async (r) => { if (!r.ok) throw new Error(await r.text()); }),
-          new Promise<never>((_, reject) =>
-            setTimeout(() => reject(new Error("Request timed out")), 20000)
-          ),
-        ]);
+        let saved = false;
+        let lastError: unknown;
+        for (let attempt = 0; attempt < 2; attempt += 1) {
+          try {
+            await Promise.race([
+              fetch("/api/posts", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ ...payload, userId }),
+              }).then(async (r) => { if (!r.ok) throw new Error(await r.text()); }),
+              new Promise<never>((_, reject) =>
+                setTimeout(() => reject(new Error("Request timed out")), 20000)
+              ),
+            ]);
+            saved = true;
+            break;
+          } catch (error) {
+            lastError = error;
+            if (attempt === 1 || !isRetryableFetchError(error)) throw error;
+            await delay(700);
+          }
+        }
+        if (!saved) throw lastError instanceof Error ? lastError : new Error("Save failed");
       }
 
       setText("");
