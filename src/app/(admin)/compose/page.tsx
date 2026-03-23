@@ -369,12 +369,12 @@ export default function ComposePage() {
     isSubmittingRef.current = true;
     setSubmittingAction(status);
 
-    // Safety timeout — force-resets state after 10s if something hangs
+    // Safety timeout — force-resets state after 25s if something hangs
     const safetyTimer = setTimeout(() => {
       isSubmittingRef.current = false;
       setSubmittingAction(null);
       showToast("Request timed out. Please check your connection and try again.");
-    }, 10000);
+    }, 25000);
 
     try {
       const now = new Date();
@@ -437,7 +437,7 @@ export default function ComposePage() {
             body: JSON.stringify(payload),
           }).then(async (r) => { if (!r.ok) throw new Error(await r.text()); }),
           new Promise<never>((_, reject) =>
-            setTimeout(() => reject(new Error("Request timed out")), 8000)
+            setTimeout(() => reject(new Error("Request timed out")), 20000)
           ),
         ]);
         setEditingPostId(null);
@@ -449,13 +449,21 @@ export default function ComposePage() {
             body: JSON.stringify({ ...payload, userId }),
           }).then(async (r) => { if (!r.ok) throw new Error(await r.text()); }),
           new Promise<never>((_, reject) =>
-            setTimeout(() => reject(new Error("Request timed out")), 8000)
+            setTimeout(() => reject(new Error("Request timed out")), 20000)
           ),
         ]);
       }
 
-      setText(""); setMediaFiles([]); setMediaPreviews([]); setExistingMediaUrls([]);
-      if (status === "Scheduled") { setScheduleDate(""); setScheduleTime(""); }
+      setText("");
+      setMediaFiles([]);
+      setMediaPreviews([]);
+      setExistingMediaUrls([]);
+      setPlatformTexts({});
+      setPlatformMediaIndexes({});
+      setEditingPlatform(null);
+      setSelectedPlatforms(["twitter"]);
+      setScheduleDate("");
+      setScheduleTime("");
       setPendingAction(null);
       if (status === "Published") showToast("Post published successfully!", "success");
       else if (status === "Scheduled") showToast(`Scheduled for ${displayDate} at ${displayTime}`, "info");
@@ -827,13 +835,13 @@ export default function ComposePage() {
                 <p className="text-neutral-500 text-sm font-medium">Select a platform to start previewing.</p>
               </div>
             ) : (
-              <div className="space-y-4 max-h-[800px] overflow-y-auto pr-1 pb-4">
+              <div className="space-y-4 overflow-y-auto pr-1 pb-4" style={{ maxHeight: "calc(100vh - 180px)" }}>
                 {selectedPlatforms.map(id => {
                   const p = platforms.find(x => x.id === id);
                   const displayText = platformTexts[id] ?? text;
                   const isEditing = editingPlatform === id;
                   return (
-                    <div key={id} className="glass rounded-[1.75rem] border border-white/5 hover:border-white/10 transition-colors shadow-xl overflow-hidden">
+                    <div key={id} className="glass rounded-[1.75rem] border border-white/5 hover:border-white/10 transition-all duration-200 shadow-xl overflow-hidden">
                       {/* Card header */}
                       <div className="px-4 pt-4 pb-3 flex items-center gap-3 border-b border-white/5">
                         <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-base shadow-inner shrink-0 ${p?.activeColor}`}>{p?.icon}</div>
@@ -959,21 +967,21 @@ export default function ComposePage() {
                               onDragOver={e => { e.preventDefault(); setDragOverPlatform(id); }}
                               onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setDragOverPlatform(null); }}
                               onDrop={e => { e.preventDefault(); if (dragIndex !== null) addMediaToPlatform(id, dragIndex); setDragOverPlatform(null); }}
-                              className={`rounded-xl transition-all ${isDragTarget && canDropHere ? "ring-2 ring-violet-400 ring-offset-1 ring-offset-black" : ""}`}
+                              className={`rounded-xl transition-all duration-200 ${isDragTarget && canDropHere ? "ring-2 ring-violet-400 ring-offset-1 ring-offset-black" : ""}`}
                             >
                               {platformIdxs.length > 0 ? (
-                                <div className={`grid gap-1 rounded-xl overflow-hidden ${platformIdxs.length === 1 ? "grid-cols-1" : platformIdxs.length <= 4 ? "grid-cols-2" : "grid-cols-3"}`}>
+                                <div className={`grid gap-1 rounded-xl overflow-hidden transition-all duration-200 ${platformIdxs.length === 1 ? "grid-cols-1" : platformIdxs.length <= 4 ? "grid-cols-2" : "grid-cols-3"}`}>
                                   {platformIdxs.map(idx => {
                                     const src = mediaPreviews[idx];
                                     const file = mediaFiles[idx];
                                     if (!src) return null;
                                     return (
-                                      <div key={idx} className="relative group">
+                                      <div key={idx} className="relative group overflow-hidden">
                                         {file?.type.startsWith("video/") ? (
-                                          <video src={src} className={`w-full object-cover ${platformIdxs.length === 1 ? "aspect-video" : "aspect-square"}`} muted />
+                                          <video src={src} className="w-full aspect-square object-cover" muted />
                                         ) : (
                                           // eslint-disable-next-line @next/next/no-img-element
-                                          <img src={src} alt="media" className={`w-full object-cover ${platformIdxs.length === 1 ? "aspect-video" : "aspect-square"}`} />
+                                          <img src={src} alt="media" className="w-full aspect-square object-cover" />
                                         )}
                                         <button
                                           onClick={() => removePlatformMedia(id, idx)}
@@ -1042,8 +1050,12 @@ export default function ComposePage() {
                 disabled={submittingAction !== null}
                 className="flex-1 py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-bold transition-all text-sm disabled:opacity-50 flex items-center justify-center gap-2"
               >
-                {submittingAction !== null ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                Post anyway
+                {submittingAction !== null
+                  ? <Loader2 className="w-4 h-4 animate-spin" />
+                  : pendingAction?.status === "Scheduled"
+                    ? <Clock className="w-4 h-4" />
+                    : <Send className="w-4 h-4" />}
+                {pendingAction?.status === "Scheduled" ? "Schedule anyway" : "Post anyway"}
               </button>
             </div>
           </div>

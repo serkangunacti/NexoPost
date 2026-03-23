@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
 
   const { userId, content, platforms, status, date, time, autoOptimize = false, mediaUrls = [], scheduledAt } = body;
 
-  if (!userId || !content || !platforms || !status) {
+  if (!userId || (!content && (!mediaUrls || mediaUrls.length === 0)) || !platforms || !status) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
   }
 
