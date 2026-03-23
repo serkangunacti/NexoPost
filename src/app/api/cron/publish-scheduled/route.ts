@@ -1,10 +1,8 @@
 import { NextResponse } from "next/server";
-import { collection, query, where, getDocs, deleteDoc, doc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { prisma } from "@/lib/prisma";
 
 // Vercel Cron calls this endpoint on schedule (see vercel.json).
-// It finds all Scheduled posts whose scheduledAt time has passed and deletes them
-// from Firestore, removing them from the Scheduled Pipeline view.
+// It finds all Scheduled posts whose scheduledAt time has passed and marks them as Published.
 export async function GET(request: Request) {
   const secret = process.env.CRON_SECRET;
   if (secret) {
@@ -14,24 +12,19 @@ export async function GET(request: Request) {
     }
   }
 
-  if (!db) {
-    return NextResponse.json({ error: "Firebase not initialized" }, { status: 500 });
-  }
+  const now = new Date();
 
-  const now = new Date().toISOString();
-
-  const q = query(collection(db, "posts"), where("status", "==", "Scheduled"));
-  const snapshot = await getDocs(q);
-
-  const toDelete: string[] = [];
-  snapshot.forEach((d) => {
-    const data = d.data();
-    if (data.scheduledAt && data.scheduledAt <= now) {
-      toDelete.push(d.id);
-    }
+  const posts = await prisma.post.findMany({
+    where: { status: "Scheduled", scheduledAt: { lte: now } },
+    select: { id: true },
   });
 
-  await Promise.all(toDelete.map((id) => deleteDoc(doc(db!, "posts", id))));
+  if (posts.length > 0) {
+    await prisma.post.updateMany({
+      where: { id: { in: posts.map((p) => p.id) } },
+      data: { status: "Published" },
+    });
+  }
 
-  return NextResponse.json({ deleted: toDelete.length, checkedAt: now });
+  return NextResponse.json({ published: posts.length, checkedAt: now.toISOString() });
 }

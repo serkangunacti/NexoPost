@@ -5,9 +5,8 @@ import { ArrowUpRight, BarChart3, Plus, Layers, Calendar, Loader2, TrendingUp, U
 import Link from "next/link";
 import { useApp } from "@/context/AppContext";
 import { getAnalyticsOverview } from "@/lib/adminAnalytics";
-import { db } from "@/lib/firebase";
+import { useSession } from "next-auth/react";
 import { getSubscriptionSnapshot } from "@/lib/subscription";
-import { Timestamp, collection, onSnapshot, query, orderBy } from "firebase/firestore";
 import { SiX, SiFacebook, SiInstagram, SiTiktok, SiBluesky, SiThreads, SiPinterest } from "react-icons/si";
 import { FaLinkedin } from "react-icons/fa6";
 
@@ -18,49 +17,40 @@ interface DashboardPost {
   time: string;
   platforms: string[];
   status: string;
-  createdAt?: Timestamp | null;
 }
 
 export default function Home() {
   const { activeClient, connectedAccounts, subscription, userType } = useApp();
+  const { data: session } = useSession();
   const [stats, setStats] = useState({ total: 0, published: 0, scheduled: 0 });
   const [upcomingPosts, setUpcomingPosts] = useState<DashboardPost[]>([]);
-  const [loading, setLoading] = useState(() => Boolean(db));
+  const [loading, setLoading] = useState(true);
   const subscriptionSnapshot = getSubscriptionSnapshot(subscription);
   const currentConnectedIds = connectedAccounts[activeClient.id] || [];
   const analyticsOverview = getAnalyticsOverview(userType, currentConnectedIds);
 
   useEffect(() => {
-    if (!db) {
-      setLoading(false);
-      return;
-    }
+    const userId = session?.user?.id;
+    if (!userId) { setLoading(false); return; }
 
-    const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      let total = 0;
-      let published = 0;
-      let scheduled = 0;
-      const upcoming: DashboardPost[] = [];
-
-      snapshot.forEach((doc) => {
-        const data = doc.data();
-        total++;
-        if (data.status === 'Published') published++;
-        if (data.status === 'Scheduled' || data.status === 'Draft') {
-          scheduled++;
-          if (upcoming.length < 3) {
-            upcoming.push({ id: doc.id, ...(data as Omit<DashboardPost, "id">) });
+    fetch(`/api/posts?userId=${userId}`)
+      .then((res) => res.json())
+      .then((posts: DashboardPost[]) => {
+        let total = 0, published = 0, scheduled = 0;
+        const upcoming: DashboardPost[] = [];
+        for (const post of posts) {
+          total++;
+          if (post.status === "Published") published++;
+          if (post.status === "Scheduled" || post.status === "Draft") {
+            scheduled++;
+            if (upcoming.length < 3) upcoming.push(post);
           }
         }
-      });
-
-      setStats({ total, published, scheduled });
-      setUpcomingPosts(upcoming);
-      setLoading(false);
-    });
-
-    return () => unsubscribe();
+        setStats({ total, published, scheduled });
+        setUpcomingPosts(upcoming);
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false));
   }, []);
 
   const renderPlatformIcon = (p: string) => {
@@ -195,7 +185,7 @@ export default function Home() {
         {loading ? (
            <div className="glass rounded-[2.5rem] p-12 border border-white/5 flex flex-col items-center justify-center min-h-[300px]">
              <Loader2 className="w-10 h-10 animate-spin text-violet-500 mb-4" />
-             <p className="text-neutral-400 font-medium">Syncing with Firestore...</p>
+             <p className="text-neutral-400 font-medium">Loading posts...</p>
            </div>
         ) : upcomingPosts.length === 0 ? (
           <div className="glass rounded-[2.5rem] p-12 border border-white/5 flex flex-col items-center justify-center text-center relative overflow-hidden group">

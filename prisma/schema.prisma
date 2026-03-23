@@ -1,0 +1,43 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Post {
+  id           String    @id @default(uuid())
+  content      String    @db.Text
+  platforms    Json
+  status       String    @default("Draft")
+  date         String
+  time         String
+  scheduledAt  DateTime? @map("scheduled_at")
+  autoOptimize Boolean   @default(false) @map("auto_optimize")
+  mediaUrls    Json      @map("media_urls")
+  userId       String    @map("user_id")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  @@map("posts")
+}
+
+model User {
+  id                String   @id @default(cuid())
+  email             String?  @unique
+  hashedPassword    String?  @map("hashed_password")
+  userType          String   @default("basic") @map("user_type")
+  activeClientId    String?  @map("active_client_id")
+  clients           Json     @default("[]")
+  connectedAccounts Json     @default("{}") @map("connected_accounts")
+  subscription      Json?
+  pendingChange     Json?    @map("pending_change")
+  userProfile       Json?    @map("user_profile")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  @@map("users")
+}

@@ -4,10 +4,8 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Send, Smile, Type, Clock, Loader2, Wand2, ImagePlus, X, ChevronDown, AlertTriangle, Pencil, Check, Layers, BookmarkPlus } from "lucide-react";
 import { useApp } from "@/context/AppContext";
-import { db, storage } from "@/lib/firebase";
+import { useSession } from "next-auth/react";
 import { getSubscriptionSnapshot } from "@/lib/subscription";
-import { collection, addDoc, serverTimestamp, doc, getDoc, updateDoc } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { SiX, SiFacebook, SiInstagram, SiTiktok, SiBluesky, SiThreads, SiPinterest, SiYoutube } from "react-icons/si";
 import { FaLinkedin } from "react-icons/fa6";
 
@@ -80,6 +78,7 @@ const RECENT_STORAGE_KEY = "nexopost_recent_emojis";
 export default function ComposePage() {
   const router = useRouter();
   const { subscription, activeClient } = useApp();
+  const { data: session } = useSession();
   const [text, setText] = useState("");
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>(["twitter"]);
   const [editingPostId, setEditingPostId] = useState<string | null>(null);
@@ -146,44 +145,44 @@ export default function ComposePage() {
     }
   }, []);
 
-  // Load post for editing — reads from localStorage (set by scheduled page on navigate),
-  // falls back to Firestore getDoc if localStorage entry is missing or mismatched.
+  // Load post for editing — checks localStorage first (set by scheduled page just before navigate).
+  // Uses a timestamp to avoid accidentally loading stale data. Falls back to Firestore if needed.
   useEffect(() => {
-    const editId = new URLSearchParams(window.location.search).get("edit");
-    if (!editId) return;
-
-    // Try localStorage first — avoids an extra Firestore round-trip and permission issues
+    // Step 1: try localStorage — reliable regardless of URL timing
     try {
       const cached = localStorage.getItem("nexopost_edit_post");
       if (cached) {
-        const data = JSON.parse(cached) as { id: string; content?: string; platforms?: string[]; mediaUrls?: string[] };
-        if (data.id === editId) {
+        const data = JSON.parse(cached) as { id: string; content?: string; platforms?: string[]; mediaUrls?: string[]; _ts?: number };
+        const isRecent = !data._ts || (Date.now() - data._ts) < 15000; // within 15 seconds
+        if (isRecent && data.id) {
           localStorage.removeItem("nexopost_edit_post");
-          setEditingPostId(editId);
-          if (data.content) setText(data.content);
+          setEditingPostId(data.id);
+          setText(data.content ?? "");
           if (data.platforms?.length) setSelectedPlatforms(data.platforms);
           if (data.mediaUrls?.length) setExistingMediaUrls(data.mediaUrls);
           return;
+        } else {
+          localStorage.removeItem("nexopost_edit_post");
         }
       }
     } catch {}
 
-    // Fallback: fetch directly from Firestore
-    if (!db) return;
-    const activeDb = db;
+    // Step 2: fall back to URL param + API fetch
+    const editId = new URLSearchParams(window.location.search).get("edit");
+    if (!editId) return;
     setEditingPostId(editId);
     (async () => {
       try {
-        const snap = await getDoc(doc(activeDb, "posts", editId));
-        if (!snap.exists()) {
+        const res = await fetch(`/api/posts/${editId}`);
+        if (!res.ok) {
           setEditingPostId(null);
           router.replace("/compose");
           return;
         }
-        const data = snap.data() as { content?: string; platforms?: string[]; mediaUrls?: string[] };
-        if (data.content) setText(data.content);
-        if (data.platforms?.length) setSelectedPlatforms(data.platforms);
-        if (data.mediaUrls?.length) setExistingMediaUrls(data.mediaUrls);
+        const data = await res.json() as { content?: string; platforms?: string[]; mediaUrls?: string[] };
+        setText(data.content ?? "");
+        if (data.platforms?.length) setSelectedPlatforms(data.platforms as string[]);
+        if (data.mediaUrls?.length) setExistingMediaUrls(data.mediaUrls as string[]);
       } catch (e) {
         console.error("Edit load error:", e);
         setEditingPostId(null);
@@ -264,12 +263,13 @@ export default function ComposePage() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
-    if (mediaFiles.length >= MAX_MEDIA) {
+    const totalMedia = mediaFiles.length + existingMediaUrls.length;
+    if (totalMedia >= MAX_MEDIA) {
       showToast(`Maximum ${MAX_MEDIA} files allowed. You've reached your limit.`);
       e.target.value = "";
       return;
     }
-    const remaining = MAX_MEDIA - mediaFiles.length;
+    const remaining = MAX_MEDIA - totalMedia;
     const toAdd = files.slice(0, remaining);
     const overflow = files.length - toAdd.length;
     const prevLen = mediaFiles.length;
@@ -304,6 +304,10 @@ export default function ComposePage() {
       });
       return updated;
     });
+  };
+
+  const removeExistingMedia = (index: number) => {
+    setExistingMediaUrls(prev => prev.filter((_, i) => i !== index));
   };
 
   // Drag-and-drop reordering
@@ -362,8 +366,6 @@ export default function ComposePage() {
       showToast("Your package has expired. Renew your subscription to schedule or publish new posts.");
       return;
     }
-    if (!db) { showToast("Firebase configuration is missing."); return; }
-
     isSubmittingRef.current = true;
     setSubmittingAction(status);
 
@@ -381,27 +383,33 @@ export default function ComposePage() {
         : now.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
       const displayTime = overrideTime || now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false });
 
-      // Upload new media files to Firebase Storage — non-blocking; falls back to no media on failure
+      // Upload new media files to Cloudinary
       let uploadedUrls: string[] = [];
-      const activeStorage = storage;
-      if (activeStorage && mediaFiles.length > 0) {
-        try {
-          uploadedUrls = await Promise.race([
-            Promise.all(
-              mediaFiles.map(async (file) => {
-                const path = `posts/${Date.now()}_${file.name}`;
-                const storageRef = ref(activeStorage, path);
-                await uploadBytes(storageRef, file);
-                return getDownloadURL(storageRef);
-              })
-            ),
-            new Promise<never>((_, reject) =>
-              setTimeout(() => reject(new Error("Storage upload timed out")), 8000)
-            ),
-          ]);
-        } catch (storageErr) {
-          console.warn("Media upload failed, saving without media:", storageErr);
-        }
+      if (mediaFiles.length > 0) {
+        const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+        const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
+        uploadedUrls = await Promise.race([
+          Promise.all(
+            mediaFiles.map(async (file) => {
+              const formData = new FormData();
+              formData.append("file", file);
+              formData.append("upload_preset", uploadPreset!);
+              const res = await fetch(
+                `https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`,
+                { method: "POST", body: formData }
+              );
+              if (!res.ok) {
+                const errData = await res.json().catch(() => ({}));
+                throw new Error(`Cloudinary: ${errData?.error?.message || res.status}`);
+              }
+              const data = await res.json();
+              return data.secure_url as string;
+            })
+          ),
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error("Upload timed out")), 30000)
+          ),
+        ]);
       }
       const allMediaUrls = [...existingMediaUrls, ...uploadedUrls];
 
@@ -418,20 +426,30 @@ export default function ComposePage() {
           : {}),
       };
 
-      const activeDb = db;
+      const userId = session?.user?.id;
+      if (!userId) throw new Error("Not authenticated");
+
       if (editingPostId) {
         await Promise.race([
-          updateDoc(doc(activeDb, "posts", editingPostId), payload),
+          fetch(`/api/posts/${editingPostId}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          }).then(async (r) => { if (!r.ok) throw new Error(await r.text()); }),
           new Promise<never>((_, reject) =>
-            setTimeout(() => reject(new Error("Firestore update timed out")), 8000)
+            setTimeout(() => reject(new Error("Request timed out")), 8000)
           ),
         ]);
         setEditingPostId(null);
       } else {
         await Promise.race([
-          addDoc(collection(activeDb, "posts"), { ...payload, createdAt: serverTimestamp() }),
+          fetch("/api/posts", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ...payload, userId }),
+          }).then(async (r) => { if (!r.ok) throw new Error(await r.text()); }),
           new Promise<never>((_, reject) =>
-            setTimeout(() => reject(new Error("Firestore write timed out")), 8000)
+            setTimeout(() => reject(new Error("Request timed out")), 8000)
           ),
         ]);
       }
@@ -444,7 +462,14 @@ export default function ComposePage() {
       else showToast("Draft saved. You can edit it anytime in Scheduled Pipeline.", "success");
     } catch (error) {
       console.error("handleSavePost error:", error);
-      showToast("Error saving post. Please check your connection and try again.");
+      const errMsg = (error instanceof Error ? error.message : String(error)).toLowerCase();
+      if (errMsg.includes("cloudinary")) {
+        showToast(`Image upload failed — ${error instanceof Error ? error.message : "Cloudinary error"}`);
+      } else if (errMsg.includes("not authenticated")) {
+        showToast("You must be logged in to save posts.");
+      } else {
+        showToast(`Save failed: ${error instanceof Error ? error.message : String(error)}`);
+      }
     } finally {
       clearTimeout(safetyTimer);
       isSubmittingRef.current = false;
@@ -525,9 +550,9 @@ export default function ComposePage() {
 
               {/* Media Upload */}
               <button
-                title={`Add photo or video (${mediaFiles.length}/${MAX_MEDIA})`}
+                title={`Add photo or video (${existingMediaUrls.length + mediaFiles.length}/${MAX_MEDIA})`}
                 onClick={() => {
-                  if (mediaFiles.length >= MAX_MEDIA) {
+                  if (existingMediaUrls.length + mediaFiles.length >= MAX_MEDIA) {
                     showToast(`Maximum ${MAX_MEDIA} file limit reached.`);
                     return;
                   }
@@ -537,7 +562,7 @@ export default function ComposePage() {
               >
                 <ImagePlus className="w-4 h-4 group-hover:scale-110 transition-transform" />
                 <span className="text-xs font-bold hidden sm:inline">
-                  Media {mediaFiles.length > 0 && <span className="opacity-60">({mediaFiles.length}/{MAX_MEDIA})</span>}
+                  Media {(existingMediaUrls.length + mediaFiles.length) > 0 && <span className="opacity-60">({existingMediaUrls.length + mediaFiles.length}/{MAX_MEDIA})</span>}
                 </span>
               </button>
               <input ref={fileInputRef} type="file" accept="image/*,video/*" multiple className="hidden" onChange={handleFileChange} />
@@ -659,13 +684,30 @@ export default function ComposePage() {
             </div>
 
             {/* Media previews with drag-and-drop */}
-            {mediaPreviews.length > 0 && (
+            {(existingMediaUrls.length > 0 || mediaPreviews.length > 0) && (
               <div className="px-5 pb-5 border-t border-white/5 pt-4">
                 <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-600 mb-3 flex items-center gap-2">
-                  <span>Media ({mediaFiles.length}/{MAX_MEDIA})</span>
-                  <span className="font-normal normal-case tracking-normal text-neutral-700">— drag to reorder · drop onto preview to add</span>
+                  <span>Media ({existingMediaUrls.length + mediaFiles.length}/{MAX_MEDIA})</span>
+                  {mediaPreviews.length > 0 && <span className="font-normal normal-case tracking-normal text-neutral-700">— drag to reorder · drop onto preview to add</span>}
                 </p>
                 <div className="flex gap-3 flex-wrap">
+                  {/* Existing media from saved post */}
+                  {existingMediaUrls.map((url, i) => (
+                    <div key={`existing-${i}`} className="relative w-20 h-20 rounded-xl overflow-hidden border border-sky-500/30 group shrink-0">
+                      {/\.(mp4|mov|webm|avi)/i.test(url) ? (
+                        <video src={url} className="w-full h-full object-cover" muted />
+                      ) : (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={url} alt="existing media" className="w-full h-full object-cover" />
+                      )}
+                      <span className="absolute bottom-1 left-1 text-[8px] font-bold bg-sky-500/80 text-white px-1 rounded">saved</span>
+                      <button onClick={() => removeExistingMedia(i)}
+                        className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/80 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500/90">
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                  {/* New media files */}
                   {mediaPreviews.map((src, i) => (
                     <div
                       key={i}
@@ -692,12 +734,12 @@ export default function ComposePage() {
                       </button>
                     </div>
                   ))}
-                  {mediaFiles.length < MAX_MEDIA && (
+                  {(existingMediaUrls.length + mediaFiles.length) < MAX_MEDIA && (
                     <button
                       onClick={() => fileInputRef.current?.click()}
                       className="w-20 h-20 rounded-xl border border-dashed border-white/20 hover:border-violet-500/50 hover:bg-violet-500/5 flex flex-col items-center justify-center text-neutral-500 hover:text-violet-400 transition-all duration-200 shrink-0 gap-1">
                       <ImagePlus className="w-5 h-5" />
-                      <span className="text-[9px] font-bold">{mediaFiles.length}/{MAX_MEDIA}</span>
+                      <span className="text-[9px] font-bold">{existingMediaUrls.length + mediaFiles.length}/{MAX_MEDIA}</span>
                     </button>
                   )}
                 </div>

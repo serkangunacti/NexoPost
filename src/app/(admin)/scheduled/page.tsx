@@ -2,10 +2,9 @@
 
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Timestamp, collection, onSnapshot, query, orderBy, deleteDoc, doc, updateDoc } from "firebase/firestore";
 import { Calendar as CalendarIcon, Send, Loader2, Trash2, Pencil, Check, X, Clock, ExternalLink, AlertTriangle } from "lucide-react";
 import { useApp } from "@/context/AppContext";
-import { db } from "@/lib/firebase";
+import { useSession } from "next-auth/react";
 import { getSubscriptionSnapshot } from "@/lib/subscription";
 import { SiX, SiFacebook, SiInstagram, SiTiktok, SiBluesky, SiThreads, SiPinterest } from "react-icons/si";
 import { FaLinkedin } from "react-icons/fa6";
@@ -18,7 +17,7 @@ interface Post {
   platforms: string[];
   status: string;
   mediaUrls?: string[];
-  createdAt?: Timestamp | null;
+  createdAt?: string | null;
 }
 
 interface ConfirmModal {
@@ -29,8 +28,9 @@ interface ConfirmModal {
 export default function ScheduledPage() {
   const router = useRouter();
   const { subscription } = useApp();
+  const { data: session } = useSession();
   const [posts, setPosts] = useState<Post[]>([]);
-  const [loading, setLoading] = useState(() => Boolean(db));
+  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('Upcoming');
   const subscriptionSnapshot = getSubscriptionSnapshot(subscription);
 
@@ -59,46 +59,58 @@ export default function ScheduledPage() {
   const [editingTimeTime, setEditingTimeTime] = useState("");
   const [savingTime, setSavingTime] = useState(false);
 
-  useEffect(() => {
-    if (!db) return;
-
-    const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const postsData: Post[] = [];
-      snapshot.forEach((doc) => {
-        postsData.push({ id: doc.id, ...(doc.data() as Omit<Post, "id">) });
-      });
-      setPosts(postsData);
+  const fetchPosts = useCallback(async () => {
+    const userId = session?.user?.id;
+    if (!userId) { setLoading(false); return; }
+    try {
+      const res = await fetch(`/api/posts?userId=${userId}`);
+      if (!res.ok) throw new Error("Failed to fetch posts");
+      const data = await res.json() as Post[];
+      setPosts(data);
+    } catch (e) {
+      console.error(e);
+    } finally {
       setLoading(false);
-    });
-
-    return () => unsubscribe();
+    }
   }, []);
 
+  useEffect(() => {
+    fetchPosts();
+    // Re-fetch when window regains focus
+    const onFocus = () => fetchPosts();
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, [fetchPosts]);
+
+  const patchPost = async (id: string, data: Record<string, unknown>) => {
+    const res = await fetch(`/api/posts/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error(await res.text());
+    await fetchPosts();
+  };
+
   const handleDelete = (id: string) => {
-    if (!db) return;
-    const database = db;
     openConfirm("Are you sure you want to delete this post?", async () => {
-      await deleteDoc(doc(database, "posts", id));
+      await fetch(`/api/posts/${id}`, { method: "DELETE" });
+      await fetchPosts();
     });
   };
 
   const handlePublishDraft = (id: string) => {
-    if (!db) return;
     if (!subscriptionSnapshot.canPublish) {
       showToast("Your package has expired. Renew your subscription to publish queued content.", "error");
       return;
     }
-    const database = db;
     openConfirm("Publish this post now?", async () => {
-      await updateDoc(doc(database, "posts", id), { status: "Published" });
+      await patchPost(id, { status: "Published" });
     });
   };
 
   const handleStartTimeEdit = (post: Post) => {
-    // Convert stored display date back to input format (approximate via new Date)
     setEditingTimeId(post.id);
-    // Store raw time string directly; date needs a yyyy-mm-dd for the input
     const raw = post.date ? new Date(post.date + " " + (post.time || "00:00")) : new Date();
     const yyyy = raw.getFullYear();
     const mm = String(raw.getMonth() + 1).padStart(2, "0");
@@ -108,11 +120,11 @@ export default function ScheduledPage() {
   };
 
   const handleSaveTime = async (id: string) => {
-    if (!db || !editingTimeDate || !editingTimeTime) return;
+    if (!editingTimeDate || !editingTimeTime) return;
     setSavingTime(true);
     try {
       const displayDate = new Date(editingTimeDate + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-      await updateDoc(doc(db, "posts", id), { date: displayDate, time: editingTimeTime });
+      await patchPost(id, { date: displayDate, time: editingTimeTime });
       setEditingTimeId(null);
     } catch (e) {
       console.error(e);
@@ -133,10 +145,10 @@ export default function ScheduledPage() {
   };
 
   const handleSaveDraft = async (id: string) => {
-    if (!db || !editingContent.trim()) return;
+    if (!editingContent.trim()) return;
     setSavingDraft(true);
     try {
-      await updateDoc(doc(db, "posts", id), { content: editingContent });
+      await patchPost(id, { content: editingContent });
       setEditingDraftId(null);
       setEditingContent("");
     } catch (e) {
@@ -310,6 +322,19 @@ export default function ScheduledPage() {
                           className="w-full bg-white/5 border border-violet-500/40 rounded-2xl p-5 text-white text-base font-medium resize-none focus:outline-none focus:border-violet-500/70 transition-colors leading-relaxed"
                           autoFocus
                         />
+                        {post.mediaUrls && post.mediaUrls.length > 0 && (
+                          <div className="flex gap-2 flex-wrap">
+                            {post.mediaUrls.map((url, i) => (
+                              <div key={i} className="w-20 h-20 rounded-xl overflow-hidden bg-black/30 border border-white/10 shrink-0">
+                                {/\.(mp4|mov|webm|avi)/i.test(url) ? (
+                                  <video src={url} className="w-full h-full object-cover" muted />
+                                ) : (
+                                  <img src={url} alt="media" className="w-full h-full object-cover" />
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
                         <div className="flex gap-2">
                           <button
                             onClick={() => handleSaveDraft(post.id)}
@@ -328,9 +353,31 @@ export default function ScheduledPage() {
                         </div>
                       </div>
                     ) : (
-                      <p className="text-white text-lg font-medium leading-relaxed whitespace-pre-wrap bg-white/5 p-6 rounded-2xl border border-white/5 shadow-inner break-words relative">
-                        {post.content}
-                      </p>
+                      <div className="space-y-3">
+                        {post.content ? (
+                          <p className="text-white text-lg font-medium leading-relaxed whitespace-pre-wrap bg-white/5 p-6 rounded-2xl border border-white/5 shadow-inner break-words">
+                            {post.content}
+                          </p>
+                        ) : null}
+                        {post.mediaUrls && post.mediaUrls.length > 0 && (
+                          <div className="flex gap-2 flex-wrap">
+                            {post.mediaUrls.map((url, i) => (
+                              <div key={i} className="w-20 h-20 rounded-xl overflow-hidden bg-black/30 border border-white/10 shrink-0">
+                                {/\.(mp4|mov|webm|avi)/i.test(url) ? (
+                                  <video src={url} className="w-full h-full object-cover" muted />
+                                ) : (
+                                  <img src={url} alt="media" className="w-full h-full object-cover" />
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        {!post.content && (!post.mediaUrls || post.mediaUrls.length === 0) && (
+                          <p className="text-neutral-600 italic text-sm p-6 bg-white/5 rounded-2xl border border-white/5">
+                            No content saved.
+                          </p>
+                        )}
+                      </div>
                     )}
                   </div>
 
@@ -373,6 +420,7 @@ export default function ScheduledPage() {
                             content: post.content,
                             platforms: post.platforms,
                             mediaUrls: post.mediaUrls ?? [],
+                            _ts: Date.now(),
                           }));
                           router.push(`/compose?edit=${post.id}`);
                         }}

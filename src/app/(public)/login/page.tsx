@@ -6,8 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowRight, Lock, ShieldCheck, User } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 import { useApp } from "@/context/AppContext";
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
-import { auth } from "@/lib/firebase";
+import { signIn } from "next-auth/react";
 
 function LoginContent() {
   const { t } = useLanguage();
@@ -75,29 +74,21 @@ function LoginContent() {
       return;
     }
 
-    if (!auth) {
-      setError("Firebase is not configured.");
-      return;
-    }
-
     setLoading(true);
     try {
-      await signInWithEmailAndPassword(auth, trimmedIdentifier, trimmedPassword);
-      // AppContext's onAuthStateChanged listener loads the user data from Firestore
-      setSuccess(t.login_page.success);
-      router.push(nextPath);
-    } catch (err: unknown) {
-      const code = (err as { code?: string })?.code;
-      if (
-        code === "auth/user-not-found" ||
-        code === "auth/wrong-password" ||
-        code === "auth/invalid-credential" ||
-        code === "auth/invalid-email"
-      ) {
+      const result = await signIn("credentials", {
+        email: trimmedIdentifier,
+        password: trimmedPassword,
+        redirect: false,
+      });
+      if (result?.error) {
         setError(t.login_page.invalid);
       } else {
-        setError("An error occurred. Please try again.");
+        setSuccess(t.login_page.success);
+        router.push(nextPath);
       }
+    } catch {
+      setError("An error occurred. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -126,19 +117,10 @@ function LoginContent() {
       return;
     }
 
-    if (!auth) {
-      setError("Firebase is not configured.");
-      return;
-    }
-
     setLoading(true);
     try {
-      // Create Firebase Auth user (this also signs them in automatically)
-      await createUserWithEmailAndPassword(auth, registerEmail.trim(), registerPassword.trim());
-
-      // Write plan + profile to Firestore via AppContext
-      // auth.currentUser is set at this point so startPlan can resolve the uid
-      const result = startPlan({
+      // Determine plan details via startPlan (computes trial/paid phase, expiry, etc.)
+      const planResult = startPlan({
         activationMode: registrationMode,
         billingCycle: "monthly",
         companyName: companyName.trim(),
@@ -148,17 +130,46 @@ function LoginContent() {
         plan: trialPlan,
       });
 
-      setSuccess(result.phase === "trial" ? t.login_page.register_success_trial : t.login_page.register_success_paid);
-      router.push(nextPath);
-    } catch (err: unknown) {
-      const code = (err as { code?: string })?.code;
-      if (code === "auth/email-already-in-use") {
-        setError("This email is already registered. Please sign in instead.");
-      } else if (code === "auth/weak-password") {
-        setError("Password must be at least 6 characters.");
-      } else {
-        setError("Registration failed. Please try again.");
+      // Create user in MySQL via register API
+      const regRes = await fetch("/api/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: registerEmail.trim(),
+          password: registerPassword.trim(),
+          fullName: registerName.trim(),
+          companyName: companyName.trim(),
+          phone: phone.trim(),
+          userType: trialPlan,
+        }),
+      });
+
+      if (!regRes.ok) {
+        const err = await regRes.json().catch(() => ({})) as { error?: string };
+        if (regRes.status === 409) {
+          setError("This email is already registered. Please sign in instead.");
+        } else {
+          setError(err.error ?? "Registration failed. Please try again.");
+        }
+        return;
       }
+
+      // Auto sign-in after successful registration
+      const loginResult = await signIn("credentials", {
+        email: registerEmail.trim(),
+        password: registerPassword.trim(),
+        redirect: false,
+      });
+
+      if (loginResult?.error) {
+        setError("Account created but sign-in failed. Please sign in manually.");
+        return;
+      }
+
+      setSuccess(planResult.phase === "trial" ? t.login_page.register_success_trial : t.login_page.register_success_paid);
+      router.push(nextPath);
+    } catch {
+      setError("Registration failed. Please try again.");
     } finally {
       setLoading(false);
     }

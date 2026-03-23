@@ -1,9 +1,6 @@
 "use client";
 import React, { createContext, useContext, useEffect, useRef, useState } from "react";
-import { onAuthStateChanged, signOut } from "firebase/auth";
-import { doc, onSnapshot, setDoc } from "firebase/firestore";
-import { auth, db } from "@/lib/firebase";
-import { getSeedForEmail } from "@/lib/purchasedAccounts";
+import { useSession, signOut } from "next-auth/react";
 import {
   PendingPlanChange,
   SubscriptionRecord,
@@ -143,99 +140,59 @@ const AppContext = createContext<AppContextType>(defaultContextValue);
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<AppSession>(defaultSession);
   const [isHydrated, setIsHydrated] = useState(false);
-  // Tracks the Firebase Auth UID of the signed-in user
   const uidRef = useRef<string | null>(null);
+  const { data: authSession, status } = useSession();
 
   useEffect(() => {
-    if (!auth) {
+    if (status === "loading") return;
+
+    if (status === "unauthenticated") {
+      uidRef.current = null;
+      setSession(defaultSession);
       setIsHydrated(true);
       return;
     }
 
-    let unsubFirestore: (() => void) | null = null;
+    const uid = authSession?.user?.id;
+    if (!uid) { setIsHydrated(true); return; }
+    uidRef.current = uid;
 
-    const unsubAuth = onAuthStateChanged(auth, (firebaseUser) => {
-      // Cancel previous Firestore listener whenever auth state changes
-      if (unsubFirestore) {
-        unsubFirestore();
-        unsubFirestore = null;
-      }
+    fetch(`/api/users/${uid}`)
+      .then(async (res) => {
+        if (!res.ok) return;
+        const data = await res.json() as AppSession;
+        const resolved = resolveSessionDates({
+          activeClientId: data.activeClientId ?? "",
+          clients: data.clients ?? [],
+          connectedAccounts: data.connectedAccounts ?? {},
+          isLoggedIn: true,
+          pendingChange: data.pendingChange ?? null,
+          subscription: data.subscription ?? null,
+          userProfile: data.userProfile ?? null,
+          userType: data.userType ?? "basic",
+        });
+        setSession(resolved);
 
-      if (!firebaseUser || !db) {
-        uidRef.current = null;
-        setSession(defaultSession);
-        setIsHydrated(true);
-        return;
-      }
-
-      uidRef.current = firebaseUser.uid;
-
-      // Real-time listener on the user's Firestore document
-      unsubFirestore = onSnapshot(doc(db, "users", firebaseUser.uid), async (snap) => {
-        if (snap.exists()) {
-          const data = snap.data() as AppSession;
-          const resolved = resolveSessionDates({
-            activeClientId: data.activeClientId ?? "",
-            clients: data.clients ?? [],
-            connectedAccounts: data.connectedAccounts ?? {},
-            isLoggedIn: true,
-            pendingChange: data.pendingChange ?? null,
-            subscription: data.subscription ?? null,
-            userProfile: data.userProfile ?? null,
-            userType: data.userType ?? "basic",
-          });
-          setSession(resolved);
-
-          // If pendingChange just resolved, write the clean state back to Firestore
-          if (data.pendingChange && !resolved.pendingChange) {
-            await setDoc(
-              doc(db!, "users", firebaseUser.uid),
-              { pendingChange: null, subscription: resolved.subscription, userType: resolved.userType },
-              { merge: true }
-            ).catch(console.error);
-          }
-        } else {
-          // First login — bootstrap Firestore doc from seed data (existing customers)
-          const seed = getSeedForEmail(firebaseUser.email ?? "");
-          const userProfile: UserProfile = {
-            companyName: "",
-            email: firebaseUser.email ?? "",
-            fullName: seed?.fullName ?? firebaseUser.displayName ?? "",
-            phone: "",
-            sessionId:
-              typeof crypto !== "undefined" && "randomUUID" in crypto
-                ? crypto.randomUUID()
-                : `${Date.now()}`,
-            signedInAt: new Date().toISOString(),
-          };
-          const bootstrapped: AppSession = {
-            activeClientId: seed?.workspaces?.[0]?.id ?? "",
-            clients: seed?.workspaces ?? [],
-            connectedAccounts: seed?.connectedAccounts ?? {},
-            isLoggedIn: true,
-            pendingChange: seed?.pendingChange ?? null,
-            subscription: seed?.subscription ?? null,
-            userProfile,
-            userType: seed?.userType ?? "basic",
-          };
-          // Write to Firestore — onSnapshot will fire again and setSession
-          await setDoc(doc(db!, "users", firebaseUser.uid), bootstrapped).catch(console.error);
+        if (data.pendingChange && !resolved.pendingChange) {
+          fetch(`/api/users/${uid}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ pendingChange: null, subscription: resolved.subscription, userType: resolved.userType }),
+          }).catch(console.error);
         }
-        setIsHydrated(true);
-      });
-    });
+      })
+      .catch(console.error)
+      .finally(() => setIsHydrated(true));
+  }, [status, authSession?.user?.id]);
 
-    return () => {
-      unsubAuth();
-      if (unsubFirestore) unsubFirestore();
-    };
-  }, []);
-
-  // Writes a partial update to the current user's Firestore document
   const persist = (updates: Partial<AppSession>) => {
     const uid = uidRef.current;
-    if (!db || !uid) return;
-    setDoc(doc(db, "users", uid), updates, { merge: true }).catch(console.error);
+    if (!uid) return;
+    fetch(`/api/users/${uid}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(updates),
+    }).catch(console.error);
   };
 
   const buildUserProfile = (
@@ -272,7 +229,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = async () => {
-    if (auth) await signOut(auth).catch(console.error);
+    await signOut({ redirect: false });
     uidRef.current = null;
     setSession(defaultSession);
   };
@@ -357,24 +314,21 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
     setSession(nextSession);
 
-    // Use auth.currentUser as fallback in case uidRef hasn't been set yet
-    // (e.g. fresh registration where onAuthStateChanged fires concurrently)
-    const uid = uidRef.current ?? auth?.currentUser?.uid;
-    if (db && uid) {
-      setDoc(
-        doc(db, "users", uid),
-        {
+    const uid = uidRef.current;
+    if (uid) {
+      fetch(`/api/users/${uid}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
           activeClientId: nextSession.activeClientId,
           clients: nextSession.clients,
           connectedAccounts: nextSession.connectedAccounts,
-          isLoggedIn: true,
           pendingChange: null,
           subscription,
           userProfile,
           userType: plan,
-        },
-        { merge: true }
-      ).catch(console.error);
+        }),
+      }).catch(console.error);
     }
 
     return { effectiveAt: now.toISOString(), phase, scheduled: false };
