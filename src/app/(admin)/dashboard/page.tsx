@@ -28,10 +28,10 @@ export default function Home() {
   const subscriptionSnapshot = getSubscriptionSnapshot(subscription);
   const currentConnectedIds = connectedAccounts[activeClient.id] || [];
   const analyticsOverview = getAnalyticsOverview(userType, currentConnectedIds);
+  const userId = session?.user?.id;
 
   useEffect(() => {
-    const userId = session?.user?.id;
-    if (!userId) { setLoading(false); return; }
+    if (!userId) return;
 
     fetch(`/api/posts?userId=${userId}`)
       .then((res) => res.json())
@@ -51,7 +51,7 @@ export default function Home() {
       })
       .catch(console.error)
       .finally(() => setLoading(false));
-  }, []);
+  }, [userId]);
 
   const renderPlatformIcon = (p: string) => {
     switch (p) {
@@ -92,27 +92,39 @@ export default function Home() {
         {[
           { title: "Total Library", value: loading ? "-" : stats.total, trend: "All time", icon: Layers, color: "text-violet-400", gradient: "from-violet-500/20 to-transparent" },
           { title: "Published", value: loading ? "-" : stats.published, trend: "Live", icon: BarChart3, color: "text-sky-400", gradient: "from-sky-500/20 to-transparent" },
-          { title: "In Pipeline", value: loading ? "-" : stats.scheduled, trend: "Queued", icon: ArrowUpRight, color: "text-emerald-400", gradient: "from-emerald-500/20 to-transparent" }
-        ].map((stat, i) => (
-          <div key={i} className="glass p-6 rounded-3xl relative overflow-hidden group hover:-translate-y-1 transition-transform duration-300">
-            <div className={`absolute inset-0 bg-gradient-to-br ${stat.gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
-            <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16 transition-transform duration-500 group-hover:scale-[2]" />
-            <div className="flex justify-between items-start mb-6 relative z-10">
-              <div className="p-3.5 bg-white/5 rounded-xl border border-white/5 shadow-inner">
-                <stat.icon className={`w-6 h-6 ${stat.color}`} />
+          { title: "In Pipeline", value: loading ? "-" : stats.scheduled, trend: "Queued", icon: ArrowUpRight, color: "text-emerald-400", gradient: "from-emerald-500/20 to-transparent", href: "/scheduled" }
+        ].map((stat, i) => {
+          const cardContent = (
+            <div className="glass p-6 rounded-3xl relative overflow-hidden group hover:-translate-y-1 transition-transform duration-300">
+              <div className={`absolute inset-0 bg-gradient-to-br ${stat.gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
+              <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16 transition-transform duration-500 group-hover:scale-[2]" />
+              <div className="flex justify-between items-start mb-6 relative z-10">
+                <div className="p-3.5 bg-white/5 rounded-xl border border-white/5 shadow-inner">
+                  <stat.icon className={`w-6 h-6 ${stat.color}`} />
+                </div>
+                <span className="text-xs font-bold text-emerald-400 bg-emerald-400/10 px-3 py-1.5 rounded-full ring-1 ring-emerald-400/20 shadow-[0_0_10px_rgba(52,211,153,0.1)]">
+                  {stat.trend}
+                </span>
               </div>
-              <span className="text-xs font-bold text-emerald-400 bg-emerald-400/10 px-3 py-1.5 rounded-full ring-1 ring-emerald-400/20 shadow-[0_0_10px_rgba(52,211,153,0.1)]">
-                {stat.trend}
-              </span>
+              <div className="relative z-10">
+                <h3 className="text-4xl font-bold text-white mb-1">
+                  {stat.value === "-" ? <Loader2 className="w-8 h-8 animate-spin text-neutral-500 mt-2 mb-1" /> : stat.value}
+                </h3>
+                <p className="text-neutral-400 font-medium text-sm tracking-wide uppercase">{stat.title}</p>
+              </div>
             </div>
-            <div className="relative z-10">
-              <h3 className="text-4xl font-bold text-white mb-1">
-                {stat.value === "-" ? <Loader2 className="w-8 h-8 animate-spin text-neutral-500 mt-2 mb-1" /> : stat.value}
-              </h3>
-              <p className="text-neutral-400 font-medium text-sm tracking-wide uppercase">{stat.title}</p>
+          );
+
+          return stat.href ? (
+            <Link key={i} href={stat.href} className="block">
+              {cardContent}
+            </Link>
+          ) : (
+            <div key={i}>
+              {cardContent}
             </div>
-          </div>
-        ))}
+          );
+        })}
       </section>
 
       <section>
