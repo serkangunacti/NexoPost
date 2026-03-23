@@ -56,7 +56,12 @@ export function normalizePostPlatformConfig(
   selectedPlatforms: string[],
   mediaUrls: string[]
 ): Required<PostPlatformConfig> {
-  const config = isRecord(rawConfig) ? rawConfig : {};
+  // Guard: some DB drivers or JSON serialization may return JSON columns as strings
+  let parsed = rawConfig;
+  if (typeof rawConfig === "string") {
+    try { parsed = JSON.parse(rawConfig); } catch { parsed = null; }
+  }
+  const config = isRecord(parsed) ? parsed : {};
 
   return {
     textByPlatform: sanitizeTextByPlatform(config.textByPlatform, selectedPlatforms),

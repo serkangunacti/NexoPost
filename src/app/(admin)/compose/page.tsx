@@ -105,6 +105,8 @@ interface LoadedPostState {
   platforms?: string[];
   mediaUrls?: string[];
   platformConfig?: PostPlatformConfig;
+  scheduledAt?: string;
+  status?: string;
   _ts?: number;
 }
 
@@ -190,11 +192,26 @@ export default function ComposePage() {
     );
     setPlatformMediaItemIds(
       loadedPlatforms.reduce<Record<string, string[]>>((acc, platformId) => {
-        acc[platformId] = normalizedConfig.mediaByPlatform[platformId];
+        acc[platformId] = [...normalizedConfig.mediaByPlatform[platformId]];
         return acc;
       }, {})
     );
     setEditingPlatform(null);
+
+    // Restore schedule date/time for scheduled posts; clear for drafts
+    if (data.status === "Scheduled" && data.scheduledAt) {
+      try {
+        const d = new Date(data.scheduledAt);
+        setScheduleDate(d.toISOString().split("T")[0]);
+        setScheduleTime(d.toISOString().split("T")[1].slice(0, 5));
+      } catch {
+        setScheduleDate("");
+        setScheduleTime("");
+      }
+    } else {
+      setScheduleDate("");
+      setScheduleTime("");
+    }
   }, []);
 
   // Load recent emojis from localStorage

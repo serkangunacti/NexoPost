@@ -15,6 +15,7 @@ interface Post {
   content: string;
   date: string;
   time: string;
+  scheduledAt?: string | null;
   platforms: string[];
   status: string;
   mediaUrls?: string[];
@@ -423,6 +424,8 @@ export default function ScheduledPage() {
                             platforms: post.platforms,
                             mediaUrls: post.mediaUrls ?? [],
                             platformConfig: post.platformConfig ?? undefined,
+                            scheduledAt: post.scheduledAt ?? undefined,
+                            status: post.status,
                             _ts: Date.now(),
                           }));
                           router.push(`/compose?edit=${post.id}`);
