@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Calendar as CalendarIcon, Send, Loader2, Trash2, Pencil, Check, X, Clock, ExternalLink, AlertTriangle } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { useSession } from "next-auth/react";
+import { type PostPlatformConfig } from "@/lib/postPlatformConfig";
 import { getSubscriptionSnapshot } from "@/lib/subscription";
 import { SiX, SiFacebook, SiInstagram, SiTiktok, SiBluesky, SiThreads, SiPinterest } from "react-icons/si";
 import { FaLinkedin } from "react-icons/fa6";
@@ -17,6 +18,7 @@ interface Post {
   platforms: string[];
   status: string;
   mediaUrls?: string[];
+  platformConfig?: PostPlatformConfig | null;
   createdAt?: string | null;
 }
 
@@ -420,6 +422,7 @@ export default function ScheduledPage() {
                             content: post.content,
                             platforms: post.platforms,
                             mediaUrls: post.mediaUrls ?? [],
+                            platformConfig: post.platformConfig ?? undefined,
                             _ts: Date.now(),
                           }));
                           router.push(`/compose?edit=${post.id}`);

@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma } from "@/generated/prisma";
+import { type PostPlatformConfig } from "@/lib/postPlatformConfig";
 import { prisma } from "@/lib/prisma";
 
 // GET /api/posts/[id]
@@ -31,15 +33,20 @@ export async function PATCH(
     time?: string;
     autoOptimize?: boolean;
     mediaUrls?: string[];
+    platformConfig?: PostPlatformConfig;
     scheduledAt?: string | null;
   };
 
   const { scheduledAt, ...rest } = body;
+  const updateData = {
+    ...rest,
+    platformConfig: body.platformConfig as Prisma.InputJsonValue | undefined,
+  };
 
   const post = await prisma.post.update({
     where: { id },
     data: {
-      ...rest,
+      ...updateData,
       ...(scheduledAt !== undefined
         ? { scheduledAt: scheduledAt ? new Date(scheduledAt) : null }
         : {}),

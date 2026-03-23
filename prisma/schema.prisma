@@ -12,6 +12,7 @@ model Post {
   id           String    @id @default(uuid())
   content      String    @db.Text
   platforms    Json
+  platformConfig Json?   @map("platform_config")
   status       String    @default("Draft")
   date         String
   time         String

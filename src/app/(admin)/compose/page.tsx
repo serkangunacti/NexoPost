@@ -5,6 +5,11 @@ import { useRouter } from "next/navigation";
 import { Send, Smile, Type, Clock, Loader2, Wand2, ImagePlus, X, ChevronDown, AlertTriangle, Pencil, Check, Layers, BookmarkPlus } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { useSession } from "next-auth/react";
+import {
+  buildPostPlatformConfig,
+  normalizePostPlatformConfig,
+  type PostPlatformConfig,
+} from "@/lib/postPlatformConfig";
 import { getSubscriptionSnapshot } from "@/lib/subscription";
 import { SiX, SiFacebook, SiInstagram, SiTiktok, SiBluesky, SiThreads, SiPinterest, SiYoutube } from "react-icons/si";
 import { FaLinkedin } from "react-icons/fa6";
@@ -90,6 +95,15 @@ function isVideoPreviewUrl(url: string) {
   return /\.(mp4|mov|webm|avi)(\?.*)?$/i.test(url);
 }
 
+interface LoadedPostState {
+  id: string;
+  content?: string;
+  platforms?: string[];
+  mediaUrls?: string[];
+  platformConfig?: PostPlatformConfig;
+  _ts?: number;
+}
+
 export default function ComposePage() {
   const router = useRouter();
   const { subscription, activeClient } = useApp();
@@ -144,6 +158,34 @@ export default function ComposePage() {
   const highlightRef = useRef<HTMLDivElement>(null);
   const subscriptionSnapshot = getSubscriptionSnapshot(subscription);
 
+  const applyLoadedPostState = useCallback((data: LoadedPostState) => {
+    const content = data.content ?? "";
+    const loadedPlatforms = data.platforms?.length ? data.platforms : ["twitter"];
+    const loadedMediaUrls = data.mediaUrls ?? [];
+    const normalizedConfig = normalizePostPlatformConfig(
+      data.platformConfig,
+      loadedPlatforms,
+      loadedMediaUrls
+    );
+
+    setEditingPostId(data.id);
+    setText(content);
+    setSelectedPlatforms(loadedPlatforms);
+    setExistingMediaUrls(loadedMediaUrls);
+    setPlatformTexts(normalizedConfig.textByPlatform);
+    setExistingPlatformMediaIndexes(
+      loadedPlatforms.reduce<Record<string, number[]>>((acc, platformId) => {
+        const mediaIndexes = normalizedConfig.mediaByPlatform[platformId]
+          .map((mediaUrl) => loadedMediaUrls.indexOf(mediaUrl))
+          .filter((mediaIndex) => mediaIndex >= 0);
+        acc[platformId] = mediaIndexes;
+        return acc;
+      }, {})
+    );
+    setPlatformMediaIndexes({});
+    setEditingPlatform(null);
+  }, []);
+
   // Load recent emojis from localStorage
   useEffect(() => {
     try {
@@ -168,14 +210,11 @@ export default function ComposePage() {
     try {
       const cached = localStorage.getItem("nexopost_edit_post");
       if (cached) {
-        const data = JSON.parse(cached) as { id: string; content?: string; platforms?: string[]; mediaUrls?: string[]; _ts?: number };
+        const data = JSON.parse(cached) as LoadedPostState;
         const isRecent = !data._ts || (Date.now() - data._ts) < 15000; // within 15 seconds
         if (isRecent && data.id) {
           localStorage.removeItem("nexopost_edit_post");
-          setEditingPostId(data.id);
-          setText(data.content ?? "");
-          if (data.platforms?.length) setSelectedPlatforms(data.platforms);
-          if (data.mediaUrls?.length) setExistingMediaUrls(data.mediaUrls);
+          applyLoadedPostState(data);
           return;
         } else {
           localStorage.removeItem("nexopost_edit_post");
@@ -195,17 +234,15 @@ export default function ComposePage() {
           router.replace("/compose");
           return;
         }
-        const data = await res.json() as { content?: string; platforms?: string[]; mediaUrls?: string[] };
-        setText(data.content ?? "");
-        if (data.platforms?.length) setSelectedPlatforms(data.platforms as string[]);
-        if (data.mediaUrls?.length) setExistingMediaUrls(data.mediaUrls as string[]);
+        const data = await res.json() as LoadedPostState;
+        applyLoadedPostState({ ...data, id: editId });
       } catch (e) {
         console.error("Edit load error:", e);
         setEditingPostId(null);
         router.replace("/compose");
       }
     })();
-  }, [router]);
+  }, [applyLoadedPostState, router]);
 
   const showToast = useCallback((msg: string, type: "success" | "error" | "info" = "error") => {
     setToast({ message: msg, type });
@@ -467,6 +504,17 @@ export default function ComposePage() {
         ]);
       }
       const allMediaUrls = [...existingMediaUrls, ...uploadedUrls];
+      const mediaByPlatform = selectedPlatforms.reduce<Record<string, string[]>>((acc, platformId) => {
+        const savedIndexes = existingPlatformMediaIndexes[platformId] ?? existingMediaUrls.map((_, i) => i);
+        const uploadedIndexes = platformMediaIndexes[platformId] ?? mediaFiles.map((_, i) => i);
+
+        acc[platformId] = [
+          ...savedIndexes.map((mediaIndex) => existingMediaUrls[mediaIndex]).filter((mediaUrl): mediaUrl is string => typeof mediaUrl === "string"),
+          ...uploadedIndexes.map((mediaIndex) => uploadedUrls[mediaIndex]).filter((mediaUrl): mediaUrl is string => typeof mediaUrl === "string"),
+        ];
+
+        return acc;
+      }, {});
 
       const payload = {
         content: text,
@@ -476,6 +524,7 @@ export default function ComposePage() {
         time: displayTime,
         autoOptimize,
         mediaUrls: allMediaUrls,
+        platformConfig: buildPostPlatformConfig(selectedPlatforms, platformTexts, mediaByPlatform),
         ...(status === "Scheduled" && overrideDate && overrideTime
           ? { scheduledAt: new Date(`${overrideDate}T${overrideTime}`).toISOString() }
           : {}),
@@ -552,6 +601,7 @@ export default function ComposePage() {
     time: string;
     autoOptimize: boolean;
     mediaUrls: string[];
+    platformConfig: PostPlatformConfig;
     scheduledAt?: string;
   }) => {
     let lastError: unknown;

@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma } from "@/generated/prisma";
+import { type PostPlatformConfig } from "@/lib/postPlatformConfig";
 import { prisma } from "@/lib/prisma";
 
 // GET /api/posts?userId=xxx
@@ -27,10 +29,22 @@ export async function POST(request: NextRequest) {
     time: string;
     autoOptimize?: boolean;
     mediaUrls?: string[];
+    platformConfig?: PostPlatformConfig;
     scheduledAt?: string;
   };
 
-  const { userId, content, platforms, status, date, time, autoOptimize = false, mediaUrls = [], scheduledAt } = body;
+  const {
+    userId,
+    content,
+    platforms,
+    status,
+    date,
+    time,
+    autoOptimize = false,
+    mediaUrls = [],
+    platformConfig,
+    scheduledAt,
+  } = body;
 
   if (!userId || (!content && (!mediaUrls || mediaUrls.length === 0)) || !platforms || !status) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -41,6 +55,7 @@ export async function POST(request: NextRequest) {
       userId,
       content,
       platforms,
+      platformConfig: platformConfig as Prisma.InputJsonValue | undefined,
       status,
       date,
       time,
