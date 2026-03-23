@@ -86,6 +86,10 @@ function isRetryableFetchError(error: unknown) {
   return RETRYABLE_FETCH_ERRORS.some((pattern) => message.includes(pattern));
 }
 
+function isVideoPreviewUrl(url: string) {
+  return /\.(mp4|mov|webm|avi)(\?.*)?$/i.test(url);
+}
+
 export default function ComposePage() {
   const router = useRouter();
   const { subscription, activeClient } = useApp();
@@ -154,7 +158,7 @@ export default function ComposePage() {
     } catch {
       setActiveEmojiCategory("smileys");
     }
-  }, []);
+  }, [router]);
 
   // Load post for editing — checks localStorage first (set by scheduled page just before navigate).
   // Uses a timestamp to avoid accidentally loading stale data. Falls back to Firestore if needed.
@@ -200,7 +204,7 @@ export default function ComposePage() {
         router.replace("/compose");
       }
     })();
-  }, []);
+  }, [router]);
 
   const showToast = useCallback((msg: string, type: "success" | "error" | "info" = "error") => {
     setToast({ message: msg, type });
@@ -662,7 +666,7 @@ export default function ComposePage() {
                       {/* Emoji grid */}
                       {activeCategory.emojis.length === 0 ? (
                         <div className="px-4 pb-6 pt-2 text-center text-neutral-600 text-sm">
-                          Start using emojis and they'll appear here.
+                          Start using emojis and they&apos;ll appear here.
                         </div>
                       ) : (
                         <div className="grid grid-cols-8 gap-0 px-1.5 pb-2 max-h-[260px] overflow-y-auto">
@@ -1007,7 +1011,9 @@ export default function ComposePage() {
                           const platformIdxs = platformMediaIndexes[id] ?? mediaFiles.map((_, i) => i);
                           const isDragTarget = dragIndex !== null && dragOverPlatform === id;
                           const canDropHere = dragIndex !== null && !platformIdxs.includes(dragIndex);
-                          if (mediaPreviews.length === 0) return null;
+                          const hasExistingMedia = existingMediaUrls.length > 0;
+                          const hasNewMedia = mediaPreviews.length > 0;
+                          if (!hasExistingMedia && !hasNewMedia) return null;
                           return (
                             <div
                               onDragOver={e => { e.preventDefault(); setDragOverPlatform(id); }}
@@ -1015,8 +1021,21 @@ export default function ComposePage() {
                               onDrop={e => { e.preventDefault(); if (dragIndex !== null) addMediaToPlatform(id, dragIndex); setDragOverPlatform(null); }}
                               className={`rounded-xl transition-all duration-200 ${isDragTarget && canDropHere ? "ring-2 ring-violet-400 ring-offset-1 ring-offset-black" : ""}`}
                             >
-                              {platformIdxs.length > 0 ? (
-                                <div className={`grid gap-1 rounded-xl overflow-hidden transition-all duration-200 ${platformIdxs.length === 1 ? "grid-cols-1" : platformIdxs.length <= 4 ? "grid-cols-2" : "grid-cols-3"}`}>
+                              {hasExistingMedia || platformIdxs.length > 0 ? (
+                                <div className={`grid gap-1 rounded-xl overflow-hidden transition-all duration-200 ${existingMediaUrls.length + platformIdxs.length === 1 ? "grid-cols-1" : existingMediaUrls.length + platformIdxs.length <= 4 ? "grid-cols-2" : "grid-cols-3"}`}>
+                                  {existingMediaUrls.map((url, idx) => (
+                                    <div key={`existing-preview-${idx}`} className="relative group overflow-hidden">
+                                      {isVideoPreviewUrl(url) ? (
+                                        <video src={url} className="w-full aspect-square object-cover" muted />
+                                      ) : (
+                                        // eslint-disable-next-line @next/next/no-img-element
+                                        <img src={url} alt="saved media" className="w-full aspect-square object-cover" />
+                                      )}
+                                      <span className="absolute left-1 top-1 rounded-full bg-sky-500/85 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wide text-white">
+                                        saved
+                                      </span>
+                                    </div>
+                                  ))}
                                   {platformIdxs.map(idx => {
                                     const src = mediaPreviews[idx];
                                     const file = mediaFiles[idx];
@@ -1074,7 +1093,7 @@ export default function ComposePage() {
               </div>
               <div>
                 <h3 className="text-base font-bold text-white">No caption</h3>
-                <p className="text-neutral-500 text-xs">You're about to post without any text</p>
+                <p className="text-neutral-500 text-xs">You&apos;re about to post without any text</p>
               </div>
             </div>
             <p className="text-sm text-neutral-400 font-medium mb-6 leading-relaxed">
