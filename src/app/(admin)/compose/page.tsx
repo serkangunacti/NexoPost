@@ -127,6 +127,7 @@ export default function ComposePage() {
   const [existingMediaUrls, setExistingMediaUrls] = useState<string[]>([]);
 
   // Per-platform media management
+  const [existingPlatformMediaIndexes, setExistingPlatformMediaIndexes] = useState<Record<string, number[]>>({});
   const [platformMediaIndexes, setPlatformMediaIndexes] = useState<Record<string, number[]>>({});
   const [dragOverPlatform, setDragOverPlatform] = useState<string | null>(null);
 
@@ -158,7 +159,7 @@ export default function ComposePage() {
     } catch {
       setActiveEmojiCategory("smileys");
     }
-  }, [router]);
+  }, []);
 
   // Load post for editing — checks localStorage first (set by scheduled page just before navigate).
   // Uses a timestamp to avoid accidentally loading stale data. Falls back to Firestore if needed.
@@ -228,14 +229,39 @@ export default function ComposePage() {
     if (selectedPlatforms.includes(id)) {
       setSelectedPlatforms(prev => prev.filter(p => p !== id));
       setPlatformTexts(prev => { const n = { ...prev }; delete n[id]; return n; });
+      setExistingPlatformMediaIndexes(prev => { const n = { ...prev }; delete n[id]; return n; });
       setPlatformMediaIndexes(prev => { const n = { ...prev }; delete n[id]; return n; });
       if (editingPlatform === id) setEditingPlatform(null);
     } else {
       setSelectedPlatforms(prev => [...prev, id]);
+      setExistingPlatformMediaIndexes(prev => ({ ...prev, [id]: existingMediaUrls.map((_, i) => i) }));
       // Initialize with all current media indexes
       setPlatformMediaIndexes(prev => ({ ...prev, [id]: mediaFiles.map((_, i) => i) }));
     }
   };
+
+  useEffect(() => {
+    if (selectedPlatforms.length === 0) return;
+
+    setExistingPlatformMediaIndexes(prev => {
+      const next = { ...prev };
+      const defaultIndexes = existingMediaUrls.map((_, i) => i);
+
+      selectedPlatforms.forEach((platformId) => {
+        if (!next[platformId]) {
+          next[platformId] = defaultIndexes;
+        }
+      });
+
+      Object.keys(next).forEach((platformId) => {
+        if (!selectedPlatforms.includes(platformId)) {
+          delete next[platformId];
+        }
+      });
+
+      return next;
+    });
+  }, [existingMediaUrls, selectedPlatforms]);
 
   // Sync textarea scroll → highlight layer
   const handleTextareaScroll = () => {
@@ -323,6 +349,13 @@ export default function ComposePage() {
 
   const removeExistingMedia = (index: number) => {
     setExistingMediaUrls(prev => prev.filter((_, i) => i !== index));
+    setExistingPlatformMediaIndexes(prev => {
+      const updated: Record<string, number[]> = {};
+      Object.entries(prev).forEach(([pid, indexes]) => {
+        updated[pid] = indexes.filter(i => i !== index).map(i => i > index ? i - 1 : i);
+      });
+      return updated;
+    });
   };
 
   // Drag-and-drop reordering
@@ -360,6 +393,13 @@ export default function ComposePage() {
       if (current.includes(mediaIdx)) return prev;
       return { ...prev, [platformId]: [...current, mediaIdx].sort((a, b) => a - b) };
     });
+  };
+
+  const removeExistingMediaFromPlatform = (platformId: string, mediaIdx: number) => {
+    setExistingPlatformMediaIndexes(prev => ({
+      ...prev,
+      [platformId]: (prev[platformId] || []).filter(i => i !== mediaIdx),
+    }));
   };
 
   const hasContent = text.trim().length > 0 || mediaFiles.length > 0 || existingMediaUrls.length > 0;
@@ -469,6 +509,7 @@ export default function ComposePage() {
       setMediaFiles([]);
       setMediaPreviews([]);
       setExistingMediaUrls([]);
+      setExistingPlatformMediaIndexes({});
       setPlatformTexts({});
       setPlatformMediaIndexes({});
       setEditingPlatform(null);
@@ -1008,10 +1049,11 @@ export default function ComposePage() {
 
                         {/* Per-platform media grid with remove + drag-to-add */}
                         {(() => {
+                          const existingPlatformIdxs = existingPlatformMediaIndexes[id] ?? existingMediaUrls.map((_, i) => i);
                           const platformIdxs = platformMediaIndexes[id] ?? mediaFiles.map((_, i) => i);
                           const isDragTarget = dragIndex !== null && dragOverPlatform === id;
                           const canDropHere = dragIndex !== null && !platformIdxs.includes(dragIndex);
-                          const hasExistingMedia = existingMediaUrls.length > 0;
+                          const hasExistingMedia = existingPlatformIdxs.length > 0;
                           const hasNewMedia = mediaPreviews.length > 0;
                           if (!hasExistingMedia && !hasNewMedia) return null;
                           return (
@@ -1022,8 +1064,11 @@ export default function ComposePage() {
                               className={`rounded-xl transition-all duration-200 ${isDragTarget && canDropHere ? "ring-2 ring-violet-400 ring-offset-1 ring-offset-black" : ""}`}
                             >
                               {hasExistingMedia || platformIdxs.length > 0 ? (
-                                <div className={`grid gap-1 rounded-xl overflow-hidden transition-all duration-200 ${existingMediaUrls.length + platformIdxs.length === 1 ? "grid-cols-1" : existingMediaUrls.length + platformIdxs.length <= 4 ? "grid-cols-2" : "grid-cols-3"}`}>
-                                  {existingMediaUrls.map((url, idx) => (
+                                <div className={`grid gap-1 rounded-xl overflow-hidden transition-all duration-200 ${existingPlatformIdxs.length + platformIdxs.length === 1 ? "grid-cols-1" : existingPlatformIdxs.length + platformIdxs.length <= 4 ? "grid-cols-2" : "grid-cols-3"}`}>
+                                  {existingPlatformIdxs.map(idx => {
+                                    const url = existingMediaUrls[idx];
+                                    if (!url) return null;
+                                    return (
                                     <div key={`existing-preview-${idx}`} className="relative group overflow-hidden">
                                       {isVideoPreviewUrl(url) ? (
                                         <video src={url} className="w-full aspect-square object-cover" muted />
@@ -1034,8 +1079,16 @@ export default function ComposePage() {
                                       <span className="absolute left-1 top-1 rounded-full bg-sky-500/85 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wide text-white">
                                         saved
                                       </span>
+                                      <button
+                                        onClick={() => removeExistingMediaFromPlatform(id, idx)}
+                                        title="Remove saved media from this platform"
+                                        className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/80 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500/90"
+                                      >
+                                        <X className="w-3 h-3" />
+                                      </button>
                                     </div>
-                                  ))}
+                                    );
+                                  })}
                                   {platformIdxs.map(idx => {
                                     const src = mediaPreviews[idx];
                                     const file = mediaFiles[idx];
