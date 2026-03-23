@@ -172,7 +172,14 @@ export default function ComposePage() {
     setText(content);
     setSelectedPlatforms(loadedPlatforms);
     setExistingMediaUrls(loadedMediaUrls);
-    setPlatformTexts(normalizedConfig.textByPlatform);
+    setPlatformTexts(
+      Object.entries(normalizedConfig.textByPlatform).reduce<Record<string, string>>((acc, [platformId, platformText]) => {
+        if (platformText !== content) {
+          acc[platformId] = platformText;
+        }
+        return acc;
+      }, {})
+    );
     setExistingPlatformMediaIndexes(
       loadedPlatforms.reduce<Record<string, number[]>>((acc, platformId) => {
         const mediaIndexes = normalizedConfig.mediaByPlatform[platformId]
@@ -527,6 +534,10 @@ export default function ComposePage() {
         ]);
       }
       const allMediaUrls = [...existingMediaUrls, ...uploadedUrls];
+      const textByPlatform = selectedPlatforms.reduce<Record<string, string>>((acc, platformId) => {
+        acc[platformId] = platformTexts[platformId] ?? text;
+        return acc;
+      }, {});
       const mediaByPlatform = selectedPlatforms.reduce<Record<string, string[]>>((acc, platformId) => {
         const savedIndexes = existingPlatformMediaIndexes[platformId] ?? existingMediaUrls.map((_, i) => i);
         const uploadedIndexes = platformMediaIndexes[platformId] ?? mediaFiles.map((_, i) => i);
@@ -547,7 +558,7 @@ export default function ComposePage() {
         time: displayTime,
         autoOptimize,
         mediaUrls: allMediaUrls,
-        platformConfig: buildPostPlatformConfig(selectedPlatforms, platformTexts, mediaByPlatform),
+        platformConfig: buildPostPlatformConfig(selectedPlatforms, textByPlatform, mediaByPlatform),
         ...(status === "Scheduled" && overrideDate && overrideTime
           ? { scheduledAt: new Date(`${overrideDate}T${overrideTime}`).toISOString() }
           : {}),
@@ -1114,7 +1125,7 @@ export default function ComposePage() {
                         )}
 
                         {/* Platform-specific override indicator */}
-                        {platformTexts[id] !== undefined && !isEditing && (
+                        {platformTexts[id] !== undefined && platformTexts[id] !== text && !isEditing && (
                           <div className="flex items-center gap-1.5 text-[10px] text-amber-400/70 font-bold">
                             <Pencil className="w-2.5 h-2.5" /> Customized for this platform
                           </div>
