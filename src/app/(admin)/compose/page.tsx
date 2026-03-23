@@ -74,6 +74,17 @@ function renderHighlightedText(text: string): string {
 
 const MAX_MEDIA = 10;
 const RECENT_STORAGE_KEY = "nexopost_recent_emojis";
+const RETRYABLE_FETCH_ERRORS = ["failed to fetch", "networkerror", "load failed"];
+
+function delay(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isRetryableFetchError(error: unknown) {
+  if (!(error instanceof Error)) return false;
+  const message = error.message.toLowerCase();
+  return RETRYABLE_FETCH_ERRORS.some((pattern) => message.includes(pattern));
+}
 
 export default function ComposePage() {
   const router = useRouter();
@@ -431,11 +442,7 @@ export default function ComposePage() {
 
       if (editingPostId) {
         await Promise.race([
-          fetch(`/api/posts/${editingPostId}`, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload),
-          }).then(async (r) => { if (!r.ok) throw new Error(await r.text()); }),
+          saveEditedPost(editingPostId, payload),
           new Promise<never>((_, reject) =>
             setTimeout(() => reject(new Error("Request timed out")), 20000)
           ),
@@ -491,6 +498,45 @@ export default function ComposePage() {
     ? [recentCategory, ...EMOJI_CATEGORIES]
     : EMOJI_CATEGORIES;
   const activeCategory = allCategories.find(c => c.id === activeEmojiCategory) ?? allCategories[0];
+
+  const saveEditedPost = useCallback(async (postId: string, payload: {
+    content: string;
+    platforms: string[];
+    status: "Scheduled" | "Published" | "Draft";
+    date: string;
+    time: string;
+    autoOptimize: boolean;
+    mediaUrls: string[];
+    scheduledAt?: string;
+  }) => {
+    let lastError: unknown;
+
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      try {
+        const response = await fetch(`/api/posts/${postId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+          throw new Error(await response.text());
+        }
+
+        return;
+      } catch (error) {
+        lastError = error;
+
+        if (attempt === 1 || !isRetryableFetchError(error)) {
+          throw error;
+        }
+
+        await delay(700);
+      }
+    }
+
+    throw lastError instanceof Error ? lastError : new Error("Save failed");
+  }, []);
 
   return (
     <div className="max-w-6xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
