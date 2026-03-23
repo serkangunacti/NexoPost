@@ -158,6 +158,10 @@ export default function ComposePage() {
 
   // Submission guard ref — set synchronously to prevent double-fire before state update lands
   const isSubmittingRef = useRef(false);
+  // Guard ref: prevents the media-sync useEffect from wiping platformMediaItemIds when
+  // applyLoadedPostState runs (both effects fire in the same flush on initial mount, so the
+  // dependency effect sees stale existingMediaUrls=[] and would filter all media to empty).
+  const isApplyingLoadedState = useRef(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -166,6 +170,7 @@ export default function ComposePage() {
   const subscriptionSnapshot = getSubscriptionSnapshot(subscription);
 
   const applyLoadedPostState = useCallback((data: LoadedPostState) => {
+    isApplyingLoadedState.current = true;
     const content = data.content ?? "";
     const loadedPlatforms = data.platforms?.length ? data.platforms : ["twitter"];
     const loadedMediaUrls = data.mediaUrls ?? [];
@@ -304,6 +309,12 @@ export default function ComposePage() {
   };
 
   useEffect(() => {
+    // Skip when applyLoadedPostState just ran — it already set platformMediaItemIds correctly.
+    // Running here with stale existingMediaUrls=[] would wipe out the loaded media.
+    if (isApplyingLoadedState.current) {
+      isApplyingLoadedState.current = false;
+      return;
+    }
     if (selectedPlatforms.length === 0) return;
 
     setPlatformMediaItemIds(prev => {
