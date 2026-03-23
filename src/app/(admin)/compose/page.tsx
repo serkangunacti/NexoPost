@@ -95,6 +95,10 @@ function isVideoPreviewUrl(url: string) {
   return /\.(mp4|mov|webm|avi)(\?.*)?$/i.test(url);
 }
 
+function createLocalMediaId() {
+  return `local-media-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
 interface LoadedPostState {
   id: string;
   content?: string;
@@ -134,15 +138,16 @@ export default function ComposePage() {
 
   // Media
   const [mediaFiles, setMediaFiles] = useState<File[]>([]);
+  const [mediaFileIds, setMediaFileIds] = useState<string[]>([]);
   const [mediaPreviews, setMediaPreviews] = useState<string[]>([]);
+  const [draggedMediaId, setDraggedMediaId] = useState<string | null>(null);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   // Already-uploaded media from Firestore (edit mode)
   const [existingMediaUrls, setExistingMediaUrls] = useState<string[]>([]);
 
   // Per-platform media management
-  const [existingPlatformMediaUrls, setExistingPlatformMediaUrls] = useState<Record<string, string[]>>({});
-  const [platformMediaIndexes, setPlatformMediaIndexes] = useState<Record<string, number[]>>({});
+  const [platformMediaItemIds, setPlatformMediaItemIds] = useState<Record<string, string[]>>({});
   const [dragOverPlatform, setDragOverPlatform] = useState<string | null>(null);
 
   // Toast
@@ -172,6 +177,9 @@ export default function ComposePage() {
     setText(content);
     setSelectedPlatforms(loadedPlatforms);
     setExistingMediaUrls(loadedMediaUrls);
+    setMediaFiles([]);
+    setMediaFileIds([]);
+    setMediaPreviews([]);
     setPlatformTexts(
       Object.entries(normalizedConfig.textByPlatform).reduce<Record<string, string>>((acc, [platformId, platformText]) => {
         if (platformText !== content) {
@@ -180,13 +188,12 @@ export default function ComposePage() {
         return acc;
       }, {})
     );
-    setExistingPlatformMediaUrls(
+    setPlatformMediaItemIds(
       loadedPlatforms.reduce<Record<string, string[]>>((acc, platformId) => {
         acc[platformId] = normalizedConfig.mediaByPlatform[platformId];
         return acc;
       }, {})
     );
-    setPlatformMediaIndexes({});
     setEditingPlatform(null);
   }, []);
 
@@ -270,31 +277,30 @@ export default function ComposePage() {
     if (selectedPlatforms.includes(id)) {
       setSelectedPlatforms(prev => prev.filter(p => p !== id));
       setPlatformTexts(prev => { const n = { ...prev }; delete n[id]; return n; });
-      setExistingPlatformMediaUrls(prev => { const n = { ...prev }; delete n[id]; return n; });
-      setPlatformMediaIndexes(prev => { const n = { ...prev }; delete n[id]; return n; });
+      setPlatformMediaItemIds(prev => { const n = { ...prev }; delete n[id]; return n; });
       if (editingPlatform === id) setEditingPlatform(null);
     } else {
+      const allMediaIds = [...existingMediaUrls, ...mediaFileIds];
       setSelectedPlatforms(prev => [...prev, id]);
-      setExistingPlatformMediaUrls(prev => ({ ...prev, [id]: [...existingMediaUrls] }));
-      // Initialize with all current media indexes
-      setPlatformMediaIndexes(prev => ({ ...prev, [id]: mediaFiles.map((_, i) => i) }));
+      setPlatformMediaItemIds(prev => ({ ...prev, [id]: allMediaIds }));
     }
   };
 
   useEffect(() => {
     if (selectedPlatforms.length === 0) return;
 
-    setExistingPlatformMediaUrls(prev => {
+    setPlatformMediaItemIds(prev => {
       const next = { ...prev };
-      const knownMedia = new Set(existingMediaUrls);
+      const allMediaIds = [...existingMediaUrls, ...mediaFileIds];
+      const knownMedia = new Set(allMediaIds);
 
       selectedPlatforms.forEach((platformId) => {
         if (!Object.prototype.hasOwnProperty.call(next, platformId)) {
-          next[platformId] = [...existingMediaUrls];
+          next[platformId] = allMediaIds;
           return;
         }
 
-        next[platformId] = next[platformId].filter((mediaUrl) => knownMedia.has(mediaUrl));
+        next[platformId] = next[platformId].filter((mediaId) => knownMedia.has(mediaId));
       });
 
       Object.keys(next).forEach((platformId) => {
@@ -305,30 +311,7 @@ export default function ComposePage() {
 
       return next;
     });
-  }, [existingMediaUrls, selectedPlatforms]);
-
-  useEffect(() => {
-    if (selectedPlatforms.length === 0) return;
-
-    setPlatformMediaIndexes(prev => {
-      const next = { ...prev };
-      const defaultIndexes = mediaFiles.map((_, i) => i);
-
-      selectedPlatforms.forEach((platformId) => {
-        if (!Object.prototype.hasOwnProperty.call(next, platformId)) {
-          next[platformId] = defaultIndexes;
-        }
-      });
-
-      Object.keys(next).forEach((platformId) => {
-        if (!selectedPlatforms.includes(platformId)) {
-          delete next[platformId];
-        }
-      });
-
-      return next;
-    });
-  }, [mediaFiles, selectedPlatforms]);
+  }, [existingMediaUrls, mediaFileIds, selectedPlatforms]);
 
   // Sync textarea scroll → highlight layer
   const handleTextareaScroll = () => {
@@ -380,18 +363,16 @@ export default function ComposePage() {
     const remaining = MAX_MEDIA - totalMedia;
     const toAdd = files.slice(0, remaining);
     const overflow = files.length - toAdd.length;
-    const prevLen = mediaFiles.length;
+    const newIds = toAdd.map(() => createLocalMediaId());
     const newFiles = [...mediaFiles, ...toAdd];
     setMediaFiles(newFiles);
     setMediaPreviews(newFiles.map((f, i) => i < mediaFiles.length ? mediaPreviews[i] : URL.createObjectURL(f)));
-    // Add new media indexes to ALL selected platforms (including pre-selected ones not yet in map)
-    const newIndexes = Array.from({ length: toAdd.length }, (_, i) => prevLen + i);
-    const allExistingIdxs = Array.from({ length: prevLen }, (_, i) => i);
-    setPlatformMediaIndexes(prev => {
+    setMediaFileIds(prev => [...prev, ...newIds]);
+    setPlatformMediaItemIds(prev => {
       const updated = { ...prev };
       selectedPlatforms.forEach(pid => {
-        const existing = updated[pid] ?? allExistingIdxs;
-        updated[pid] = [...existing, ...newIndexes];
+        const existing = updated[pid] ?? [...existingMediaUrls, ...mediaFileIds];
+        updated[pid] = [...existing, ...newIds];
       });
       return updated;
     });
@@ -402,13 +383,15 @@ export default function ComposePage() {
   };
 
   const removeMedia = (index: number) => {
+    const removedId = mediaFileIds[index];
     setMediaFiles(prev => prev.filter((_, i) => i !== index));
     setMediaPreviews(prev => prev.filter((_, i) => i !== index));
-    // Remap platform media indexes: drop removed index, shift higher indexes down
-    setPlatformMediaIndexes(prev => {
-      const updated: Record<string, number[]> = {};
-      Object.entries(prev).forEach(([pid, indexes]) => {
-        updated[pid] = indexes.filter(i => i !== index).map(i => i > index ? i - 1 : i);
+    setMediaFileIds(prev => prev.filter((_, i) => i !== index));
+    if (!removedId) return;
+    setPlatformMediaItemIds(prev => {
+      const updated: Record<string, string[]> = {};
+      Object.entries(prev).forEach(([pid, mediaIds]) => {
+        updated[pid] = mediaIds.filter((mediaId) => mediaId !== removedId);
       });
       return updated;
     });
@@ -418,17 +401,20 @@ export default function ComposePage() {
     const removedUrl = existingMediaUrls[index];
     setExistingMediaUrls(prev => prev.filter((_, i) => i !== index));
     if (!removedUrl) return;
-    setExistingPlatformMediaUrls(prev => {
+    setPlatformMediaItemIds(prev => {
       const updated: Record<string, string[]> = {};
-      Object.entries(prev).forEach(([pid, mediaUrls]) => {
-        updated[pid] = mediaUrls.filter((mediaUrl) => mediaUrl !== removedUrl);
+      Object.entries(prev).forEach(([pid, mediaIds]) => {
+        updated[pid] = mediaIds.filter((mediaId) => mediaId !== removedUrl);
       });
       return updated;
     });
   };
 
   // Drag-and-drop reordering
-  const handleDragStart = (i: number) => setDragIndex(i);
+  const handleDragStart = (mediaId: string, index?: number) => {
+    setDraggedMediaId(mediaId);
+    setDragIndex(index ?? null);
+  };
   const handleDragOver = (e: React.DragEvent, i: number) => {
     e.preventDefault();
     if (dragOverIndex !== i) setDragOverIndex(i);
@@ -445,30 +431,29 @@ export default function ComposePage() {
     newPreviews.splice(i, 0, mp);
     setMediaFiles(newFiles);
     setMediaPreviews(newPreviews);
+    setMediaFileIds(prev => {
+      const next = [...prev];
+      const [mediaId] = next.splice(dragIndex, 1);
+      next.splice(i, 0, mediaId);
+      return next;
+    });
     setDragIndex(null); setDragOverIndex(null);
   };
-  const handleDragEnd = () => { setDragIndex(null); setDragOverIndex(null); setDragOverPlatform(null); };
+  const handleDragEnd = () => { setDraggedMediaId(null); setDragIndex(null); setDragOverIndex(null); setDragOverPlatform(null); };
 
-  const removePlatformMedia = (platformId: string, mediaIdx: number) => {
-    setPlatformMediaIndexes(prev => ({
+  const removePlatformMedia = (platformId: string, mediaPosition: number) => {
+    setPlatformMediaItemIds(prev => ({
       ...prev,
-      [platformId]: (prev[platformId] || []).filter(i => i !== mediaIdx),
+      [platformId]: (prev[platformId] || []).filter((_, index) => index !== mediaPosition),
     }));
   };
 
-  const addMediaToPlatform = (platformId: string, mediaIdx: number) => {
-    setPlatformMediaIndexes(prev => {
+  const addMediaToPlatform = (platformId: string, mediaId: string) => {
+    setPlatformMediaItemIds(prev => {
       const current = prev[platformId] || [];
-      if (current.includes(mediaIdx)) return prev;
-      return { ...prev, [platformId]: [...current, mediaIdx].sort((a, b) => a - b) };
+      if (current.includes(mediaId)) return prev;
+      return { ...prev, [platformId]: [...current, mediaId] };
     });
-  };
-
-  const removeExistingMediaFromPlatform = (platformId: string, mediaIdx: number) => {
-    setExistingPlatformMediaUrls(prev => ({
-      ...prev,
-      [platformId]: (prev[platformId] || []).filter((_, index) => index !== mediaIdx),
-    }));
   };
 
   const hasContent = text.trim().length > 0 || mediaFiles.length > 0 || existingMediaUrls.length > 0;
@@ -536,18 +521,20 @@ export default function ComposePage() {
         ]);
       }
       const allMediaUrls = [...existingMediaUrls, ...uploadedUrls];
+      const uploadedMediaUrlById = mediaFileIds.reduce<Record<string, string>>((acc, mediaId, index) => {
+        const uploadedUrl = uploadedUrls[index];
+        if (uploadedUrl) acc[mediaId] = uploadedUrl;
+        return acc;
+      }, {});
       const textByPlatform = selectedPlatforms.reduce<Record<string, string>>((acc, platformId) => {
         acc[platformId] = platformTexts[platformId] ?? text;
         return acc;
       }, {});
       const mediaByPlatform = selectedPlatforms.reduce<Record<string, string[]>>((acc, platformId) => {
-        const savedUrls = existingPlatformMediaUrls[platformId] ?? existingMediaUrls;
-        const uploadedIndexes = platformMediaIndexes[platformId] ?? mediaFiles.map((_, i) => i);
-
-        acc[platformId] = [
-          ...savedUrls.filter((mediaUrl): mediaUrl is string => typeof mediaUrl === "string"),
-          ...uploadedIndexes.map((mediaIndex) => uploadedUrls[mediaIndex]).filter((mediaUrl): mediaUrl is string => typeof mediaUrl === "string"),
-        ];
+        const platformMediaIds = platformMediaItemIds[platformId] ?? [...existingMediaUrls, ...mediaFileIds];
+        acc[platformId] = platformMediaIds
+          .map((mediaId) => uploadedMediaUrlById[mediaId] ?? (existingMediaUrls.includes(mediaId) ? mediaId : undefined))
+          .filter((mediaUrl): mediaUrl is string => typeof mediaUrl === "string");
 
         return acc;
       }, {});
@@ -592,11 +579,11 @@ export default function ComposePage() {
 
       setText("");
       setMediaFiles([]);
+      setMediaFileIds([]);
       setMediaPreviews([]);
       setExistingMediaUrls([]);
-      setExistingPlatformMediaUrls({});
+      setPlatformMediaItemIds({});
       setPlatformTexts({});
-      setPlatformMediaIndexes({});
       setEditingPlatform(null);
       setSelectedPlatforms(["twitter"]);
       setScheduleDate("");
@@ -878,7 +865,14 @@ export default function ComposePage() {
                 <div className="flex gap-3 flex-wrap">
                   {/* Existing media from saved post */}
                   {existingMediaUrls.map((url, i) => (
-                    <div key={`existing-${i}`} className="relative w-20 h-20 rounded-xl overflow-hidden border border-sky-500/30 group shrink-0">
+                    <div
+                      key={`existing-${i}`}
+                      draggable
+                      onDragStart={() => handleDragStart(url)}
+                      onDragEnd={handleDragEnd}
+                      className="relative w-20 h-20 rounded-xl overflow-hidden border border-sky-500/30 group shrink-0"
+                      style={{ cursor: draggedMediaId === url ? "grabbing" : "grab" }}
+                    >
                       {/\.(mp4|mov|webm|avi)/i.test(url) ? (
                         <video src={url} className="w-full h-full object-cover" muted />
                       ) : (
@@ -897,12 +891,12 @@ export default function ComposePage() {
                     <div
                       key={i}
                       draggable
-                      onDragStart={() => handleDragStart(i)}
+                      onDragStart={() => handleDragStart(mediaFileIds[i], i)}
                       onDragOver={e => handleDragOver(e, i)}
                       onDrop={() => handleDrop(i)}
                       onDragEnd={handleDragEnd}
                       className={`relative w-20 h-20 rounded-xl overflow-hidden border group shrink-0 transition-all duration-150 ${dragIndex === i ? "opacity-30 scale-95" : ""} ${dragOverIndex === i && dragIndex !== i ? "ring-2 ring-violet-400 scale-105 border-violet-500/50" : "border-white/10"}`}
-                      style={{ cursor: dragIndex !== null ? "grabbing" : "grab" }}
+                      style={{ cursor: draggedMediaId === mediaFileIds[i] ? "grabbing" : "grab" }}
                     >
                       {mediaFiles[i]?.type.startsWith("video/") ? (
                         <video src={src} className="w-full h-full object-cover" muted />
@@ -1135,60 +1129,42 @@ export default function ComposePage() {
 
                         {/* Per-platform media grid with remove + drag-to-add */}
                         {(() => {
-                          const existingPlatformMedia = existingPlatformMediaUrls[id] ?? existingMediaUrls;
-                          const platformIdxs = platformMediaIndexes[id] ?? mediaFiles.map((_, i) => i);
-                          const isDragTarget = dragIndex !== null && dragOverPlatform === id;
-                          const canDropHere = dragIndex !== null && !platformIdxs.includes(dragIndex);
-                          const hasExistingMedia = existingPlatformMedia.length > 0;
-                          const hasNewMedia = mediaPreviews.length > 0;
-                          if (!hasExistingMedia && !hasNewMedia) return null;
+                          const platformMediaIds = platformMediaItemIds[id] ?? [...existingMediaUrls, ...mediaFileIds];
+                          const isDragTarget = draggedMediaId !== null && dragOverPlatform === id;
+                          const canDropHere = draggedMediaId !== null && !platformMediaIds.includes(draggedMediaId);
+                          const hasAnyMedia = existingMediaUrls.length > 0 || mediaPreviews.length > 0;
+                          if (!hasAnyMedia) return null;
                           return (
                             <div
                               onDragOver={e => { e.preventDefault(); setDragOverPlatform(id); }}
                               onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setDragOverPlatform(null); }}
-                              onDrop={e => { e.preventDefault(); if (dragIndex !== null) addMediaToPlatform(id, dragIndex); setDragOverPlatform(null); }}
+                              onDrop={e => { e.preventDefault(); if (draggedMediaId) addMediaToPlatform(id, draggedMediaId); setDragOverPlatform(null); }}
                               className={`rounded-xl transition-all duration-200 ${isDragTarget && canDropHere ? "ring-2 ring-violet-400 ring-offset-1 ring-offset-black" : ""}`}
                             >
-                              {hasExistingMedia || platformIdxs.length > 0 ? (
-                                <div className={`grid gap-1 rounded-xl overflow-hidden transition-all duration-200 ${existingPlatformMedia.length + platformIdxs.length === 1 ? "grid-cols-1" : existingPlatformMedia.length + platformIdxs.length <= 4 ? "grid-cols-2" : "grid-cols-3"}`}>
-                                  {existingPlatformMedia.map((url, idx) => {
-                                    if (!url) return null;
-                                    return (
-                                    <div key={`existing-preview-${id}-${idx}-${url}`} className="relative group overflow-hidden">
-                                      {isVideoPreviewUrl(url) ? (
-                                        <video src={url} className="w-full aspect-square object-cover" muted />
-                                      ) : (
-                                        // eslint-disable-next-line @next/next/no-img-element
-                                        <img src={url} alt="saved media" className="w-full aspect-square object-cover" />
-                                      )}
-                                      <span className="absolute left-1 top-1 rounded-full bg-sky-500/85 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wide text-white">
-                                        saved
-                                      </span>
-                                      <button
-                                        onClick={() => removeExistingMediaFromPlatform(id, idx)}
-                                        title="Remove saved media from this platform"
-                                        className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/80 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500/90"
-                                      >
-                                        <X className="w-3 h-3" />
-                                      </button>
-                                    </div>
-                                    );
-                                  })}
-                                  {platformIdxs.map(idx => {
-                                    const src = mediaPreviews[idx];
-                                    const file = mediaFiles[idx];
+                              {platformMediaIds.length > 0 ? (
+                                <div className={`grid gap-1 rounded-xl overflow-hidden transition-all duration-200 ${platformMediaIds.length === 1 ? "grid-cols-1" : platformMediaIds.length <= 4 ? "grid-cols-2" : "grid-cols-3"}`}>
+                                  {platformMediaIds.map((mediaId, mediaPosition) => {
+                                    const isSavedMedia = existingMediaUrls.includes(mediaId);
+                                    const fileIndex = mediaFileIds.indexOf(mediaId);
+                                    const src = isSavedMedia ? mediaId : mediaPreviews[fileIndex];
+                                    const file = fileIndex >= 0 ? mediaFiles[fileIndex] : undefined;
                                     if (!src) return null;
                                     return (
-                                      <div key={idx} className="relative group overflow-hidden">
-                                        {file?.type.startsWith("video/") ? (
+                                      <div key={`${id}-${mediaId}-${mediaPosition}`} className="relative group overflow-hidden">
+                                        {((isSavedMedia && isVideoPreviewUrl(src)) || file?.type.startsWith("video/")) ? (
                                           <video src={src} className="w-full aspect-square object-cover" muted />
                                         ) : (
                                           // eslint-disable-next-line @next/next/no-img-element
-                                          <img src={src} alt="media" className="w-full aspect-square object-cover" />
+                                          <img src={src} alt={isSavedMedia ? "saved media" : "media"} className="w-full aspect-square object-cover" />
+                                        )}
+                                        {isSavedMedia && (
+                                          <span className="absolute left-1 top-1 rounded-full bg-sky-500/85 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wide text-white">
+                                            saved
+                                          </span>
                                         )}
                                         <button
-                                          onClick={() => removePlatformMedia(id, idx)}
-                                          title="Remove from this platform"
+                                          onClick={() => removePlatformMedia(id, mediaPosition)}
+                                          title={isSavedMedia ? "Remove saved media from this platform" : "Remove from this platform"}
                                           className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/80 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500/90"
                                         >
                                           <X className="w-3 h-3" />
