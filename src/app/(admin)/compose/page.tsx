@@ -141,7 +141,7 @@ export default function ComposePage() {
   const [existingMediaUrls, setExistingMediaUrls] = useState<string[]>([]);
 
   // Per-platform media management
-  const [existingPlatformMediaIndexes, setExistingPlatformMediaIndexes] = useState<Record<string, number[]>>({});
+  const [existingPlatformMediaUrls, setExistingPlatformMediaUrls] = useState<Record<string, string[]>>({});
   const [platformMediaIndexes, setPlatformMediaIndexes] = useState<Record<string, number[]>>({});
   const [dragOverPlatform, setDragOverPlatform] = useState<string | null>(null);
 
@@ -180,12 +180,9 @@ export default function ComposePage() {
         return acc;
       }, {})
     );
-    setExistingPlatformMediaIndexes(
-      loadedPlatforms.reduce<Record<string, number[]>>((acc, platformId) => {
-        const mediaIndexes = normalizedConfig.mediaByPlatform[platformId]
-          .map((mediaUrl) => loadedMediaUrls.indexOf(mediaUrl))
-          .filter((mediaIndex) => mediaIndex >= 0);
-        acc[platformId] = mediaIndexes;
+    setExistingPlatformMediaUrls(
+      loadedPlatforms.reduce<Record<string, string[]>>((acc, platformId) => {
+        acc[platformId] = normalizedConfig.mediaByPlatform[platformId];
         return acc;
       }, {})
     );
@@ -273,12 +270,12 @@ export default function ComposePage() {
     if (selectedPlatforms.includes(id)) {
       setSelectedPlatforms(prev => prev.filter(p => p !== id));
       setPlatformTexts(prev => { const n = { ...prev }; delete n[id]; return n; });
-      setExistingPlatformMediaIndexes(prev => { const n = { ...prev }; delete n[id]; return n; });
+      setExistingPlatformMediaUrls(prev => { const n = { ...prev }; delete n[id]; return n; });
       setPlatformMediaIndexes(prev => { const n = { ...prev }; delete n[id]; return n; });
       if (editingPlatform === id) setEditingPlatform(null);
     } else {
       setSelectedPlatforms(prev => [...prev, id]);
-      setExistingPlatformMediaIndexes(prev => ({ ...prev, [id]: existingMediaUrls.map((_, i) => i) }));
+      setExistingPlatformMediaUrls(prev => ({ ...prev, [id]: [...existingMediaUrls] }));
       // Initialize with all current media indexes
       setPlatformMediaIndexes(prev => ({ ...prev, [id]: mediaFiles.map((_, i) => i) }));
     }
@@ -287,14 +284,17 @@ export default function ComposePage() {
   useEffect(() => {
     if (selectedPlatforms.length === 0) return;
 
-    setExistingPlatformMediaIndexes(prev => {
+    setExistingPlatformMediaUrls(prev => {
       const next = { ...prev };
-      const defaultIndexes = existingMediaUrls.map((_, i) => i);
+      const knownMedia = new Set(existingMediaUrls);
 
       selectedPlatforms.forEach((platformId) => {
         if (!Object.prototype.hasOwnProperty.call(next, platformId)) {
-          next[platformId] = defaultIndexes;
+          next[platformId] = [...existingMediaUrls];
+          return;
         }
+
+        next[platformId] = next[platformId].filter((mediaUrl) => knownMedia.has(mediaUrl));
       });
 
       Object.keys(next).forEach((platformId) => {
@@ -415,11 +415,13 @@ export default function ComposePage() {
   };
 
   const removeExistingMedia = (index: number) => {
+    const removedUrl = existingMediaUrls[index];
     setExistingMediaUrls(prev => prev.filter((_, i) => i !== index));
-    setExistingPlatformMediaIndexes(prev => {
-      const updated: Record<string, number[]> = {};
-      Object.entries(prev).forEach(([pid, indexes]) => {
-        updated[pid] = indexes.filter(i => i !== index).map(i => i > index ? i - 1 : i);
+    if (!removedUrl) return;
+    setExistingPlatformMediaUrls(prev => {
+      const updated: Record<string, string[]> = {};
+      Object.entries(prev).forEach(([pid, mediaUrls]) => {
+        updated[pid] = mediaUrls.filter((mediaUrl) => mediaUrl !== removedUrl);
       });
       return updated;
     });
@@ -463,9 +465,9 @@ export default function ComposePage() {
   };
 
   const removeExistingMediaFromPlatform = (platformId: string, mediaIdx: number) => {
-    setExistingPlatformMediaIndexes(prev => ({
+    setExistingPlatformMediaUrls(prev => ({
       ...prev,
-      [platformId]: (prev[platformId] || []).filter(i => i !== mediaIdx),
+      [platformId]: (prev[platformId] || []).filter((_, index) => index !== mediaIdx),
     }));
   };
 
@@ -539,11 +541,11 @@ export default function ComposePage() {
         return acc;
       }, {});
       const mediaByPlatform = selectedPlatforms.reduce<Record<string, string[]>>((acc, platformId) => {
-        const savedIndexes = existingPlatformMediaIndexes[platformId] ?? existingMediaUrls.map((_, i) => i);
+        const savedUrls = existingPlatformMediaUrls[platformId] ?? existingMediaUrls;
         const uploadedIndexes = platformMediaIndexes[platformId] ?? mediaFiles.map((_, i) => i);
 
         acc[platformId] = [
-          ...savedIndexes.map((mediaIndex) => existingMediaUrls[mediaIndex]).filter((mediaUrl): mediaUrl is string => typeof mediaUrl === "string"),
+          ...savedUrls.filter((mediaUrl): mediaUrl is string => typeof mediaUrl === "string"),
           ...uploadedIndexes.map((mediaIndex) => uploadedUrls[mediaIndex]).filter((mediaUrl): mediaUrl is string => typeof mediaUrl === "string"),
         ];
 
@@ -592,7 +594,7 @@ export default function ComposePage() {
       setMediaFiles([]);
       setMediaPreviews([]);
       setExistingMediaUrls([]);
-      setExistingPlatformMediaIndexes({});
+      setExistingPlatformMediaUrls({});
       setPlatformTexts({});
       setPlatformMediaIndexes({});
       setEditingPlatform(null);
@@ -1133,11 +1135,11 @@ export default function ComposePage() {
 
                         {/* Per-platform media grid with remove + drag-to-add */}
                         {(() => {
-                          const existingPlatformIdxs = existingPlatformMediaIndexes[id] ?? existingMediaUrls.map((_, i) => i);
+                          const existingPlatformMedia = existingPlatformMediaUrls[id] ?? existingMediaUrls;
                           const platformIdxs = platformMediaIndexes[id] ?? mediaFiles.map((_, i) => i);
                           const isDragTarget = dragIndex !== null && dragOverPlatform === id;
                           const canDropHere = dragIndex !== null && !platformIdxs.includes(dragIndex);
-                          const hasExistingMedia = existingPlatformIdxs.length > 0;
+                          const hasExistingMedia = existingPlatformMedia.length > 0;
                           const hasNewMedia = mediaPreviews.length > 0;
                           if (!hasExistingMedia && !hasNewMedia) return null;
                           return (
@@ -1148,12 +1150,11 @@ export default function ComposePage() {
                               className={`rounded-xl transition-all duration-200 ${isDragTarget && canDropHere ? "ring-2 ring-violet-400 ring-offset-1 ring-offset-black" : ""}`}
                             >
                               {hasExistingMedia || platformIdxs.length > 0 ? (
-                                <div className={`grid gap-1 rounded-xl overflow-hidden transition-all duration-200 ${existingPlatformIdxs.length + platformIdxs.length === 1 ? "grid-cols-1" : existingPlatformIdxs.length + platformIdxs.length <= 4 ? "grid-cols-2" : "grid-cols-3"}`}>
-                                  {existingPlatformIdxs.map(idx => {
-                                    const url = existingMediaUrls[idx];
+                                <div className={`grid gap-1 rounded-xl overflow-hidden transition-all duration-200 ${existingPlatformMedia.length + platformIdxs.length === 1 ? "grid-cols-1" : existingPlatformMedia.length + platformIdxs.length <= 4 ? "grid-cols-2" : "grid-cols-3"}`}>
+                                  {existingPlatformMedia.map((url, idx) => {
                                     if (!url) return null;
                                     return (
-                                    <div key={`existing-preview-${idx}`} className="relative group overflow-hidden">
+                                    <div key={`existing-preview-${id}-${idx}-${url}`} className="relative group overflow-hidden">
                                       {isVideoPreviewUrl(url) ? (
                                         <video src={url} className="w-full aspect-square object-cover" muted />
                                       ) : (
