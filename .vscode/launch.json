@@ -8,6 +8,7 @@
             "type": "chrome",
             "request": "launch",
             "name": "Launch Chrome against localhost",
+            "preLaunchTask": "Start NexoPost Dev (3001)",
             "url": "http://127.0.0.1:3001",
             "webRoot": "${workspaceFolder}"
         }
