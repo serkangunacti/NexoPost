@@ -285,7 +285,7 @@ export default function ComposePage() {
       const defaultIndexes = existingMediaUrls.map((_, i) => i);
 
       selectedPlatforms.forEach((platformId) => {
-        if (!next[platformId]) {
+        if (!Object.prototype.hasOwnProperty.call(next, platformId)) {
           next[platformId] = defaultIndexes;
         }
       });
@@ -299,6 +299,29 @@ export default function ComposePage() {
       return next;
     });
   }, [existingMediaUrls, selectedPlatforms]);
+
+  useEffect(() => {
+    if (selectedPlatforms.length === 0) return;
+
+    setPlatformMediaIndexes(prev => {
+      const next = { ...prev };
+      const defaultIndexes = mediaFiles.map((_, i) => i);
+
+      selectedPlatforms.forEach((platformId) => {
+        if (!Object.prototype.hasOwnProperty.call(next, platformId)) {
+          next[platformId] = defaultIndexes;
+        }
+      });
+
+      Object.keys(next).forEach((platformId) => {
+        if (!selectedPlatforms.includes(platformId)) {
+          delete next[platformId];
+        }
+      });
+
+      return next;
+    });
+  }, [mediaFiles, selectedPlatforms]);
 
   // Sync textarea scroll → highlight layer
   const handleTextareaScroll = () => {
