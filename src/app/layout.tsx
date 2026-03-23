@@ -1,10 +1,7 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
 import { SessionProvider } from "next-auth/react";
 import { AppProvider } from "@/context/AppContext";
 import "./globals.css";
-
-const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "NexoPost | Premium Social Media Management & Agency Panel",
@@ -36,7 +33,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="tr">
-      <body className={`${inter.className} bg-[#0a0a0f] text-white min-h-screen selection:bg-violet-500/30`}>
+      <body className="bg-[#0a0a0f] text-white min-h-screen antialiased selection:bg-violet-500/30">
         <SessionProvider>
           <AppProvider>{children}</AppProvider>
         </SessionProvider>
