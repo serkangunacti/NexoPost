@@ -16,16 +16,20 @@ const LanguageContext = createContext<LanguageContextType | undefined>(undefined
 const LANGUAGE_STORAGE_KEY = "nexopost-language";
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [lang, setLang] = useState<Language>(() => {
-    if (typeof window === "undefined") {
-      return "tr";
-    }
-
-    const savedLang = window.localStorage.getItem(LANGUAGE_STORAGE_KEY);
-    return savedLang === "en" || savedLang === "tr" ? savedLang : "tr";
-  });
+  const [lang, setLang] = useState<Language>("tr");
   const translations = useMemo(() => ({ en, tr }), []);
   const t = translations[lang];
+
+  useEffect(() => {
+    const savedLang = window.localStorage.getItem(LANGUAGE_STORAGE_KEY);
+    if (savedLang === "en" || savedLang === "tr") {
+      setLang(savedLang);
+      return;
+    }
+
+    window.localStorage.setItem(LANGUAGE_STORAGE_KEY, lang);
+    document.documentElement.lang = lang;
+  }, []);
 
   useEffect(() => {
     window.localStorage.setItem(LANGUAGE_STORAGE_KEY, lang);

@@ -24,8 +24,8 @@ export default function PublicNavbar() {
           <div className="flex items-center gap-12">
             {/* Logo */}
             <Link href="/" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} className="flex items-center gap-3 group">
-              <div className="w-10 h-10 rounded-xl bg-violet-600/20 flex items-center justify-center border border-violet-500/30 group-hover:scale-105 transition-transform overflow-hidden relative shadow-[0_0_15px_rgba(139,92,246,0.3)]">
-                <Image src="/logo.png" alt="NexoPost Logo" fill className="object-cover" />
+              <div className="w-10 h-10 rounded-xl bg-violet-600/20 flex items-center justify-center border border-violet-500/30 group-hover:scale-105 transition-transform shadow-[0_0_15px_rgba(139,92,246,0.3)]">
+                <Image src="/logo.png" alt="NexoPost Logo" width={28} height={28} className="h-7 w-7 object-contain" />
               </div>
               <span className="text-xl font-extrabold tracking-tight text-white flex items-center gap-1.5">
                 Nexo<span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-sky-400">Post</span>

@@ -310,8 +310,8 @@ export default function Sidebar({ className }: SidebarProps) {
         {/* Logo + close button row */}
         <div className="flex items-center justify-between px-6 mb-8">
           <Link href="/dashboard" onClick={closeMobile} className="flex items-center gap-3 group cursor-pointer">
-            <div className="w-10 h-10 rounded-xl bg-violet-600/20 flex items-center justify-center border border-violet-500/30 group-hover:scale-105 transition-transform overflow-hidden relative shadow-[0_0_15px_rgba(139,92,246,0.2)]">
-              <Image src="/logo.png" alt="NexoPost Logo" fill className="object-cover" />
+            <div className="w-10 h-10 rounded-xl bg-violet-600/20 flex items-center justify-center border border-violet-500/30 group-hover:scale-105 transition-transform shadow-[0_0_15px_rgba(139,92,246,0.2)]">
+              <Image src="/logo.png" alt="NexoPost Logo" width={28} height={28} className="h-7 w-7 object-contain" />
             </div>
             <span className="text-2xl font-extrabold tracking-tight text-white">
               Nexo<span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-sky-400">Post</span>
