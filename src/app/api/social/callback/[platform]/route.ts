@@ -280,6 +280,6 @@ async function saveTokens(
 
   await prisma.user.update({
     where: { id: userId },
-    data: { socialTokens: updated as Prisma.InputJsonValue },
+    data: { socialTokens: updated as unknown as Prisma.InputJsonValue },
   });
 }

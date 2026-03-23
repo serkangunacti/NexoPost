@@ -54,7 +54,7 @@ export async function DELETE(
 
   await prisma.user.update({
     where: { id },
-    data: { socialTokens: tokens as Prisma.InputJsonValue },
+    data: { socialTokens: tokens as unknown as Prisma.InputJsonValue },
   });
 
   return NextResponse.json({ ok: true });
