@@ -14,7 +14,7 @@ export async function GET(
   if (!user) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   // Redact access tokens before sending to the client
-  const raw = (user.socialTokens ?? {}) as SocialTokens;
+  const raw = (user.socialTokens ?? {}) as unknown as SocialTokens;
   const redacted: Record<string, Record<string, object>> = {};
   for (const [clientId, platforms] of Object.entries(raw)) {
     redacted[clientId] = {};
@@ -44,7 +44,7 @@ export async function DELETE(
   const user = await prisma.user.findUnique({ where: { id }, select: { socialTokens: true } });
   if (!user) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const tokens = (user.socialTokens ?? {}) as SocialTokens;
+  const tokens = (user.socialTokens ?? {}) as unknown as SocialTokens;
   if (tokens[clientId]) {
     delete tokens[clientId][platform];
     if (Object.keys(tokens[clientId]).length === 0) {

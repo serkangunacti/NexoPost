@@ -254,7 +254,7 @@ async function saveTokens(
   data: Partial<SocialTokenData> & { accessToken: string }
 ) {
   const user = await prisma.user.findUnique({ where: { id: userId }, select: { socialTokens: true } });
-  const existing = (user?.socialTokens ?? {}) as SocialTokens;
+  const existing = (user?.socialTokens ?? {}) as unknown as SocialTokens;
 
   const tokenEntry: SocialTokenData = {
     accessToken: data.accessToken,
