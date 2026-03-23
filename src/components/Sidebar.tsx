@@ -22,6 +22,7 @@ import {
   ArrowUpRight,
   KeyRound,
   Menu,
+  Link2,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -239,6 +240,7 @@ export default function Sidebar({ className }: SidebarProps) {
     { name: "Analytics", href: "/analytics", icon: BarChart3 },
     { name: "Composer", href: "/compose", icon: PenSquare },
     { name: "Scheduled", href: "/scheduled", icon: CalendarDays },
+    { name: "Connections", href: "/connections", icon: Link2 },
     { name: "Accounts", href: "/accounts", icon: Users },
   ];
 

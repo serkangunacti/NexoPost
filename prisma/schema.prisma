@@ -34,6 +34,7 @@ model User {
   activeClientId    String?  @map("active_client_id")
   clients           Json     @default("[]")
   connectedAccounts Json     @default("{}") @map("connected_accounts")
+  socialTokens      Json?    @map("social_tokens")
   subscription      Json?
   pendingChange     Json?    @map("pending_change")
   userProfile       Json?    @map("user_profile")
