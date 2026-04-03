@@ -20,6 +20,7 @@ const envSchema = z.object({
   YOUTUBE_CLIENT_SECRET: z.string().min(1).optional(),
   PINTEREST_CLIENT_ID: z.string().min(1).optional(),
   PINTEREST_CLIENT_SECRET: z.string().min(1).optional(),
+  SUPERADMIN_EMAILS: z.string().optional(),
 });
 
 const parsed = envSchema.parse({
@@ -46,6 +47,7 @@ const parsed = envSchema.parse({
   YOUTUBE_CLIENT_SECRET: process.env.YOUTUBE_CLIENT_SECRET,
   PINTEREST_CLIENT_ID: process.env.PINTEREST_CLIENT_ID,
   PINTEREST_CLIENT_SECRET: process.env.PINTEREST_CLIENT_SECRET,
+  SUPERADMIN_EMAILS: process.env.SUPERADMIN_EMAILS,
 });
 
 export const env = {

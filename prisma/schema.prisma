@@ -22,6 +22,12 @@ enum SocialAccountStatus {
   ERROR
 }
 
+enum WorkspaceStatus {
+  ACTIVE
+  PAUSED
+  ARCHIVED
+}
+
 enum ApprovalRequestStatus {
   PENDING
   APPROVED
@@ -74,6 +80,7 @@ model User {
   email                     String?           @unique
   hashedPassword            String?           @map("hashed_password")
   userType                  String            @default("basic") @map("user_type")
+  superadminNote            String?           @map("superadmin_note") @db.Text
   activeClientId            String?           @map("active_client_id")
   clients                   Json              @default("[]")
   connectedAccounts         Json              @default("{}") @map("connected_accounts")
@@ -87,6 +94,7 @@ model User {
   approvalRequestsReviewed  ApprovalRequest[] @relation("ApprovalReviewer")
   auditLogs                 AuditLog[]
   postsAuthored             Post[]            @relation("PostAuthor")
+  supportRequests           SupportRequest[]
   workspaceMemberships      WorkspaceMember[]
   workspacesOwned           Workspace[]       @relation("WorkspaceOwner")
 
@@ -97,6 +105,7 @@ model Workspace {
   id                 String              @id @default(cuid())
   name               String
   slug               String?             @unique
+  status             WorkspaceStatus     @default(ACTIVE)
   ownerId            String              @map("owner_id")
   createdAt          DateTime            @default(now()) @map("created_at")
   updatedAt          DateTime            @updatedAt @map("updated_at")
@@ -110,6 +119,7 @@ model Workspace {
   publicationResults PublicationResult[]
   socialAccounts     SocialAccount[]
   subscriptions      Subscription[]
+  supportRequests    SupportRequest[]
   usagePeriods       WorkspaceUsagePeriod[]
   dailyUsage         WorkspaceDailyUsage[]
 
@@ -410,4 +420,22 @@ model AuditLog {
   @@index([workspaceId, createdAt])
   @@index([userId, createdAt])
   @@map("audit_logs")
+}
+
+model SupportRequest {
+  id          String    @id @default(cuid())
+  userId      String    @map("user_id")
+  workspaceId String?   @map("workspace_id")
+  subject     String
+  message     String    @db.Text
+  status      String    @default("OPEN")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace   Workspace? @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([workspaceId, createdAt])
+  @@index([status, createdAt])
+  @@map("support_requests")
 }

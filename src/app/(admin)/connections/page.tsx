@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useApp } from "@/context/AppContext";
-import { CheckCircle2, AlertCircle, Loader2, Link2, Unlink, Building2, ExternalLink } from "lucide-react";
+import { CheckCircle2, AlertCircle, Loader2, Link2, Unlink, Building2, ExternalLink, ShieldCheck, Send } from "lucide-react";
 import { SiX, SiFacebook, SiInstagram, SiPinterest, SiTiktok, SiYoutube, SiBluesky, SiThreads } from "react-icons/si";
 import { FaLinkedin } from "react-icons/fa6";
 import { canPlanConnectPlatform, type PlanId } from "@/lib/plans";
@@ -34,6 +34,7 @@ interface PlatformDef {
   docsUrl: string;
   oauthReady?: boolean;
   publishReady?: boolean;
+  connectionMode?: "oauth" | "custom";
 }
 
 const PLATFORMS: PlatformDef[] = [
@@ -109,10 +110,10 @@ const PLATFORMS: PlatformDef[] = [
     gradient: "from-black to-neutral-800",
     ring: "ring-white/20",
     bg: "bg-black border border-neutral-800",
-    description: "Threads is visible in the product and connection support is rolling out. Publishing unlocks progressively.",
+    description: "Threads uses the Meta app connection flow. Connection is ready; publish goes live right after the Meta rollout tranche.",
     requiredEnvs: ["FACEBOOK_APP_ID", "FACEBOOK_APP_SECRET"],
     docsUrl: "https://developers.facebook.com/",
-    oauthReady: false,
+    oauthReady: true,
     publishReady: false,
   },
   {
@@ -122,11 +123,12 @@ const PLATFORMS: PlatformDef[] = [
     gradient: "from-[#0560FF] to-[#0B80FF]",
     ring: "ring-[#0560FF]/40",
     bg: "bg-[#0560FF]",
-    description: "Bluesky is on the active roadmap. Connection and publishing are being released in controlled stages.",
+    description: "Bluesky uses a secure app-password session. Connection is custom, and text plus image publishing is active.",
     requiredEnvs: [],
     docsUrl: "https://docs.bsky.app/",
-    oauthReady: false,
-    publishReady: false,
+    oauthReady: true,
+    publishReady: true,
+    connectionMode: "custom",
   },
   {
     id: "youtube",
@@ -135,10 +137,10 @@ const PLATFORMS: PlatformDef[] = [
     gradient: "from-[#FF0000] to-[#c40000]",
     ring: "ring-[#FF0000]/40",
     bg: "bg-white border border-[#FF0000]/20",
-    description: "YouTube account linking and publishing are being finalized. It is visible in-product while rollout completes.",
+    description: "YouTube account linking is ready. Shorts/video publish is staged right after the current provider release slice.",
     requiredEnvs: ["YOUTUBE_CLIENT_ID", "YOUTUBE_CLIENT_SECRET"],
     docsUrl: "https://console.cloud.google.com/apis/credentials",
-    oauthReady: false,
+    oauthReady: true,
     publishReady: false,
   },
   {
@@ -148,13 +150,91 @@ const PLATFORMS: PlatformDef[] = [
     gradient: "from-[#E60023] to-[#b0001c]",
     ring: "ring-[#E60023]/40",
     bg: "bg-white border border-[#E60023]/20",
-    description: "Pinterest is active in the product surface and moves through staged connection and publish rollout.",
+    description: "Pinterest board connection is ready and image/video pin publishing is available in the current build.",
     requiredEnvs: ["PINTEREST_CLIENT_ID", "PINTEREST_CLIENT_SECRET"],
     docsUrl: "https://developers.pinterest.com/apps/",
-    oauthReady: false,
-    publishReady: false,
+    oauthReady: true,
+    publishReady: true,
   },
 ];
+
+function BlueskyConnectModal({
+  clientId,
+  onClose,
+  onSuccess,
+}: {
+  clientId: string;
+  onClose: () => void;
+  onSuccess: () => void;
+}) {
+  const [handle, setHandle] = useState("");
+  const [appPassword, setAppPassword] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const valid = handle.trim().length > 3 && appPassword.trim().length > 8;
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!valid || submitting) return;
+    setSubmitting(true);
+    try {
+      const response = await fetch("/api/social/connect/bluesky", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          clientId,
+          handle: handle.trim(),
+          appPassword: appPassword.trim(),
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({ error: "Bluesky connection failed." }));
+        throw new Error(data.error ?? "Bluesky connection failed.");
+      }
+
+      onSuccess();
+      onClose();
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Bluesky connection failed.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[200] flex items-center justify-center px-4">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <form onSubmit={submit} className="relative z-10 w-full max-w-lg glass rounded-[2rem] border border-white/10 p-8 shadow-2xl">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="p-2.5 rounded-xl bg-sky-500/10 border border-sky-500/20">
+            <ShieldCheck className="w-5 h-5 text-sky-300" />
+          </div>
+          <div>
+            <h2 className="text-white text-xl font-bold">Connect Bluesky</h2>
+            <p className="text-sm text-neutral-400">Use your handle and an app password. Raw credentials are never shown in the dashboard.</p>
+          </div>
+        </div>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-semibold text-neutral-400 mb-2">Handle</label>
+            <input value={handle} onChange={(e) => setHandle(e.target.value)} placeholder="you.bsky.social" className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-neutral-600 font-medium focus:outline-none focus:border-violet-500/50" />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-neutral-400 mb-2">App Password</label>
+            <input type="password" value={appPassword} onChange={(e) => setAppPassword(e.target.value)} placeholder="xxxx-xxxx-xxxx-xxxx" className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-neutral-600 font-medium focus:outline-none focus:border-violet-500/50" />
+          </div>
+        </div>
+        <div className="flex gap-3 pt-6">
+          <button type="button" onClick={onClose} className="flex-1 py-3 rounded-xl border border-white/10 text-neutral-400 hover:text-white hover:bg-white/5 font-semibold transition-all">Cancel</button>
+          <button type="submit" disabled={!valid || submitting} className="flex-1 py-3 rounded-xl bg-violet-600 hover:bg-violet-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold transition-all inline-flex items-center justify-center gap-2">
+            {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+            {submitting ? "Connecting..." : "Connect"}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
 
 function PlatformCard({
   platform,
@@ -308,6 +388,7 @@ export default function ConnectionsPage() {
   const [disconnecting, setDisconnecting] = useState<string | null>(null);
   const [configuredPlatforms, setConfiguredPlatforms] = useState<Set<string>>(new Set());
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+  const [showBlueskyModal, setShowBlueskyModal] = useState(false);
 
   const userId = session?.user?.id;
 
@@ -372,6 +453,10 @@ export default function ConnectionsPage() {
 
   const handleConnect = (platformId: string) => {
     if (!activeClient.id || !userId) return;
+    if (platformId === "bluesky") {
+      setShowBlueskyModal(true);
+      return;
+    }
     setConnecting(platformId);
     // Navigate to OAuth initiation route — page will redirect to platform
     window.location.href = `/api/social/connect/${platformId}?clientId=${encodeURIComponent(activeClient.id)}`;
@@ -408,6 +493,16 @@ export default function ConnectionsPage() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
+      {showBlueskyModal ? (
+        <BlueskyConnectModal
+          clientId={activeClient.id}
+          onClose={() => setShowBlueskyModal(false)}
+          onSuccess={() => {
+            showToast("Bluesky connected successfully!", "success");
+            loadTokens();
+          }}
+        />
+      ) : null}
 
       {/* Toast */}
       {toast && (
@@ -444,7 +539,7 @@ export default function ConnectionsPage() {
       <div className="glass rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4 flex gap-3">
         <AlertCircle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
         <div className="text-sm text-amber-200/80 leading-relaxed">
-          <strong className="text-amber-300">Before connecting:</strong> Create a developer app on each platform&apos;s developer console and add the API credentials as environment variables in your Vercel project settings. Each platform connection opens a secure OAuth authorization window.
+          <strong className="text-amber-300">Before connecting:</strong> Create developer apps for OAuth-based networks and add their credentials to your Vercel environment. Bluesky uses a secure app-password flow inside this dashboard, while the rest open a platform authorization window.
         </div>
       </div>
 
@@ -506,7 +601,7 @@ export default function ConnectionsPage() {
             <h3 className="text-white font-semibold">Callback URLs to Register</h3>
             <p className="text-neutral-500">Add these redirect URIs in each platform&apos;s developer console:</p>
             <div className="space-y-1">
-              {["twitter", "linkedin", "facebook", "instagram", "tiktok"].map((p) => (
+              {["twitter", "linkedin", "facebook", "instagram", "tiktok", "youtube", "pinterest", "threads"].map((p) => (
                 <code key={p} className="block text-xs bg-black/40 border border-white/10 text-violet-300 px-3 py-1.5 rounded-lg font-mono">
                   {typeof window !== "undefined" ? window.location.origin : "https://your-domain.com"}/api/social/callback/{p}
                 </code>

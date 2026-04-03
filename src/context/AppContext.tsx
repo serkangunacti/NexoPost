@@ -31,6 +31,8 @@ interface AppSession {
   activeClientId: string;
   clients: Client[];
   connectedAccounts: Record<string, string[]>;
+  isStaff: boolean;
+  isSuperadmin: boolean;
   isLoggedIn: boolean;
   pendingChange: PendingPlanChange | null;
   subscription: SubscriptionRecord | null;
@@ -72,6 +74,8 @@ interface AppContextType {
   removeClient: (clientId: string) => void;
   renameClient: (clientId: string, name: string) => void;
   connectedAccounts: Record<string, string[]>;
+  isStaff: boolean;
+  isSuperadmin: boolean;
   toggleAccount: (clientId: string, platformId: string) => void;
 }
 
@@ -82,6 +86,8 @@ const defaultSession: AppSession = {
   activeClientId: "",
   clients: [],
   connectedAccounts: {},
+  isStaff: false,
+  isSuperadmin: false,
   isLoggedIn: false,
   pendingChange: null,
   subscription: null,
@@ -129,6 +135,8 @@ const defaultContextValue: AppContextType = {
   removeClient: () => {},
   renameClient: () => {},
   connectedAccounts: {},
+  isStaff: false,
+  isSuperadmin: false,
   toggleAccount: () => {},
 };
 
@@ -168,6 +176,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           activeClientId: data.activeClientId ?? "",
           clients: data.clients ?? [],
           connectedAccounts: data.connectedAccounts ?? {},
+          isStaff: data.isStaff ?? false,
+          isSuperadmin: data.isSuperadmin ?? false,
           isLoggedIn: true,
           pendingChange: data.pendingChange ?? null,
           subscription: data.subscription ?? null,
@@ -333,8 +343,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         body: JSON.stringify({
           activeClientId: nextSession.activeClientId,
           clients: nextSession.clients,
-          connectedAccounts: nextSession.connectedAccounts,
-          pendingChange: null,
+        connectedAccounts: nextSession.connectedAccounts,
+        isStaff: nextSession.isStaff,
+        isSuperadmin: nextSession.isSuperadmin,
+        pendingChange: null,
           subscription,
           userProfile,
           userType: plan,
@@ -415,6 +427,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         removeClient,
         renameClient,
         connectedAccounts: session.connectedAccounts,
+        isStaff: session.isStaff,
+        isSuperadmin: session.isSuperadmin,
         toggleAccount,
       }}
     >

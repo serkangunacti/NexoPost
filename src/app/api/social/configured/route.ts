@@ -14,7 +14,7 @@ export async function GET() {
     tiktok: !!(env.TIKTOK_CLIENT_KEY && env.TIKTOK_CLIENT_SECRET),
     youtube: !!(env.YOUTUBE_CLIENT_ID && env.YOUTUBE_CLIENT_SECRET),
     pinterest: !!(env.PINTEREST_CLIENT_ID && env.PINTEREST_CLIENT_SECRET),
-    bluesky: false,
+    bluesky: true,
   };
 
   const configured = Object.entries(checks)

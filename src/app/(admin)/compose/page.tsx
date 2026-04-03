@@ -12,6 +12,7 @@ import {
 } from "@/lib/postPlatformConfig";
 import { getSubscriptionSnapshot } from "@/lib/subscription";
 import { canPlanPublishToPlatform, getPlanConfig } from "@/lib/plans";
+import { preparePlatformMedia } from "@/lib/mediaPreparation";
 import { SiX, SiFacebook, SiInstagram, SiTiktok, SiBluesky, SiThreads, SiPinterest, SiYoutube } from "react-icons/si";
 import { FaLinkedin } from "react-icons/fa6";
 
@@ -294,12 +295,11 @@ export default function ComposePage() {
     { id: "threads", name: "Threads", icon: <SiThreads className="w-6 h-6" />, color: "hover:bg-neutral-800 bg-neutral-900 border border-neutral-800 text-white/70", activeColor: "bg-black ring-2 ring-white text-white" },
     { id: "bluesky", name: "Bluesky", icon: <SiBluesky className="w-6 h-6" />, color: "hover:bg-[#0560FF]/80 bg-[#0560FF]/40 text-white/70", activeColor: "bg-[#0560FF] ring-2 ring-white text-white" },
     { id: "pinterest", name: "Pinterest", icon: <SiPinterest className="w-6 h-6" />, color: "hover:bg-[#E60023]/80 bg-[#E60023]/40 text-white/70", activeColor: "bg-[#E60023] ring-2 ring-white text-white" },
-    { id: "youtube_shorts", name: "YouTube Shorts", icon: <SiYoutube className="w-6 h-6" />, color: "hover:bg-[#FF0000]/80 bg-[#FF0000]/40 text-white/70", activeColor: "bg-[#FF0000] ring-2 ring-white text-white shadow-[0_0_15px_#FF0000]" },
+    { id: "youtube", name: "YouTube Shorts", icon: <SiYoutube className="w-6 h-6" />, color: "hover:bg-[#FF0000]/80 bg-[#FF0000]/40 text-white/70", activeColor: "bg-[#FF0000] ring-2 ring-white text-white shadow-[0_0_15px_#FF0000]" },
   ];
 
   const isPlatformSelectable = (platformId: string) => {
-    const normalized = platformId === "youtube_shorts" ? "youtube" : platformId;
-    return canPlanPublishToPlatform(planConfig.id, normalized);
+    return canPlanPublishToPlatform(planConfig.id, platformId);
   };
 
   const handleToggle = (id: string) => {
@@ -637,7 +637,7 @@ export default function ComposePage() {
       setPlatformMediaItemIds({});
       setPlatformTexts({});
       setEditingPlatform(null);
-      setSelectedPlatforms(["twitter"]);
+      setSelectedPlatforms(["facebook"]);
       setScheduleDate("");
       setScheduleTime("");
       setPendingAction(null);
@@ -667,6 +667,15 @@ export default function ComposePage() {
     ? [recentCategory, ...EMOJI_CATEGORIES]
     : EMOJI_CATEGORIES;
   const activeCategory = allCategories.find(c => c.id === activeEmojiCategory) ?? allCategories[0];
+  const mediaPreviewCatalog = [...existingMediaUrls, ...mediaPreviews];
+  const platformPreparationPreview = selectedPlatforms.reduce<Record<string, ReturnType<typeof preparePlatformMedia>>>((acc, platformId) => {
+    const selectedMedia = platformMediaItemIds[platformId] ?? mediaPreviewCatalog;
+    const platformMedia = selectedMedia
+      .map((mediaId) => mediaPreviewCatalog.find((entry) => entry === mediaId) ?? mediaId)
+      .filter((entry): entry is string => typeof entry === "string");
+    acc[platformId] = preparePlatformMedia(platformId, platformMedia);
+    return acc;
+  }, {});
 
   const saveEditedPost = useCallback(async (postId: string, payload: {
     content: string;
@@ -762,6 +771,51 @@ export default function ComposePage() {
               })}
             </div>
           </div>
+
+          {selectedPlatforms.length > 0 && (
+            <div className="glass p-6 rounded-[2rem] border border-white/5">
+              <div className="flex items-center justify-between gap-4 mb-4">
+                <div>
+                  <h3 className="text-xs font-bold text-neutral-400 uppercase tracking-wider">2. Auto-Prepare Preview</h3>
+                  <p className="text-sm text-neutral-500 mt-2">We keep the original upload, prepare safer platform variants, and still let you override caption/media per platform below.</p>
+                </div>
+                <div className={`px-3 py-2 rounded-xl text-xs font-bold border ${autoOptimize ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-300" : "bg-white/5 border-white/10 text-neutral-400"}`}>
+                  {autoOptimize ? "Auto-Scale Enabled" : "Manual Emphasis"}
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {selectedPlatforms.map((platformId) => {
+                  const preview = platformPreparationPreview[platformId];
+                  return (
+                    <div key={platformId} className="rounded-2xl border border-white/8 bg-black/20 p-4">
+                      <div className="flex items-center justify-between gap-3 mb-3">
+                        <p className="text-white font-semibold capitalize">{platformId}</p>
+                        <span className="text-[10px] uppercase tracking-widest font-bold text-neutral-500">
+                          Ratio {preview.summary.targetAspectRatio}
+                        </span>
+                      </div>
+                      <p className="text-xs text-neutral-400">
+                        {preview.summary.mediaCount} media selected • {preview.summary.transformableCount} Cloudinary auto-fit candidate{preview.summary.transformableCount === 1 ? "" : "s"}
+                      </p>
+                      {preview.issues.length > 0 ? (
+                        <div className="mt-3 space-y-2">
+                          {preview.issues.map((issue) => (
+                            <div key={issue} className="text-xs text-amber-200 bg-amber-500/10 border border-amber-500/20 rounded-xl px-3 py-2">
+                              {issue}
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="mt-3 text-xs text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-3 py-2">
+                          Auto-fit looks safe for the current media set.
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Editor */}
           <div className="glass rounded-[2rem] border border-white/5 overflow-visible flex flex-col min-h-[420px] shadow-2xl relative transition-all duration-500 hover:border-violet-500/20">

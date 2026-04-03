@@ -15,6 +15,7 @@ type TxClient = Prisma.TransactionClient | PrismaClient;
 type WorkspacePlanContext = {
   plan: ReturnType<typeof getPlanConfig>;
   subscription: SubscriptionRecord;
+  workspaceStatus: "ACTIVE" | "PAUSED" | "ARCHIVED";
 };
 
 type ReserveResult =
@@ -111,6 +112,7 @@ async function getWorkspacePlanContext(workspaceId: string): Promise<WorkspacePl
           userType: true,
         },
       },
+      status: true,
     },
   });
 
@@ -119,6 +121,7 @@ async function getWorkspacePlanContext(workspaceId: string): Promise<WorkspacePl
   return {
     plan: getPlanConfig(subscription.plan),
     subscription,
+    workspaceStatus: workspace?.status ?? "ACTIVE",
   };
 }
 
@@ -258,6 +261,22 @@ export async function reservePublicationUsage(
 
   const context = await getWorkspacePlanContext(input.job.workspaceId);
   const usagePeriod = await ensureUsagePeriod(tx, input.job.workspaceId, context);
+
+  if (context.workspaceStatus !== "ACTIVE") {
+    await incrementBlockedUsage(tx, {
+      workspaceId: input.job.workspaceId,
+      platform: input.job.platform,
+      usagePeriod,
+      reason: "BLOCKED_PLAN_ACCESS",
+    });
+    return {
+      ok: false,
+      reason: "BLOCKED_PLAN_ACCESS",
+      message: `This workspace is ${context.workspaceStatus.toLowerCase()} and cannot publish right now.`,
+      usagePeriod,
+      dailyUsage: null,
+    };
+  }
 
   if (!canPlanPublishToPlatform(context.plan.id, input.job.platform)) {
     await incrementBlockedUsage(tx, {

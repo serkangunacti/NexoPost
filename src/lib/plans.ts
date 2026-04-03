@@ -36,7 +36,7 @@ export type PlanEntitlements = {
 
 export const PLAN_ORDER: PlanId[] = ["free", "basic", "pro", "agency", "agency_plus"];
 
-const PAID_ROLLOUT_PLATFORMS: PlatformId[] = [
+const PAID_ACTIVE_PLATFORMS: PlatformId[] = [
   "tiktok",
   "youtube",
   "pinterest",
@@ -83,8 +83,8 @@ export const PLAN_CATALOG: Record<PlanId, PlanEntitlements> = {
     maxWorkspaces: 1,
     maxMembers: 2,
     monthlyPlatformJobs: 300,
-    allowedPlatforms: ["facebook", "instagram", "linkedin"],
-    connectablePlatforms: ["facebook", "instagram", "linkedin", ...PAID_ROLLOUT_PLATFORMS],
+    allowedPlatforms: ["facebook", "instagram", "linkedin", ...PAID_ACTIVE_PLATFORMS],
+    connectablePlatforms: ["facebook", "instagram", "linkedin", ...PAID_ACTIVE_PLATFORMS],
     xEnabled: false,
     xSpendCapCents: null,
     marketing: {
@@ -108,8 +108,8 @@ export const PLAN_CATALOG: Record<PlanId, PlanEntitlements> = {
     maxWorkspaces: 5,
     maxMembers: 5,
     monthlyPlatformJobs: 1500,
-    allowedPlatforms: ["facebook", "instagram", "linkedin"],
-    connectablePlatforms: ["facebook", "instagram", "linkedin", ...PAID_ROLLOUT_PLATFORMS],
+    allowedPlatforms: ["facebook", "instagram", "linkedin", ...PAID_ACTIVE_PLATFORMS],
+    connectablePlatforms: ["facebook", "instagram", "linkedin", ...PAID_ACTIVE_PLATFORMS],
     xEnabled: false,
     xSpendCapCents: null,
     marketing: {
@@ -134,8 +134,8 @@ export const PLAN_CATALOG: Record<PlanId, PlanEntitlements> = {
     maxWorkspaces: 10,
     maxMembers: 10,
     monthlyPlatformJobs: 5000,
-    allowedPlatforms: ["facebook", "instagram", "linkedin", "twitter"],
-    connectablePlatforms: ["facebook", "instagram", "linkedin", "twitter", ...PAID_ROLLOUT_PLATFORMS],
+    allowedPlatforms: ["facebook", "instagram", "linkedin", "twitter", ...PAID_ACTIVE_PLATFORMS],
+    connectablePlatforms: ["facebook", "instagram", "linkedin", "twitter", ...PAID_ACTIVE_PLATFORMS],
     xEnabled: true,
     xSpendCapCents: 2000,
     marketing: {
@@ -159,8 +159,8 @@ export const PLAN_CATALOG: Record<PlanId, PlanEntitlements> = {
     maxWorkspaces: null,
     maxMembers: 25,
     monthlyPlatformJobs: 20000,
-    allowedPlatforms: ["facebook", "instagram", "linkedin", "twitter"],
-    connectablePlatforms: ["facebook", "instagram", "linkedin", "twitter", ...PAID_ROLLOUT_PLATFORMS],
+    allowedPlatforms: ["facebook", "instagram", "linkedin", "twitter", ...PAID_ACTIVE_PLATFORMS],
+    connectablePlatforms: ["facebook", "instagram", "linkedin", "twitter", ...PAID_ACTIVE_PLATFORMS],
     xEnabled: true,
     xSpendCapCents: 8000,
     marketing: {

@@ -2,6 +2,7 @@ import type { Prisma, SocialAccount, WorkspaceRole } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { ApiError } from "@/lib/http";
 import type { SocialTokens, SocialTokenData } from "@/lib/socialAuth";
+import { isStaffEmail, isSuperadminEmail } from "@/lib/staff";
 
 type LegacyClient = {
   id: string;
@@ -14,6 +15,8 @@ type AppSessionPayload = {
   activeClientId: string;
   clients: LegacyClient[];
   connectedAccounts: LegacyConnectedAccounts;
+  isStaff: boolean;
+  isSuperadmin: boolean;
   isLoggedIn: boolean;
   pendingChange: Prisma.JsonValue | null;
   subscription: Prisma.JsonValue | null;
@@ -263,6 +266,7 @@ export async function buildAppSession(userId: string): Promise<AppSessionPayload
       id: true,
       userType: true,
       activeClientId: true,
+      email: true,
       pendingChange: true,
       subscription: true,
       userProfile: true,
@@ -320,6 +324,8 @@ export async function buildAppSession(userId: string): Promise<AppSessionPayload
     activeClientId,
     clients,
     connectedAccounts,
+    isStaff: !!user.email && isStaffEmail(user.email),
+    isSuperadmin: !!user.email && isSuperadminEmail(user.email),
     isLoggedIn: true,
     pendingChange: (user.pendingChange as Prisma.JsonValue | null) ?? null,
     subscription: (user.subscription as Prisma.JsonValue | null) ?? null,
@@ -377,6 +383,10 @@ export async function upsertSocialAccountFromToken(
   token: Partial<SocialTokenData> & { accessToken: string }
 ) {
   const nextStatus = token.accessToken ? "CONNECTED" : "DISCONNECTED";
+  const metadata = {
+    scope: token.scope ?? null,
+    ...(token.metadata ?? {}),
+  };
 
   return prisma.socialAccount.upsert({
     where: {
@@ -400,9 +410,7 @@ export async function upsertSocialAccountFromToken(
       pageAccessToken: token.pageAccessToken,
       status: nextStatus,
       connectedAt: token.connectedAt ? new Date(token.connectedAt) : new Date(),
-      metadata: {
-        scope: token.scope ?? null,
-      },
+      metadata,
     },
     update: {
       externalAccountId: token.accountId ?? `${workspaceId}:${platform}`,
@@ -417,9 +425,7 @@ export async function upsertSocialAccountFromToken(
       pageAccessToken: token.pageAccessToken,
       status: nextStatus,
       connectedAt: token.connectedAt ? new Date(token.connectedAt) : new Date(),
-      metadata: {
-        scope: token.scope ?? null,
-      },
+      metadata,
     },
   });
 }

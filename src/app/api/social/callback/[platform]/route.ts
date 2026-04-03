@@ -2,12 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import {
-  isSupportedPlatform,
-  getPlatformConfig,
   decodeState,
   getCallbackUrl,
-  type SocialTokens,
+  getPlatformConfig,
+  isSupportedPlatform,
   type SocialTokenData,
+  type SocialTokens,
   type SupportedPlatform,
 } from "@/lib/socialAuth";
 import { logAuditEvent } from "@/lib/audit";
@@ -40,7 +40,6 @@ export async function GET(
     return NextResponse.redirect(redirectBase.toString());
   }
 
-  // Verify state nonce
   const state = decodeState(rawState);
   const nonceCookie = request.cookies.get("oauth_nonce")?.value;
   if (!state || !nonceCookie || state.nonce !== nonceCookie || state.platform !== platform) {
@@ -55,14 +54,10 @@ export async function GET(
   }
 
   try {
-    // Exchange code → tokens
     const tokenData = await exchangeCodeForTokens(platform, code, config.clientId, config.clientSecret, request);
-    // Fetch account profile
     const profile = await fetchProfile(platform, tokenData.accessToken, config.clientId, config.clientSecret, tokenData);
-    // Persist to DB
     await saveTokens(state.userId, state.clientId, platform, { ...tokenData, ...profile });
 
-    // Clear OAuth cookies
     const successRedirect = NextResponse.redirect(
       new URL(`/connections?success=${platform}`, request.url).toString()
     );
@@ -71,7 +66,7 @@ export async function GET(
     return successRedirect;
   } catch (err) {
     console.error(`[social-callback:${platform}]`, err);
-    const errorMessage = err instanceof Error ? encodeURIComponent(err.message.slice(0, 100)) : "unknown";
+    const errorMessage = err instanceof Error ? encodeURIComponent(err.message.slice(0, 160)) : "unknown";
     redirectBase.searchParams.set("error", "token_exchange_failed");
     redirectBase.searchParams.set("detail", errorMessage);
     const errResponse = NextResponse.redirect(redirectBase.toString());
@@ -80,8 +75,6 @@ export async function GET(
     return errResponse;
   }
 }
-
-// ── Token exchange ─────────────────────────────────────────────────────────────
 
 async function exchangeCodeForTokens(
   platform: SupportedPlatform,
@@ -94,7 +87,6 @@ async function exchangeCodeForTokens(
   const callbackUrl = getCallbackUrl(platform);
 
   if (platform === "twitter") {
-    // Twitter uses Basic Auth + PKCE
     const verifier = request.cookies.get("oauth_pkce")?.value ?? "";
     const body = new URLSearchParams({
       code,
@@ -131,20 +123,23 @@ async function exchangeCodeForTokens(
       redirect_uri: callbackUrl,
       code_verifier: verifier,
     });
-    const res = await fetch(config.tokenUrl, { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body });
+    const res = await fetch(config.tokenUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body,
+    });
     if (!res.ok) throw new Error(`TikTok token error: ${await res.text()}`);
-    const data = await res.json() as { data?: { access_token: string; refresh_token?: string; expires_in?: number; scope?: string } };
-    const d = data.data;
-    if (!d) throw new Error("TikTok: empty token response");
+    const data = await res.json() as { access_token?: string; refresh_token?: string; expires_in?: number; scope?: string; data?: { access_token: string; refresh_token?: string; expires_in?: number; scope?: string } };
+    const normalized = data.data ?? data;
+    if (!normalized.access_token) throw new Error("TikTok: empty token response");
     return {
-      accessToken: d.access_token,
-      refreshToken: d.refresh_token,
-      expiresAt: d.expires_in ? Date.now() + d.expires_in * 1000 : undefined,
-      scope: d.scope,
+      accessToken: normalized.access_token,
+      refreshToken: normalized.refresh_token,
+      expiresAt: normalized.expires_in ? Date.now() + normalized.expires_in * 1000 : undefined,
+      scope: normalized.scope,
     };
   }
 
-  // LinkedIn, Facebook, Instagram — standard POST with client credentials
   const body = new URLSearchParams({
     grant_type: "authorization_code",
     code,
@@ -152,6 +147,7 @@ async function exchangeCodeForTokens(
     client_id: clientId,
     client_secret: clientSecret,
   });
+
   const res = await fetch(config.tokenUrl, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -166,8 +162,6 @@ async function exchangeCodeForTokens(
     scope: data.scope,
   };
 }
-
-// ── Profile fetch ──────────────────────────────────────────────────────────────
 
 async function fetchProfile(
   platform: SupportedPlatform,
@@ -194,25 +188,26 @@ async function fetchProfile(
       headers: { Authorization: `Bearer ${accessToken}` },
     });
     if (!res.ok) throw new Error(`LinkedIn profile error: ${await res.text()}`);
-    const data = await res.json() as { sub: string; name: string; email?: string; picture?: string };
+    const data = await res.json() as { sub: string; name: string; picture?: string };
     return {
-      accountId: data.sub,
+      accountId: `urn:li:person:${data.sub}`,
       accountName: data.name,
       accountAvatar: data.picture,
+      metadata: {
+        linkedInMemberId: data.sub,
+      },
     };
   }
 
-  if (platform === "facebook" || platform === "instagram") {
-    // Get user info
+  if (platform === "facebook" || platform === "instagram" || platform === "threads") {
     const meRes = await fetch(
-      `https://graph.facebook.com/v19.0/me?fields=id,name,picture.width(200)&access_token=${accessToken}`
+      `https://graph.facebook.com/v19.0/me?fields=id,name,picture.width(200)&access_token=${encodeURIComponent(accessToken)}`
     );
     if (!meRes.ok) throw new Error(`Meta profile error: ${await meRes.text()}`);
     const me = await meRes.json() as { id: string; name: string; picture?: { data?: { url?: string } } };
 
-    // Get managed Pages
     const pagesRes = await fetch(
-      `https://graph.facebook.com/v19.0/me/accounts?access_token=${accessToken}`
+      `https://graph.facebook.com/v19.0/me/accounts?access_token=${encodeURIComponent(accessToken)}`
     );
     const pages = pagesRes.ok
       ? (await pagesRes.json() as { data?: Array<{ id: string; name: string; access_token: string }> }).data ?? []
@@ -226,11 +221,15 @@ async function fetchProfile(
       pageId: firstPage?.id,
       pageName: firstPage?.name,
       pageAccessToken: firstPage?.access_token,
+      metadata: {
+        metaFamily: true,
+        threadsCapable: platform === "threads",
+      },
     };
   }
 
   if (platform === "tiktok") {
-    const res = await fetch("https://open.tiktok.com/v2/user/info/?fields=open_id,display_name,avatar_url", {
+    const res = await fetch("https://open.tiktokapis.com/v2/user/info/?fields=open_id,display_name,avatar_url", {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
     if (!res.ok) throw new Error(`TikTok profile error: ${await res.text()}`);
@@ -244,10 +243,54 @@ async function fetchProfile(
     };
   }
 
+  if (platform === "youtube") {
+    const res = await fetch("https://www.googleapis.com/youtube/v3/channels?part=snippet&mine=true", {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    if (!res.ok) throw new Error(`YouTube profile error: ${await res.text()}`);
+    const data = await res.json() as { items?: Array<{ id: string; snippet?: { title?: string; thumbnails?: { default?: { url?: string } } } }> };
+    const channel = data.items?.[0];
+    if (!channel?.id) throw new Error("YouTube: no channel found for the authenticated account.");
+    return {
+      accountId: channel.id,
+      accountName: channel.snippet?.title ?? "YouTube Channel",
+      accountAvatar: channel.snippet?.thumbnails?.default?.url,
+      metadata: {
+        channelId: channel.id,
+      },
+    };
+  }
+
+  if (platform === "pinterest") {
+    const userRes = await fetch("https://api.pinterest.com/v5/user_account", {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    if (!userRes.ok) throw new Error(`Pinterest profile error: ${await userRes.text()}`);
+    const user = await userRes.json() as { username?: string; account_type?: string; profile_image?: string; id?: string };
+
+    const boardsRes = await fetch("https://api.pinterest.com/v5/boards?page_size=1", {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    const boards = boardsRes.ok
+      ? (await boardsRes.json() as { items?: Array<{ id: string; name: string }> }).items ?? []
+      : [];
+    const firstBoard = boards[0];
+
+    return {
+      accountId: user.id ?? user.username ?? "pinterest",
+      accountName: user.username ?? "Pinterest",
+      accountAvatar: user.profile_image,
+      pageId: firstBoard?.id,
+      pageName: firstBoard?.name,
+      metadata: {
+        boardId: firstBoard?.id ?? null,
+        boardName: firstBoard?.name ?? null,
+      },
+    };
+  }
+
   return {};
 }
-
-// ── Persist tokens ─────────────────────────────────────────────────────────────
 
 async function saveTokens(
   userId: string,
@@ -259,7 +302,7 @@ async function saveTokens(
     where: { id: userId },
     select: { socialTokens: true, connectedAccounts: true },
   });
-  const existing = (user?.socialTokens ?? {}) as unknown as SocialTokens;
+  const existing = ((user?.socialTokens ?? {}) as unknown as SocialTokens) ?? {};
   const connectedAccounts = parseLegacyConnectedAccounts(user?.connectedAccounts);
 
   const tokenEntry: SocialTokenData = {
@@ -274,6 +317,7 @@ async function saveTokens(
     pageName: data.pageName,
     pageAccessToken: data.pageAccessToken,
     connectedAt: new Date().toISOString(),
+    metadata: data.metadata,
   };
 
   const updated: SocialTokens = {

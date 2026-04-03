@@ -1,26 +1,21 @@
 import { env } from "@/lib/env";
 
-// ── Social OAuth Types ─────────────────────────────────────────────────────────
-
 export interface SocialTokenData {
   accessToken: string;
   refreshToken?: string;
-  expiresAt?: number;       // Unix ms timestamp
+  expiresAt?: number;
   accountId: string;
   accountName: string;
   accountAvatar?: string;
   scope?: string;
-  connectedAt: string;      // ISO date
-  // Facebook/Instagram extras
+  connectedAt: string;
   pageId?: string;
   pageName?: string;
   pageAccessToken?: string;
+  metadata?: Record<string, unknown>;
 }
 
-/** Per-user token store: { clientId → { platform → TokenData } } */
 export type SocialTokens = Record<string, Record<string, SocialTokenData>>;
-
-// ── Supported platforms ────────────────────────────────────────────────────────
 
 export const SUPPORTED_PLATFORMS = [
   "twitter",
@@ -28,6 +23,10 @@ export const SUPPORTED_PLATFORMS = [
   "facebook",
   "instagram",
   "tiktok",
+  "youtube",
+  "pinterest",
+  "threads",
+  "bluesky",
 ] as const;
 
 export type SupportedPlatform = (typeof SUPPORTED_PLATFORMS)[number];
@@ -36,8 +35,6 @@ export function isSupportedPlatform(p: string): p is SupportedPlatform {
   return (SUPPORTED_PLATFORMS as readonly string[]).includes(p);
 }
 
-// ── OAuth config per platform ──────────────────────────────────────────────────
-
 export interface PlatformOAuthConfig {
   authUrl: string;
   tokenUrl: string;
@@ -45,14 +42,17 @@ export interface PlatformOAuthConfig {
   usePKCE: boolean;
   clientId: string | undefined;
   clientSecret: string | undefined;
+  connectionMode?: "oauth" | "custom";
 }
 
 export function getPlatformConfig(platform: SupportedPlatform): PlatformOAuthConfig {
+  const metaScopes = ["pages_manage_posts", "pages_read_engagement", "pages_show_list"];
+
   const base: Record<SupportedPlatform, PlatformOAuthConfig> = {
     twitter: {
       authUrl: "https://twitter.com/i/oauth2/authorize",
       tokenUrl: "https://api.twitter.com/2/oauth2/token",
-      scopes: ["tweet.read", "tweet.write", "users.read", "offline.access"],
+      scopes: ["tweet.read", "tweet.write", "users.read", "offline.access", "media.write"],
       usePKCE: true,
       clientId: env.TWITTER_CLIENT_ID,
       clientSecret: env.TWITTER_CLIENT_SECRET,
@@ -60,7 +60,7 @@ export function getPlatformConfig(platform: SupportedPlatform): PlatformOAuthCon
     linkedin: {
       authUrl: "https://www.linkedin.com/oauth/v2/authorization",
       tokenUrl: "https://www.linkedin.com/oauth/v2/accessToken",
-      scopes: ["openid", "profile", "email", "w_member_social"],
+      scopes: ["openid", "profile", "email", "w_member_social", "rw_organization_admin"],
       usePKCE: false,
       clientId: env.LINKEDIN_CLIENT_ID,
       clientSecret: env.LINKEDIN_CLIENT_SECRET,
@@ -68,19 +68,16 @@ export function getPlatformConfig(platform: SupportedPlatform): PlatformOAuthCon
     facebook: {
       authUrl: "https://www.facebook.com/v19.0/dialog/oauth",
       tokenUrl: "https://graph.facebook.com/v19.0/oauth/access_token",
-      scopes: ["pages_manage_posts", "pages_read_engagement", "pages_show_list"],
+      scopes: [...metaScopes, "pages_manage_metadata", "business_management"],
       usePKCE: false,
       clientId: env.FACEBOOK_APP_ID,
       clientSecret: env.FACEBOOK_APP_SECRET,
     },
     instagram: {
-      // Instagram uses the Meta/Facebook OAuth app — same credentials
       authUrl: "https://www.facebook.com/v19.0/dialog/oauth",
       tokenUrl: "https://graph.facebook.com/v19.0/oauth/access_token",
       scopes: [
-        "pages_manage_posts",
-        "pages_read_engagement",
-        "pages_show_list",
+        ...metaScopes,
         "instagram_basic",
         "instagram_content_publish",
         "instagram_manage_comments",
@@ -91,17 +88,59 @@ export function getPlatformConfig(platform: SupportedPlatform): PlatformOAuthCon
     },
     tiktok: {
       authUrl: "https://www.tiktok.com/v2/auth/authorize/",
-      tokenUrl: "https://open.tiktok.com/v2/oauth/token/",
+      tokenUrl: "https://open.tiktokapis.com/v2/oauth/token/",
       scopes: ["user.info.basic", "video.publish", "video.upload"],
       usePKCE: true,
       clientId: env.TIKTOK_CLIENT_KEY,
       clientSecret: env.TIKTOK_CLIENT_SECRET,
     },
+    youtube: {
+      authUrl: "https://accounts.google.com/o/oauth2/v2/auth",
+      tokenUrl: "https://oauth2.googleapis.com/token",
+      scopes: [
+        "openid",
+        "email",
+        "profile",
+        "https://www.googleapis.com/auth/youtube.upload",
+        "https://www.googleapis.com/auth/youtube.readonly",
+      ],
+      usePKCE: true,
+      clientId: env.YOUTUBE_CLIENT_ID,
+      clientSecret: env.YOUTUBE_CLIENT_SECRET,
+    },
+    pinterest: {
+      authUrl: "https://www.pinterest.com/oauth/",
+      tokenUrl: "https://api.pinterest.com/v5/oauth/token",
+      scopes: ["boards:read", "boards:write", "pins:read", "pins:write", "user_accounts:read"],
+      usePKCE: false,
+      clientId: env.PINTEREST_CLIENT_ID,
+      clientSecret: env.PINTEREST_CLIENT_SECRET,
+    },
+    threads: {
+      authUrl: "https://www.facebook.com/v19.0/dialog/oauth",
+      tokenUrl: "https://graph.facebook.com/v19.0/oauth/access_token",
+      scopes: [
+        ...metaScopes,
+        "threads_basic",
+        "threads_content_publish",
+      ],
+      usePKCE: false,
+      clientId: env.FACEBOOK_APP_ID,
+      clientSecret: env.FACEBOOK_APP_SECRET,
+    },
+    bluesky: {
+      authUrl: "",
+      tokenUrl: "",
+      scopes: [],
+      usePKCE: false,
+      clientId: undefined,
+      clientSecret: undefined,
+      connectionMode: "custom",
+    },
   };
+
   return base[platform];
 }
-
-// ── PKCE helpers ───────────────────────────────────────────────────────────────
 
 export function generateCodeVerifier(): string {
   const arr = new Uint8Array(32);
@@ -120,8 +159,6 @@ function base64url(bytes: Uint8Array): string {
   bytes.forEach((b) => (str += String.fromCharCode(b)));
   return btoa(str).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
 }
-
-// ── OAuth state helpers ────────────────────────────────────────────────────────
 
 export interface OAuthState {
   userId: string;
@@ -142,9 +179,54 @@ export function decodeState(raw: string): OAuthState | null {
   }
 }
 
-// ── Callback URL builder ───────────────────────────────────────────────────────
-
 export function getCallbackUrl(platform: SupportedPlatform): string {
   const base = env.appBaseUrl.replace(/\/$/, "");
   return `${base}/api/social/callback/${platform}`;
+}
+
+export function getBlueskyServiceUrl() {
+  return "https://bsky.social";
+}
+
+export async function createBlueskySession(input: { identifier: string; password: string }) {
+  const response = await fetch(`${getBlueskyServiceUrl()}/xrpc/com.atproto.server.createSession`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      identifier: input.identifier,
+      password: input.password,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Bluesky session error: ${await response.text()}`);
+  }
+
+  return response.json() as Promise<{
+    accessJwt: string;
+    refreshJwt: string;
+    did: string;
+    handle: string;
+    email?: string;
+  }>;
+}
+
+export async function getBlueskyProfile(accessJwt: string, actor: string) {
+  const params = new URLSearchParams({ actor });
+  const response = await fetch(`${getBlueskyServiceUrl()}/xrpc/app.bsky.actor.getProfile?${params.toString()}`, {
+    headers: {
+      Authorization: `Bearer ${accessJwt}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Bluesky profile error: ${await response.text()}`);
+  }
+
+  return response.json() as Promise<{
+    did: string;
+    handle: string;
+    displayName?: string;
+    avatar?: string;
+  }>;
 }

@@ -309,7 +309,8 @@ export async function runPublicationJob(jobId: string) {
     }
 
     const adapter = getProviderAdapter(job.platform);
-    const validation = await adapter.validateMedia(payload);
+    const normalized = await adapter.normalizeContent(payload);
+    const validation = await adapter.validateMedia(normalized);
 
     if (!validation.ok) {
       await markJobFailed(tx, job, validation.issues.join(" "));
@@ -318,7 +319,7 @@ export async function runPublicationJob(jobId: string) {
 
     const usageReservation = await reservePublicationUsage(tx, {
       job,
-      mediaUrls: payload.mediaUrls,
+      mediaUrls: normalized.mediaUrls,
     });
 
     if (!usageReservation.ok) {
@@ -328,7 +329,9 @@ export async function runPublicationJob(jobId: string) {
 
     try {
       const published = await adapter.publishNow({
-        ...payload,
+        content: normalized.content,
+        mediaUrls: normalized.mediaUrls,
+        preparedMedia: normalized.preparedMedia,
         postId: job.postId,
         socialAccount: socialAccount as SocialAccount,
         workspaceId: job.workspaceId,
@@ -353,13 +356,33 @@ export async function runPublicationJob(jobId: string) {
           status: "SUCCEEDED",
           remoteId: published.remoteId,
           remoteUrl: published.remoteUrl,
-          payload: published.payload as Prisma.InputJsonValue | undefined,
+          payload: {
+            ...(published.payload ?? {}),
+            normalizedWarnings: normalized.warnings,
+            preparedMedia: normalized.preparedMedia.map((asset) => ({
+              originalUrl: asset.originalUrl,
+              preparedUrl: asset.preparedUrl,
+              kind: asset.kind,
+              ratio: asset.targetAspectRatio,
+              mode: asset.transformMode,
+            })),
+          } as Prisma.InputJsonValue,
         },
         update: {
           status: "SUCCEEDED",
           remoteId: published.remoteId,
           remoteUrl: published.remoteUrl,
-          payload: published.payload as Prisma.InputJsonValue | undefined,
+          payload: {
+            ...(published.payload ?? {}),
+            normalizedWarnings: normalized.warnings,
+            preparedMedia: normalized.preparedMedia.map((asset) => ({
+              originalUrl: asset.originalUrl,
+              preparedUrl: asset.preparedUrl,
+              kind: asset.kind,
+              ratio: asset.targetAspectRatio,
+              mode: asset.transformMode,
+            })),
+          } as Prisma.InputJsonValue,
           errorMessage: null,
         },
       });
