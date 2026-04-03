@@ -101,7 +101,10 @@ export async function GET(
     url.searchParams.set("response_type", "code");
     url.searchParams.set("client_id", config.clientId);
     url.searchParams.set("redirect_uri", callbackUrl);
-    url.searchParams.set("scope", config.scopes.join(" "));
+    url.searchParams.set(
+      "scope",
+      config.scopes.join(config.scopeSeparator === "comma" ? "," : " ")
+    );
     url.searchParams.set("state", state);
     Object.entries(config.extraAuthParams ?? {}).forEach(([key, value]) => {
       url.searchParams.set(key, value);

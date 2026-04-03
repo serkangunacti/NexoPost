@@ -45,6 +45,7 @@ export interface PlatformOAuthConfig {
   authUrl: string;
   tokenUrl: string;
   scopes: string[];
+  scopeSeparator?: "space" | "comma";
   usePKCE: boolean;
   clientId: string | undefined;
   clientSecret: string | undefined;
@@ -131,6 +132,7 @@ export function getPlatformConfig(platform: SupportedPlatform): PlatformOAuthCon
         "threads_basic",
         "threads_content_publish",
       ],
+      scopeSeparator: "comma",
       usePKCE: false,
       clientId: env.THREADS_APP_ID,
       clientSecret: env.THREADS_APP_SECRET,
