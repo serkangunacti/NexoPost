@@ -7,6 +7,7 @@ import {
   getCallbackUrl,
   getPlatformConfig,
   isSupportedPlatform,
+  type MetaPageOption,
   type SocialTokenData,
   type SocialTokens,
   type SupportedPlatform,
@@ -254,6 +255,11 @@ async function fetchProfile(
       ? (await pagesRes.json() as { data?: Array<{ id: string; name: string; access_token: string }> }).data ?? []
       : [];
     const firstPage = pages[0];
+    const availablePages: MetaPageOption[] = pages.map((page) => ({
+      id: page.id,
+      name: page.name,
+      accessToken: page.access_token,
+    }));
 
     return {
       accountId: me.id,
@@ -265,6 +271,9 @@ async function fetchProfile(
       metadata: {
         metaFamily: true,
         threadsCapable: platform === "threads",
+        publishTarget: "page",
+        personalProfilePublishingSupported: false,
+        availablePages,
       },
     };
   }

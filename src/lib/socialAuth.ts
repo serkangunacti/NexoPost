@@ -15,6 +15,12 @@ export interface SocialTokenData {
   metadata?: Record<string, unknown>;
 }
 
+export type MetaPageOption = {
+  id: string;
+  name: string;
+  accessToken?: string;
+};
+
 export type SocialTokens = Record<string, Record<string, SocialTokenData>>;
 
 export const SUPPORTED_PLATFORMS = [

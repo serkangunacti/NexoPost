@@ -3,8 +3,13 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireSelf } from "@/lib/authz";
 import { ApiError, toErrorResponse } from "@/lib/http";
-import { removeSocialAccount, parseLegacySocialTokens } from "@/lib/workspaces";
+import { removeSocialAccount, parseLegacySocialTokens, updateSocialAccountPageSelection } from "@/lib/workspaces";
 import { logAuditEvent } from "@/lib/audit";
+
+type SafePageOption = {
+  id: string;
+  name: string;
+};
 
 type SafeTokenData = {
   accountId: string;
@@ -14,9 +19,31 @@ type SafeTokenData = {
   pageId?: string;
   pageName?: string;
   scope?: string;
+  pageOptions?: SafePageOption[];
+  publishTarget?: "page";
+  personalProfileSupported?: boolean;
 };
 
 type SafeTokens = Record<string, Record<string, SafeTokenData>>;
+
+function parseSafePageOptions(metadata: Prisma.JsonValue | null): SafePageOption[] {
+  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
+    return [];
+  }
+
+  const availablePages = (metadata as Record<string, unknown>).availablePages;
+  if (!Array.isArray(availablePages)) {
+    return [];
+  }
+
+  return availablePages
+    .filter((page): page is Record<string, unknown> => !!page && typeof page === "object" && !Array.isArray(page))
+    .map((page) => ({
+      id: typeof page.id === "string" ? page.id : "",
+      name: typeof page.name === "string" ? page.name : "",
+    }))
+    .filter((page) => page.id && page.name);
+}
 
 function toSafeTokens(raw: Prisma.JsonValue | null): SafeTokens {
   const legacy = parseLegacySocialTokens(raw);
@@ -33,6 +60,9 @@ function toSafeTokens(raw: Prisma.JsonValue | null): SafeTokens {
         pageId: token.pageId,
         pageName: token.pageName,
         scope: token.scope,
+        pageOptions: parseSafePageOptions((token.metadata ?? null) as Prisma.JsonValue | null),
+        publishTarget: "page",
+        personalProfileSupported: false,
       };
     }
   }
@@ -85,11 +115,60 @@ export async function GET(
           pageId: account.pageId ?? undefined,
           pageName: account.pageName ?? undefined,
           scope: Array.isArray(account.scopes) ? account.scopes.join(",") : undefined,
+          pageOptions: parseSafePageOptions(account.metadata as Prisma.JsonValue | null),
+          publishTarget: "page",
+          personalProfileSupported: false,
         };
       }
     }
 
     return NextResponse.json(safe);
+  } catch (error) {
+    return toErrorResponse(error);
+  }
+}
+
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const userId = await requireSelf(id);
+    const body = await request.json() as {
+      clientId?: string;
+      platform?: string;
+      pageId?: string;
+    };
+
+    const clientId = body.clientId?.trim() ?? "";
+    const platform = body.platform?.trim() ?? "";
+    const pageId = body.pageId?.trim() ?? "";
+
+    if (!clientId || !platform || !pageId) {
+      throw new ApiError(400, "clientId, platform, and pageId are required");
+    }
+
+    if (!["facebook", "instagram", "threads"].includes(platform)) {
+      throw new ApiError(400, "Page selection is only available for Meta family connections");
+    }
+
+    const result = await updateSocialAccountPageSelection(userId, clientId, platform, pageId);
+
+    await logAuditEvent({
+      action: "social.page_selected",
+      entityType: "social_account",
+      entityId: `${clientId}:${platform}`,
+      userId,
+      workspaceId: clientId,
+      payload: {
+        platform,
+        pageId: result.pageId,
+        pageName: result.pageName,
+      },
+    });
+
+    return NextResponse.json({ ok: true, ...result });
   } catch (error) {
     return toErrorResponse(error);
   }

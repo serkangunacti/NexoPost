@@ -1,7 +1,7 @@
 import type { Prisma, SocialAccount, WorkspaceRole } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { ApiError } from "@/lib/http";
-import type { SocialTokens, SocialTokenData } from "@/lib/socialAuth";
+import type { MetaPageOption, SocialTokens, SocialTokenData } from "@/lib/socialAuth";
 import { deleteBlueskyOAuthSession } from "@/lib/blueskyOAuth";
 import { isStaffEmail, isSuperadminEmail } from "@/lib/staff";
 
@@ -459,6 +459,109 @@ export async function removeSocialAccount(workspaceId: string, platform: string)
       platform,
     },
   });
+}
+
+function parseAvailableMetaPages(metadata: unknown): MetaPageOption[] {
+  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
+    return [];
+  }
+
+  const rawPages = (metadata as Record<string, unknown>).availablePages;
+  if (!Array.isArray(rawPages)) {
+    return [];
+  }
+
+  return rawPages
+    .filter((page): page is Record<string, unknown> => !!page && typeof page === "object" && !Array.isArray(page))
+    .map((page) => ({
+      id: typeof page.id === "string" ? page.id : "",
+      name: typeof page.name === "string" ? page.name : "",
+      accessToken: typeof page.accessToken === "string" ? page.accessToken : undefined,
+    }))
+    .filter((page) => page.id && page.name);
+}
+
+export async function updateSocialAccountPageSelection(
+  userId: string,
+  workspaceId: string,
+  platform: string,
+  pageId: string
+) {
+  const socialAccount = await prisma.socialAccount.findUnique({
+    where: {
+      workspaceId_platform: {
+        workspaceId,
+        platform,
+      },
+    },
+  });
+
+  if (!socialAccount) {
+    throw new ApiError(404, "Connected social account not found");
+  }
+
+  const availablePages = parseAvailableMetaPages(socialAccount.metadata);
+  const selectedPage = availablePages.find((page) => page.id === pageId);
+  if (!selectedPage) {
+    throw new ApiError(400, "Selected page is not available for this connection");
+  }
+
+  const nextMetadata = {
+    ...(socialAccount.metadata && typeof socialAccount.metadata === "object" && !Array.isArray(socialAccount.metadata)
+      ? socialAccount.metadata as Record<string, unknown>
+      : {}),
+    selectedPublishTarget: selectedPage.id,
+    publishTarget: "page",
+    personalProfilePublishingSupported: false,
+  };
+
+  await prisma.socialAccount.update({
+    where: {
+      workspaceId_platform: {
+        workspaceId,
+        platform,
+      },
+    },
+    data: {
+      pageId: selectedPage.id,
+      pageName: selectedPage.name,
+      pageAccessToken: selectedPage.accessToken ?? socialAccount.pageAccessToken,
+      metadata: nextMetadata,
+    },
+  });
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { socialTokens: true },
+  });
+
+  const tokens = parseLegacySocialTokens(user?.socialTokens);
+  if (tokens[workspaceId]?.[platform]) {
+    tokens[workspaceId][platform] = {
+      ...tokens[workspaceId][platform],
+      pageId: selectedPage.id,
+      pageName: selectedPage.name,
+      pageAccessToken: selectedPage.accessToken ?? tokens[workspaceId][platform].pageAccessToken,
+      metadata: {
+        ...(tokens[workspaceId][platform].metadata ?? {}),
+        selectedPublishTarget: selectedPage.id,
+        publishTarget: "page",
+        personalProfilePublishingSupported: false,
+      },
+    };
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        socialTokens: tokens as unknown as Prisma.InputJsonValue,
+      },
+    });
+  }
+
+  return {
+    pageId: selectedPage.id,
+    pageName: selectedPage.name,
+  };
 }
 
 export async function getWorkspaceSocialAccounts(workspaceId: string) {

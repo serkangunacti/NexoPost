@@ -18,6 +18,9 @@ interface SafeTokenData {
   pageId?: string;
   pageName?: string;
   scope?: string;
+  pageOptions?: Array<{ id: string; name: string }>;
+  publishTarget?: "page";
+  personalProfileSupported?: boolean;
 }
 
 type SafeTokens = Record<string, Record<string, SafeTokenData>>;
@@ -217,6 +220,7 @@ function PlatformCard({
   token,
   onConnect,
   onDisconnect,
+  onSelectPage,
   connecting,
   disconnecting,
   configuredPlatforms,
@@ -226,6 +230,7 @@ function PlatformCard({
   token: SafeTokenData | null;
   onConnect: (platformId: string) => void;
   onDisconnect: (platformId: string) => void;
+  onSelectPage: (platformId: string, pageId: string) => void;
   connecting: string | null;
   disconnecting: string | null;
   configuredPlatforms: Set<string>;
@@ -239,6 +244,8 @@ function PlatformCard({
   const isOauthReady = platform.oauthReady !== false;
   const isPublishReady = platform.publishReady !== false;
   const isAvailableOnPlan = canPlanConnectPlatform(userType, platform.id);
+  const supportsPageSelection = ["facebook", "instagram", "threads"].includes(platform.id);
+  const pageOptions = token?.pageOptions ?? [];
 
   return (
     <div className={`glass rounded-[2rem] border p-6 flex flex-col gap-5 transition-all duration-300 ${
@@ -284,23 +291,60 @@ function PlatformCard({
 
       {/* Connected account info */}
       {isConnected && token && (
-        <div className="flex items-center gap-3 bg-white/5 rounded-xl p-3 border border-white/5">
-          {token.accountAvatar ? (
-            <img src={token.accountAvatar} alt="" className="w-10 h-10 rounded-full object-cover shrink-0" />
-          ) : (
-            <div className="w-10 h-10 rounded-full bg-violet-500/20 flex items-center justify-center shrink-0">
-              <span className="text-violet-300 font-bold text-sm">{token.accountName.charAt(0).toUpperCase()}</span>
+        <div className="bg-white/5 rounded-xl p-3 border border-white/5 space-y-3">
+          <div className="flex items-center gap-3">
+            {token.accountAvatar ? (
+              <img src={token.accountAvatar} alt="" className="w-10 h-10 rounded-full object-cover shrink-0" />
+            ) : (
+              <div className="w-10 h-10 rounded-full bg-violet-500/20 flex items-center justify-center shrink-0">
+                <span className="text-violet-300 font-bold text-sm">{token.accountName.charAt(0).toUpperCase()}</span>
+              </div>
+            )}
+            <div className="flex-1 min-w-0">
+              <p className="text-white font-semibold text-sm truncate">{token.accountName}</p>
+              {token.pageName && (
+                <p className="text-neutral-400 text-xs truncate">Page: {token.pageName}</p>
+              )}
+              <p className="text-neutral-500 text-xs">
+                Connected {new Date(token.connectedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+              </p>
+            </div>
+          </div>
+
+          {supportsPageSelection && (
+            <div className="space-y-2">
+              <p className="text-[11px] uppercase tracking-[0.2em] text-neutral-500">Publish target</p>
+              <select
+                value={token.pageId ?? ""}
+                onChange={(event) => onSelectPage(platform.id, event.target.value)}
+                disabled={pageOptions.length === 0}
+                className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500/50 disabled:opacity-50"
+              >
+                {pageOptions.length === 0 ? (
+                  <option value="">No Pages available</option>
+                ) : (
+                  pageOptions.map((page) => (
+                    <option key={page.id} value={page.id}>
+                      {page.name}
+                    </option>
+                  ))
+                )}
+              </select>
+              <p className="text-xs text-neutral-500">
+                Personal Facebook profiles are not supported. NexoPost publishes to Pages only.
+              </p>
             </div>
           )}
-          <div className="flex-1 min-w-0">
-            <p className="text-white font-semibold text-sm truncate">{token.accountName}</p>
-            {token.pageName && (
-              <p className="text-neutral-400 text-xs truncate">Page: {token.pageName}</p>
-            )}
-            <p className="text-neutral-500 text-xs">
-              Connected {new Date(token.connectedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+          {platform.id === "instagram" && (
+            <p className="text-xs text-neutral-500">
+              Instagram publishing requires a Business or Creator account linked to the selected Facebook Page.
             </p>
-          </div>
+          )}
+          {platform.id === "threads" && (
+            <p className="text-xs text-neutral-500">
+              Threads will also use the selected Page context once the Meta rollout is enabled.
+            </p>
+          )}
         </div>
       )}
 
@@ -465,6 +509,44 @@ export default function ConnectionsPage() {
     }
   };
 
+  const handleSelectPage = async (platformId: string, pageId: string) => {
+    if (!userId || !activeClient.id || !pageId) return;
+
+    try {
+      const res = await fetch(`/api/users/${userId}/social-tokens`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          clientId: activeClient.id,
+          platform: platformId,
+          pageId,
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({ error: "Failed to update Page selection." }));
+        throw new Error(data.error ?? "Failed to update Page selection.");
+      }
+
+      const data = await res.json() as { pageId: string; pageName: string };
+      setTokens((prev) => {
+        const next = { ...prev };
+        next[activeClient.id] = {
+          ...(next[activeClient.id] ?? {}),
+          [platformId]: {
+            ...(next[activeClient.id]?.[platformId] ?? {}),
+            pageId: data.pageId,
+            pageName: data.pageName,
+          },
+        };
+        return next;
+      });
+      showToast(`${PLATFORMS.find((entry) => entry.id === platformId)?.name ?? platformId} publish target updated.`, "success");
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "Failed to update Page selection.");
+    }
+  };
+
   const clientTokens = tokens[activeClient.id] ?? {};
 
   return (
@@ -529,6 +611,7 @@ export default function ConnectionsPage() {
               token={clientTokens[platform.id] ?? null}
               onConnect={handleConnect}
               onDisconnect={handleDisconnect}
+              onSelectPage={handleSelectPage}
               connecting={connecting}
               disconnecting={disconnecting}
               configuredPlatforms={configuredPlatforms}
