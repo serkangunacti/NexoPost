@@ -84,9 +84,9 @@ export function getPlatformConfig(platform: SupportedPlatform): PlatformOAuthCon
       tokenUrl: "https://graph.facebook.com/v19.0/oauth/access_token",
       scopes: [
         "pages_show_list",
-        "business_management",
-        "instagram_business_basic",
-        "instagram_business_content_publish",
+        "pages_read_engagement",
+        "instagram_basic",
+        "instagram_content_publish",
       ],
       usePKCE: false,
       clientId: env.FACEBOOK_APP_ID,
