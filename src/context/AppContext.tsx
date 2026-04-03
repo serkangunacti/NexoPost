@@ -2,14 +2,15 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from "react";
 import { useSession, signOut } from "next-auth/react";
 import {
+  BillingCycle,
   PendingPlanChange,
+  PlanId,
   SubscriptionRecord,
-  addPaidDuration,
+  buildSubscriptionRecord,
   getNextMonthStart,
 } from "@/lib/subscription";
 
-type UserType = "basic" | "pro" | "agency";
-type BillingCycle = "monthly" | "annual";
+type UserType = PlanId;
 type ActivationMode = "auto" | "trial" | "paid";
 
 interface Client {
@@ -39,7 +40,7 @@ interface AppSession {
 
 interface StartPlanResult {
   effectiveAt: string;
-  phase: "trial" | "paid";
+  phase: "free" | "trial" | "paid";
   scheduled: boolean;
 }
 
@@ -85,7 +86,7 @@ const defaultSession: AppSession = {
   pendingChange: null,
   subscription: null,
   userProfile: null,
-  userType: "basic",
+  userType: "free",
 };
 
 function resolveSessionDates(session: AppSession): AppSession {
@@ -94,26 +95,23 @@ function resolveSessionDates(session: AppSession): AppSession {
   const effectiveAt = new Date(session.pendingChange.effectiveAt);
   if (effectiveAt.getTime() > Date.now()) return session;
 
-  const expiresAt = addPaidDuration(effectiveAt, session.pendingChange.billingCycle);
-
   return {
     ...session,
     pendingChange: null,
-    subscription: {
+    subscription: buildSubscriptionRecord({
       billingCycle: session.pendingChange.billingCycle,
-      expiresAt: expiresAt.toISOString(),
       hasUsedTrial: true,
       phase: "paid",
       plan: session.pendingChange.plan,
-      startedAt: effectiveAt.toISOString(),
-    },
+      startedAt: effectiveAt,
+    }),
     userType: session.pendingChange.plan,
   };
 }
 
 const defaultContextValue: AppContextType = {
   isHydrated: false,
-  userType: "basic",
+  userType: "free",
   setUserType: () => {},
   isLoggedIn: false,
   setIsLoggedIn: () => {},
@@ -148,13 +146,18 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
     if (status === "unauthenticated") {
       uidRef.current = null;
-      setSession(defaultSession);
-      setIsHydrated(true);
+      queueMicrotask(() => {
+        setSession(defaultSession);
+        setIsHydrated(true);
+      });
       return;
     }
 
     const uid = authSession?.user?.id;
-    if (!uid) { setIsHydrated(true); return; }
+    if (!uid) {
+      queueMicrotask(() => setIsHydrated(true));
+      return;
+    }
     uidRef.current = uid;
 
     fetch(`/api/users/${uid}`)
@@ -169,7 +172,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           pendingChange: data.pendingChange ?? null,
           subscription: data.subscription ?? null,
           userProfile: data.userProfile ?? null,
-          userType: data.userType ?? "basic",
+          userType: data.userType ?? "free",
         });
         setSession(resolved);
 
@@ -263,7 +266,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const hasUsedTrial = currentSubscription?.hasUsedTrial ?? false;
     const isActivePaidSubscription =
       currentSubscription?.phase === "paid" &&
-      new Date(currentSubscription.expiresAt).getTime() > now.getTime();
+      (!!currentSubscription.expiresAt && new Date(currentSubscription.expiresAt).getTime() > now.getTime());
 
     if (
       isActivePaidSubscription &&
@@ -279,27 +282,35 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
 
     const phase: SubscriptionRecord["phase"] =
-      activationMode === "trial"
-        ? "trial"
-        : activationMode === "paid"
-          ? "paid"
-          : hasUsedTrial
+      plan === "free"
+        ? "free"
+        : activationMode === "trial"
+          ? "trial"
+          : activationMode === "paid"
             ? "paid"
-            : "trial";
+            : hasUsedTrial
+              ? "paid"
+              : "trial";
 
-    const expiresAt =
+    const subscription: SubscriptionRecord =
       phase === "trial"
-        ? new Date(now.getTime() + 15 * 24 * 60 * 60 * 1000)
-        : addPaidDuration(now, billingCycle);
-
-    const subscription: SubscriptionRecord = {
-      billingCycle,
-      expiresAt: expiresAt.toISOString(),
-      hasUsedTrial: true,
-      phase,
-      plan,
-      startedAt: now.toISOString(),
-    };
+        ? {
+            billingCycle,
+            currentPeriodEnd: new Date(now.getTime() + 15 * 24 * 60 * 60 * 1000).toISOString(),
+            currentPeriodStart: now.toISOString(),
+            expiresAt: new Date(now.getTime() + 15 * 24 * 60 * 60 * 1000).toISOString(),
+            hasUsedTrial: true,
+            phase,
+            plan,
+            startedAt: now.toISOString(),
+          }
+        : buildSubscriptionRecord({
+            billingCycle,
+            hasUsedTrial: phase !== "free",
+            phase,
+            plan,
+            startedAt: now,
+          });
 
     const userProfile = buildUserProfile({ email, fullName, companyName, phone }, session.userProfile);
 

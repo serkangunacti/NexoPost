@@ -9,13 +9,15 @@ import { SiX, SiFacebook, SiInstagram, SiTiktok, SiBluesky, SiThreads, SiPintere
 import { FaLinkedin } from "react-icons/fa6";
 import AnimatedShowcase from "@/components/public/AnimatedShowcase";
 import SpaceBackground from "@/components/public/SpaceBackground";
+import { PLAN_ORDER, formatPriceCents, getPlanConfig, getPlanPriceCents, type PlanId } from "@/lib/plans";
 
 export default function LandingPage() {
   const { t } = useLanguage();
   const [isAnnual, setIsAnnual] = useState(false);
   const ctaHref = useCtaHref();
-  const buildCheckoutHref = (plan: "basic" | "pro" | "agency") =>
+  const buildCheckoutHref = (plan: Exclude<PlanId, "free">) =>
     `/checkout?plan=${plan}&billing=${isAnnual ? "annual" : "monthly"}&step=payment`;
+  const publicPlans = PLAN_ORDER.map((planId) => getPlanConfig(planId));
 
   const socialIcons = [
     <SiX key="x" className="w-6 h-6 md:w-8 md:h-8 text-white hover:scale-110 transition-transform cursor-pointer" />,
@@ -135,7 +137,7 @@ export default function LandingPage() {
 
       {/* Pricing Section */}
       <section id="pricing" className="w-full py-32 px-6">
-        <div className="max-w-6xl mx-auto">
+        <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-white mb-4">{t.pricing.title}</h2>
             <div className="w-24 h-1.5 bg-gradient-to-r from-violet-500 to-sky-500 mx-auto rounded-full mb-6" />
@@ -156,152 +158,54 @@ export default function LandingPage() {
                 {isAnnual && <div className="absolute inset-0 bg-violet-600 rounded-full -z-10 shadow-[0_0_15px_rgba(139,92,246,0.4)]" />}
                 {t.pricing.annually}
                 <span className={`text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full font-black ml-1 transition-all ${isAnnual ? 'bg-white text-violet-600 shadow-md' : 'bg-violet-600/30 text-violet-300'}`}>
-                  {t.pricing.save}
+                  11 Months
                 </span>
               </button>
             </div>
           </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-6 max-w-[1400px] mx-auto">
+            {publicPlans.map((plan) => {
+              const href = plan.id === "free" ? "/login" : buildCheckoutHref(plan.id);
+              const price = formatPriceCents(getPlanPriceCents(plan.id, isAnnual ? "annual" : "monthly"));
+              const featured = plan.id === "pro" || plan.id === "agency_plus";
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            
-            {/* Basic Tier */}
-            <div className="glass p-10 rounded-[2.5rem] border border-white/10 relative hover:border-violet-500/30 transition-colors flex flex-col">
-              <h3 className="text-2xl font-bold text-white mb-2">{t.pricing.basic}</h3>
-              <p className="text-neutral-400 font-medium mb-8">{t.pricing.basic_desc}</p>
-              
-              <div className="mb-8 flex items-end gap-1">
-                <span className="text-5xl font-extrabold text-white">${isAnnual ? "90" : "9"}</span>
-                <span className="text-neutral-500 font-medium mb-1">{isAnnual ? t.pricing.yr : t.pricing.mo}</span>
-              </div>
-              
-              <ul className="space-y-4 mb-10 flex-1">
-                <li className="flex items-center gap-3 text-neutral-300 font-medium tracking-wide">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
-                  {t.pricing.basic_perk1}
-                </li>
-                <li className="flex items-center gap-3 text-neutral-300 font-medium tracking-wide">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
-                  {t.pricing.basic_perk2}
-                </li>
-                <li className="flex items-center gap-3 text-neutral-300 font-medium tracking-wide">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
-                  {t.pricing.basic_perk3}
-                </li>
-                <li className="flex items-center gap-3 text-neutral-300 font-medium tracking-wide">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
-                  {t.pricing.basic_perk5}
-                </li>
-                <li className="flex items-center gap-3 text-neutral-300 font-medium tracking-wide">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
-                  {t.pricing.basic_perk6}
-                </li>
-                <li className="flex items-center gap-3 text-neutral-100 font-bold tracking-wide">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
-                  {t.pricing.basic_perk7}
-                </li>
-              </ul>
-              
-              <Link href={buildCheckoutHref("basic")} className="w-full py-4 rounded-2xl glass font-bold text-white text-center hover:bg-white/10 transition-colors border-white/20 shadow-lg">
-                {t.pricing.choose}
-              </Link>
-            </div>
-
-            {/* Pro Tier */}
-            <div className="glass p-10 rounded-[2.5rem] border border-violet-500/50 bg-violet-900/10 relative shadow-[0_0_50px_rgba(139,92,246,0.15)] flex flex-col transform md:-translate-y-4 z-10">
-              <div className="absolute -top-4 inset-x-0 mx-auto w-fit bg-gradient-to-r from-violet-500 to-sky-500 text-white text-xs font-bold uppercase tracking-widest py-1.5 px-4 rounded-full shadow-lg">
-                {t.pricing.popular}
-              </div>
-              
-              <h3 className="text-2xl font-bold text-white mb-2">{t.pricing.pro}</h3>
-              <p className="text-violet-300 font-medium mb-8">{t.pricing.pro_desc}</p>
-              
-              <div className="mb-8 flex items-end gap-1">
-                <span className="text-5xl font-extrabold text-white">${isAnnual ? "190" : "19"}</span>
-                <span className="text-neutral-500 font-medium mb-1">{isAnnual ? t.pricing.yr : t.pricing.mo}</span>
-              </div>
-              
-              <ul className="space-y-4 mb-10 flex-1">
-                <li className="flex items-center gap-3 text-neutral-300 font-medium tracking-wide">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
-                  {t.pricing.pro_perk1}
-                </li>
-                <li className="flex items-center gap-3 text-neutral-300 font-medium tracking-wide">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
-                  {t.pricing.pro_perk2}
-                </li>
-                <li className="flex items-center gap-3 text-neutral-300 font-medium tracking-wide">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
-                  {t.pricing.pro_perk3}
-                </li>
-                <li className="flex items-center gap-3 text-neutral-300 font-medium tracking-wide">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
-                  {t.pricing.pro_perk4}
-                </li>
-                <li className="flex items-center gap-3 text-neutral-300 font-medium tracking-wide">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
-                  {t.pricing.pro_perk5}
-                </li>
-                <li className="flex items-center gap-3 text-neutral-300 font-medium tracking-wide">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
-                  {t.pricing.pro_perk6}
-                </li>
-                <li className="flex items-center gap-3 text-white font-bold tracking-wide">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
-                  {t.pricing.pro_perk7}
-                </li>
-              </ul>
-              
-              <Link href={buildCheckoutHref("pro")} className="w-full py-4 rounded-2xl bg-violet-600 hover:bg-violet-500 font-bold text-white text-center transition-colors shadow-[0_0_20px_rgba(139,92,246,0.3)]">
-                {t.pricing.choose}
-              </Link>
-            </div>
-
-            {/* Agency Tier */}
-            <div className="glass p-10 rounded-[2.5rem] border border-white/10 relative hover:border-violet-500/30 transition-colors flex flex-col">
-              <h3 className="text-2xl font-bold text-white mb-2">{t.pricing.agency}</h3>
-              <p className="text-neutral-400 font-medium mb-8">{t.pricing.agency_desc}</p>
-              
-              <div className="mb-8 flex items-end gap-1">
-                <span className="text-5xl font-extrabold text-white">${isAnnual ? "490" : "49"}</span>
-                <span className="text-neutral-500 font-medium mb-1">{isAnnual ? t.pricing.yr : t.pricing.mo}</span>
-              </div>
-              
-              <ul className="space-y-4 mb-10 flex-1">
-                <li className="flex items-center gap-3 text-neutral-300 font-medium tracking-wide">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
-                  {t.pricing.agency_perk1}
-                </li>
-                <li className="flex items-center gap-3 text-neutral-300 font-medium tracking-wide">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
-                  {t.pricing.agency_perk2}
-                </li>
-                <li className="flex items-center gap-3 text-neutral-300 font-medium tracking-wide">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
-                  {t.pricing.agency_perk3}
-                </li>
-                <li className="flex items-center gap-3 text-neutral-300 font-medium tracking-wide">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
-                  {t.pricing.agency_perk4}
-                </li>
-                <li className="flex items-center gap-3 text-neutral-300 font-medium tracking-wide">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
-                  {t.pricing.agency_perk5}
-                </li>
-                <li className="flex items-center gap-3 text-neutral-300 font-medium tracking-wide">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
-                  {t.pricing.agency_perk6}
-                </li>
-                <li className="flex items-center gap-3 text-neutral-100 font-bold tracking-wide">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
-                  {t.pricing.agency_perk7}
-                </li>
-              </ul>
-              
-              <Link href={buildCheckoutHref("agency")} className="w-full py-4 rounded-2xl glass font-bold text-white text-center hover:bg-white/10 transition-colors border-white/20 shadow-lg">
-                {t.pricing.choose}
-              </Link>
-            </div>
-
+              return (
+                <div
+                  key={plan.id}
+                  className={`glass p-8 rounded-[2.5rem] border relative transition-colors flex flex-col ${
+                    featured ? "border-violet-500/40 bg-violet-900/10 shadow-[0_0_50px_rgba(139,92,246,0.12)]" : "border-white/10 hover:border-violet-500/30"
+                  }`}
+                >
+                  {plan.marketing.badge ? (
+                    <div className="absolute -top-4 inset-x-0 mx-auto w-fit bg-gradient-to-r from-violet-500 to-sky-500 text-white text-xs font-bold uppercase tracking-widest py-1.5 px-4 rounded-full shadow-lg">
+                      {plan.marketing.badge}
+                    </div>
+                  ) : null}
+                  <h3 className="text-2xl font-bold text-white mb-2">{plan.label}</h3>
+                  <p className="text-neutral-400 font-medium mb-8 min-h-[72px]">{plan.marketing.summary}</p>
+                  <div className="mb-8 flex items-end gap-1">
+                    <span className="text-5xl font-extrabold text-white">${price}</span>
+                    <span className="text-neutral-500 font-medium mb-1">{isAnnual ? t.pricing.yr : t.pricing.mo}</span>
+                  </div>
+                  <ul className="space-y-4 mb-10 flex-1">
+                    {plan.marketing.perks.map((perk) => (
+                      <li key={perk} className="flex items-center gap-3 text-neutral-300 font-medium tracking-wide">
+                        <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+                        {perk}
+                      </li>
+                    ))}
+                  </ul>
+                  <Link
+                    href={href}
+                    className={`w-full py-4 rounded-2xl font-bold text-white text-center transition-colors shadow-lg ${
+                      featured ? "bg-violet-600 hover:bg-violet-500" : "glass hover:bg-white/10 border-white/20"
+                    }`}
+                  >
+                    {plan.marketing.cta}
+                  </Link>
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>

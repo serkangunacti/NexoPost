@@ -11,6 +11,7 @@ import {
   type PostPlatformConfig,
 } from "@/lib/postPlatformConfig";
 import { getSubscriptionSnapshot } from "@/lib/subscription";
+import { canPlanPublishToPlatform, getPlanConfig } from "@/lib/plans";
 import { SiX, SiFacebook, SiInstagram, SiTiktok, SiBluesky, SiThreads, SiPinterest, SiYoutube } from "react-icons/si";
 import { FaLinkedin } from "react-icons/fa6";
 
@@ -112,10 +113,10 @@ interface LoadedPostState {
 
 export default function ComposePage() {
   const router = useRouter();
-  const { subscription, activeClient } = useApp();
+  const { subscription, activeClient, userType } = useApp();
   const { data: session } = useSession();
   const [text, setText] = useState("");
-  const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>(["twitter"]);
+  const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>(["facebook"]);
   const [editingPostId, setEditingPostId] = useState<string | null>(null);
   const [submittingAction, setSubmittingAction] = useState<"Published" | "Scheduled" | "Draft" | null>(null);
   const [autoOptimize, setAutoOptimize] = useState(true);
@@ -168,6 +169,7 @@ export default function ComposePage() {
   const platformTextareaRef = useRef<HTMLTextAreaElement>(null);
   const highlightRef = useRef<HTMLDivElement>(null);
   const subscriptionSnapshot = getSubscriptionSnapshot(subscription);
+  const planConfig = getPlanConfig(userType);
 
   const applyLoadedPostState = useCallback((data: LoadedPostState) => {
     isApplyingLoadedState.current = true;
@@ -295,7 +297,17 @@ export default function ComposePage() {
     { id: "youtube_shorts", name: "YouTube Shorts", icon: <SiYoutube className="w-6 h-6" />, color: "hover:bg-[#FF0000]/80 bg-[#FF0000]/40 text-white/70", activeColor: "bg-[#FF0000] ring-2 ring-white text-white shadow-[0_0_15px_#FF0000]" },
   ];
 
+  const isPlatformSelectable = (platformId: string) => {
+    const normalized = platformId === "youtube_shorts" ? "youtube" : platformId;
+    return canPlanPublishToPlatform(planConfig.id, normalized);
+  };
+
   const handleToggle = (id: string) => {
+    if (!isPlatformSelectable(id)) {
+      showToast("This platform is not publish-enabled on your current plan or rollout stage.");
+      return;
+    }
+
     if (selectedPlatforms.includes(id)) {
       setSelectedPlatforms(prev => prev.filter(p => p !== id));
       setPlatformTexts(prev => { const n = { ...prev }; delete n[id]; return n; });
@@ -581,8 +593,7 @@ export default function ComposePage() {
           : {}),
       };
 
-      const userId = session?.user?.id;
-      if (!userId) throw new Error("Not authenticated");
+      if (!session?.user?.id) throw new Error("Not authenticated");
 
       if (editingPostId) {
         await Promise.race([
@@ -601,7 +612,7 @@ export default function ComposePage() {
               fetch("/api/posts", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ ...payload, userId }),
+                body: JSON.stringify({ ...payload, workspaceId: activeClient.id }),
               }).then(async (r) => { if (!r.ok) throw new Error(await r.text()); }),
               new Promise<never>((_, reject) =>
                 setTimeout(() => reject(new Error("Request timed out")), 20000)
@@ -741,9 +752,10 @@ export default function ComposePage() {
             <div className="flex gap-4 relative z-10 flex-wrap">
               {platforms.map(p => {
                 const isActive = selectedPlatforms.includes(p.id);
+                const isSelectable = isPlatformSelectable(p.id);
                 return (
-                  <button key={p.id} title={p.name} onClick={() => handleToggle(p.id)}
-                    className={`w-14 h-14 rounded-[1rem] flex items-center justify-center font-bold transition-all duration-300 transform ${isActive ? p.activeColor + " scale-105 shadow-lg shadow-white/10" : p.color + " opacity-60 hover:opacity-100 hover:scale-105"}`}>
+                  <button key={p.id} title={p.name} onClick={() => handleToggle(p.id)} disabled={!isSelectable}
+                    className={`w-14 h-14 rounded-[1rem] flex items-center justify-center font-bold transition-all duration-300 transform ${isActive ? p.activeColor + " scale-105 shadow-lg shadow-white/10" : p.color + " opacity-60 hover:opacity-100 hover:scale-105"} ${!isSelectable ? "cursor-not-allowed grayscale opacity-30 hover:scale-100" : ""}`}>
                     {p.icon}
                   </button>
                 );

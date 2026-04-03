@@ -30,7 +30,7 @@ interface ConfirmModal {
 
 export default function ScheduledPage() {
   const router = useRouter();
-  const { subscription } = useApp();
+  const { subscription, activeClient } = useApp();
   const { data: session } = useSession();
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
@@ -64,9 +64,9 @@ export default function ScheduledPage() {
 
   const fetchPosts = useCallback(async () => {
     const userId = session?.user?.id;
-    if (!userId) { setLoading(false); return; }
+    if (!userId || !activeClient.id) { setLoading(false); return; }
     try {
-      const res = await fetch(`/api/posts?userId=${userId}`);
+      const res = await fetch(`/api/posts?workspaceId=${encodeURIComponent(activeClient.id)}`);
       if (!res.ok) throw new Error("Failed to fetch posts");
       const data = await res.json() as Post[];
       setPosts(data);
@@ -75,7 +75,7 @@ export default function ScheduledPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [activeClient.id, session?.user?.id]);
 
   useEffect(() => {
     fetchPosts();

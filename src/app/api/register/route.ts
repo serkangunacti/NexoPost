@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import { Prisma } from "@/generated/prisma";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getSeedForEmail } from "@/lib/purchasedAccounts";
+import { buildSubscriptionRecord } from "@/lib/subscription";
 
 export async function POST(request: NextRequest) {
   const body = await request.json() as {
@@ -16,7 +17,7 @@ export async function POST(request: NextRequest) {
     pendingChange?: unknown;
   };
 
-  const { email, password, fullName = "", companyName = "", phone = "", userType = "basic", subscription = null, pendingChange = null } = body;
+  const { email, password, fullName = "", companyName = "", phone = "", userType = "free", subscription = null, pendingChange = null } = body;
 
   if (!email || !password) {
     return NextResponse.json({ error: "Email and password are required" }, { status: 400 });
@@ -47,7 +48,11 @@ export async function POST(request: NextRequest) {
       activeClientId: seed?.workspaces?.[0]?.id ?? "",
       clients: (seed?.workspaces ?? []) as object[],
       connectedAccounts: (seed?.connectedAccounts ?? {}) as object,
-      subscription: ((seed?.subscription ?? subscription) ?? Prisma.JsonNull) as Prisma.InputJsonValue,
+      subscription: ((seed?.subscription ?? subscription) ?? buildSubscriptionRecord({
+        billingCycle: "monthly",
+        phase: "free",
+        plan: "free",
+      })) as Prisma.InputJsonValue,
       pendingChange: ((seed?.pendingChange ?? pendingChange) ?? Prisma.JsonNull) as Prisma.InputJsonValue,
       userProfile: userProfile as object,
     },

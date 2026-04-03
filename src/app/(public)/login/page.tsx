@@ -7,6 +7,7 @@ import { ArrowRight, Lock, ShieldCheck, User } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 import { useApp } from "@/context/AppContext";
 import { signIn } from "next-auth/react";
+import { PLAN_ORDER, formatPriceCents, getPlanConfig, getPlanPriceCents, type PlanId } from "@/lib/plans";
 
 function LoginContent() {
   const { t } = useLanguage();
@@ -17,7 +18,7 @@ function LoginContent() {
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [registrationMode, setRegistrationMode] = useState<"trial" | "paid">("trial");
-  const [trialPlan, setTrialPlan] = useState<"basic" | "pro" | "agency">("pro");
+  const [trialPlan, setTrialPlan] = useState<PlanId>("free");
   const [registerName, setRegisterName] = useState("");
   const [registerEmail, setRegisterEmail] = useState("");
   const [registerPassword, setRegisterPassword] = useState("");
@@ -29,36 +30,9 @@ function LoginContent() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState("");
-  const selectedPlanPrice = trialPlan === "agency" ? 49 : trialPlan === "pro" ? 19 : 9;
-  const planFeatureMap = {
-    basic: [
-      t.pricing.basic_perk1,
-      t.pricing.basic_perk2,
-      t.pricing.basic_perk3,
-      t.pricing.basic_perk5,
-      t.pricing.basic_perk6,
-      t.pricing.basic_perk7,
-    ],
-    pro: [
-      t.pricing.pro_perk1,
-      t.pricing.pro_perk2,
-      t.pricing.pro_perk3,
-      t.pricing.pro_perk4,
-      t.pricing.pro_perk5,
-      t.pricing.pro_perk6,
-      t.pricing.pro_perk7,
-    ],
-    agency: [
-      t.pricing.agency_perk1,
-      t.pricing.agency_perk2,
-      t.pricing.agency_perk3,
-      t.pricing.agency_perk4,
-      t.pricing.agency_perk5,
-      t.pricing.agency_perk6,
-      t.pricing.agency_perk7,
-    ],
-  } as const;
-  const selectedPlanFeatures = planFeatureMap[trialPlan];
+  const selectedPlan = getPlanConfig(trialPlan);
+  const selectedPlanPrice = formatPriceCents(getPlanPriceCents(trialPlan, "monthly"));
+  const selectedPlanFeatures = selectedPlan.marketing.perks;
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -105,13 +79,14 @@ function LoginContent() {
       companyName.trim() &&
       phone.trim();
     const paymentFieldsValid = cardNumber.trim() && expiry.trim() && cvv.trim();
+    const requiresPayment = registrationMode === "paid" && trialPlan !== "free";
 
     if (!baseFieldsValid) {
       setError(t.login_page.register_error);
       return;
     }
 
-    if (registrationMode === "paid" && !paymentFieldsValid) {
+    if (requiresPayment && !paymentFieldsValid) {
       setError("Please fill in your payment details.");
       return;
     }
@@ -120,7 +95,7 @@ function LoginContent() {
     try {
       // Determine plan details via startPlan (computes trial/paid phase, expiry, etc.)
       const planResult = startPlan({
-        activationMode: registrationMode,
+        activationMode: trialPlan === "free" ? "paid" : registrationMode,
         billingCycle: "monthly",
         companyName: companyName.trim(),
         email: registerEmail.trim(),
@@ -213,14 +188,10 @@ function LoginContent() {
                       </p>
                       <p className="mt-2 text-2xl font-extrabold text-white">${selectedPlanPrice} USD</p>
                       <p className="mt-4 text-xs font-bold uppercase tracking-[0.24em] text-violet-300">
-                        {trialPlan === "agency" ? t.pricing.agency : trialPlan === "pro" ? t.pricing.pro : t.pricing.basic}
+                        {selectedPlan.label}
                       </p>
                       <p className="mt-2 text-sm font-medium text-neutral-400">
-                        {trialPlan === "agency"
-                          ? t.pricing.agency_desc
-                          : trialPlan === "pro"
-                            ? t.pricing.pro_desc
-                            : t.pricing.basic_desc}
+                        {selectedPlan.marketing.summary}
                       </p>
                       <div className="mt-4 space-y-3">
                         {selectedPlanFeatures.slice(0, 4).map((feature) => (
@@ -230,7 +201,7 @@ function LoginContent() {
                           </div>
                         ))}
                       </div>
-                      {registrationMode === "trial" ? (
+                      {registrationMode === "trial" && trialPlan !== "free" ? (
                         <button
                           type="button"
                           onClick={() => setRegistrationMode("paid")}
@@ -307,8 +278,8 @@ function LoginContent() {
                   <label className="block text-sm font-semibold text-neutral-400 mb-2">
                     {t.login_page.trial_plan_label}
                   </label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {(["basic", "pro", "agency"] as const).map((plan) => (
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+                    {PLAN_ORDER.map((plan) => (
                       <button
                         key={plan}
                         type="button"
@@ -319,7 +290,7 @@ function LoginContent() {
                             : "border-white/10 bg-black/20 text-neutral-300 hover:bg-white/5"
                         }`}
                       >
-                        {plan.charAt(0).toUpperCase() + plan.slice(1)}
+                        {getPlanConfig(plan).label}
                       </button>
                     ))}
                   </div>
@@ -390,7 +361,7 @@ function LoginContent() {
                   />
                 </div>
 
-                {registrationMode === "paid" ? (
+                {registrationMode === "paid" && trialPlan !== "free" ? (
                   <>
                     <div>
                       <label className="block text-sm font-semibold text-neutral-400 mb-2">

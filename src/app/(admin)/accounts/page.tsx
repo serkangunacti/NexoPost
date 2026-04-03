@@ -135,7 +135,7 @@ export default function AccountsPage() {
         </div>
       </header>
 
-      {userType !== "basic" ? (
+      {userType !== "free" && userType !== "basic" ? (
         <section className="glass rounded-[2rem] border border-white/5 p-6 md:p-8 shadow-2xl">
           <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
             <div>

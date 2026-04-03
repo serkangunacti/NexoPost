@@ -6,6 +6,7 @@ import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { useApp } from "@/context/AppContext";
 import { useState } from "react";
+import { getPlanConfig, getPlanLabel, isUnlimited, type PlanId } from "@/lib/plans";
 import {
   LayoutDashboard,
   PenSquare,
@@ -183,21 +184,30 @@ function ChangePasswordModal({ onClose }: { onClose: () => void }) {
 }
 
 /* ── Workspace Limit Modal ── */
-function WorkspaceLimitModal({ userType, onClose }: { userType: string; onClose: () => void }) {
-  const limit = userType === "basic" ? 1 : 3;
-  const nextPlan = userType === "basic" ? "Pro" : "Agency";
+function WorkspaceLimitModal({ userType, onClose }: { userType: PlanId; onClose: () => void }) {
+  const currentPlan = getPlanConfig(userType);
+  const limit = currentPlan.maxWorkspaces;
+  const nextPlan = userType === "free" ? "Basic" : userType === "basic" ? "Pro" : userType === "pro" ? "Agency" : "Agency Plus";
   return (
     <Modal title="Workspace Limit Reached" icon={<Building2 className="w-5 h-5 text-amber-400" />} onClose={onClose}>
       <div className="space-y-5">
         <p className="text-neutral-300 text-sm leading-relaxed">
-          Your <span className="font-bold text-white capitalize">{userType.toUpperCase()}</span> plan allows up to{" "}
-          <span className="font-bold text-amber-300">{limit} workspace{limit > 1 ? "s" : ""}</span>.
+          Your <span className="font-bold text-white capitalize">{getPlanLabel(userType).toUpperCase()}</span> plan allows up to{" "}
+          <span className="font-bold text-amber-300">
+            {isUnlimited(limit) ? "unlimited workspaces" : `${limit} workspace${limit > 1 ? "s" : ""}`}
+          </span>.
           Upgrade your plan to manage more clients.
         </p>
         <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-400/20">
           <p className="text-xs font-bold text-amber-300 uppercase tracking-widest mb-1">With {nextPlan} Plan</p>
           <p className="text-white text-sm font-semibold">
-            {nextPlan === "Pro" ? "Up to 3 workspaces" : "Unlimited workspaces"}
+            {nextPlan === "Basic"
+              ? "1 workspace with paid publishing"
+              : nextPlan === "Pro"
+                ? "Up to 5 workspaces"
+                : nextPlan === "Agency"
+                  ? "Up to 10 workspaces with X access"
+                  : "Unlimited workspaces and higher X capacity"}
           </p>
         </div>
         <div className="flex gap-3 pt-1">
@@ -226,6 +236,7 @@ export default function Sidebar({ className }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { userType, activeClient, setActiveClient, clients, addClient, renameClient, logout, userProfile, updateUserProfile } = useApp();
+  const isStaff = !!userProfile?.email && (userProfile.email.endsWith("@nexopost.com") || userProfile.email === "admin@nexopost.com");
 
   const [mobileOpen, setMobileOpen] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -242,6 +253,7 @@ export default function Sidebar({ className }: SidebarProps) {
     { name: "Scheduled", href: "/scheduled", icon: CalendarDays },
     { name: "Connections", href: "/connections", icon: Link2 },
     { name: "Accounts", href: "/accounts", icon: Users },
+    ...(isStaff ? [{ name: "Campaigns", href: "/campaigns", icon: ArrowUpRight }] : []),
   ];
 
   const closeMobile = () => setMobileOpen(false);
@@ -377,8 +389,8 @@ export default function Sidebar({ className }: SidebarProps) {
 
             <button
               onClick={() => {
-                const maxClients = userType === "basic" ? 1 : userType === "pro" ? 3 : Infinity;
-                if (clients.length >= maxClients) {
+                const maxClients = getPlanConfig(userType).maxWorkspaces;
+                if (maxClients !== null && clients.length >= maxClients) {
                   setShowLimitModal(true);
                   return;
                 }

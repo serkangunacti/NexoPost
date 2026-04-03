@@ -1,3 +1,5 @@
+import { env } from "@/lib/env";
+
 // ── Social OAuth Types ─────────────────────────────────────────────────────────
 
 export interface SocialTokenData {
@@ -52,24 +54,24 @@ export function getPlatformConfig(platform: SupportedPlatform): PlatformOAuthCon
       tokenUrl: "https://api.twitter.com/2/oauth2/token",
       scopes: ["tweet.read", "tweet.write", "users.read", "offline.access"],
       usePKCE: true,
-      clientId: process.env.TWITTER_CLIENT_ID,
-      clientSecret: process.env.TWITTER_CLIENT_SECRET,
+      clientId: env.TWITTER_CLIENT_ID,
+      clientSecret: env.TWITTER_CLIENT_SECRET,
     },
     linkedin: {
       authUrl: "https://www.linkedin.com/oauth/v2/authorization",
       tokenUrl: "https://www.linkedin.com/oauth/v2/accessToken",
       scopes: ["openid", "profile", "email", "w_member_social"],
       usePKCE: false,
-      clientId: process.env.LINKEDIN_CLIENT_ID,
-      clientSecret: process.env.LINKEDIN_CLIENT_SECRET,
+      clientId: env.LINKEDIN_CLIENT_ID,
+      clientSecret: env.LINKEDIN_CLIENT_SECRET,
     },
     facebook: {
       authUrl: "https://www.facebook.com/v19.0/dialog/oauth",
       tokenUrl: "https://graph.facebook.com/v19.0/oauth/access_token",
       scopes: ["pages_manage_posts", "pages_read_engagement", "pages_show_list"],
       usePKCE: false,
-      clientId: process.env.FACEBOOK_APP_ID,
-      clientSecret: process.env.FACEBOOK_APP_SECRET,
+      clientId: env.FACEBOOK_APP_ID,
+      clientSecret: env.FACEBOOK_APP_SECRET,
     },
     instagram: {
       // Instagram uses the Meta/Facebook OAuth app — same credentials
@@ -84,16 +86,16 @@ export function getPlatformConfig(platform: SupportedPlatform): PlatformOAuthCon
         "instagram_manage_comments",
       ],
       usePKCE: false,
-      clientId: process.env.FACEBOOK_APP_ID,
-      clientSecret: process.env.FACEBOOK_APP_SECRET,
+      clientId: env.FACEBOOK_APP_ID,
+      clientSecret: env.FACEBOOK_APP_SECRET,
     },
     tiktok: {
       authUrl: "https://www.tiktok.com/v2/auth/authorize/",
       tokenUrl: "https://open.tiktok.com/v2/oauth/token/",
       scopes: ["user.info.basic", "video.publish", "video.upload"],
       usePKCE: true,
-      clientId: process.env.TIKTOK_CLIENT_KEY,
-      clientSecret: process.env.TIKTOK_CLIENT_SECRET,
+      clientId: env.TIKTOK_CLIENT_KEY,
+      clientSecret: env.TIKTOK_CLIENT_SECRET,
     },
   };
   return base[platform];
@@ -143,6 +145,6 @@ export function decodeState(raw: string): OAuthState | null {
 // ── Callback URL builder ───────────────────────────────────────────────────────
 
 export function getCallbackUrl(platform: SupportedPlatform): string {
-  const base = (process.env.NEXTAUTH_URL ?? "").replace(/\/$/, "");
+  const base = env.appBaseUrl.replace(/\/$/, "");
   return `${base}/api/social/callback/${platform}`;
 }

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { Prisma } from "@/generated/prisma";
+import { Prisma } from "@prisma/client";
 import {
   isSupportedPlatform,
   getPlatformConfig,
@@ -10,6 +10,8 @@ import {
   type SocialTokenData,
   type SupportedPlatform,
 } from "@/lib/socialAuth";
+import { logAuditEvent } from "@/lib/audit";
+import { parseLegacyConnectedAccounts, upsertSocialAccountFromToken } from "@/lib/workspaces";
 
 export async function GET(
   request: NextRequest,
@@ -253,8 +255,12 @@ async function saveTokens(
   platform: SupportedPlatform,
   data: Partial<SocialTokenData> & { accessToken: string }
 ) {
-  const user = await prisma.user.findUnique({ where: { id: userId }, select: { socialTokens: true } });
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { socialTokens: true, connectedAccounts: true },
+  });
   const existing = (user?.socialTokens ?? {}) as unknown as SocialTokens;
+  const connectedAccounts = parseLegacyConnectedAccounts(user?.connectedAccounts);
 
   const tokenEntry: SocialTokenData = {
     accessToken: data.accessToken,
@@ -278,8 +284,28 @@ async function saveTokens(
     },
   };
 
+  connectedAccounts[clientId] = Array.from(
+    new Set([...(connectedAccounts[clientId] ?? []), platform])
+  );
+
   await prisma.user.update({
     where: { id: userId },
-    data: { socialTokens: updated as unknown as Prisma.InputJsonValue },
+    data: {
+      socialTokens: updated as unknown as Prisma.InputJsonValue,
+      connectedAccounts: connectedAccounts as unknown as Prisma.InputJsonValue,
+    },
+  });
+
+  await upsertSocialAccountFromToken(clientId, platform, tokenEntry);
+  await logAuditEvent({
+    action: "social.connected",
+    entityType: "social_account",
+    entityId: `${clientId}:${platform}`,
+    userId,
+    workspaceId: clientId,
+    payload: {
+      platform,
+      accountId: tokenEntry.accountId,
+    },
   });
 }

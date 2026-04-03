@@ -32,8 +32,12 @@ export default function Home() {
 
   useEffect(() => {
     if (!userId) return;
+    if (!activeClient.id) {
+      return;
+    }
 
-    fetch(`/api/posts?userId=${userId}`)
+    queueMicrotask(() => setLoading(true));
+    fetch(`/api/posts?workspaceId=${encodeURIComponent(activeClient.id)}`)
       .then((res) => res.json())
       .then((posts: DashboardPost[]) => {
         let total = 0, published = 0, scheduled = 0;
@@ -51,7 +55,7 @@ export default function Home() {
       })
       .catch(console.error)
       .finally(() => setLoading(false));
-  }, [userId]);
+  }, [activeClient.id, userId]);
 
   const renderPlatformIcon = (p: string) => {
     switch (p) {
@@ -141,7 +145,7 @@ export default function Home() {
           </Link>
         </div>
 
-        {userType === "basic" ? (
+        {userType === "free" || userType === "basic" ? (
           <div className="glass rounded-[2rem] border border-white/5 p-8 md:p-10">
             <div className="max-w-2xl">
               <p className="text-sm uppercase tracking-[0.25em] text-violet-300 font-bold mb-3">Upgrade Insight</p>

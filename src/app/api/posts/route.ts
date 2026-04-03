@@ -1,69 +1,95 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Prisma } from "@/generated/prisma";
 import { type PostPlatformConfig } from "@/lib/postPlatformConfig";
 import { prisma } from "@/lib/prisma";
+import { savePostGraph } from "@/lib/publishing";
+import { requireWorkspaceAccess } from "@/lib/authz";
+import { checkRateLimit } from "@/lib/rateLimit";
+import { ApiError, toErrorResponse } from "@/lib/http";
 
-// GET /api/posts?userId=xxx
-export async function GET(request: NextRequest) {
-  const userId = request.nextUrl.searchParams.get("userId");
-  if (!userId) {
-    return NextResponse.json({ error: "userId required" }, { status: 400 });
+function coerceStringArray(value: unknown) {
+  if (Array.isArray(value)) {
+    return value.filter((item): item is string => typeof item === "string");
   }
 
-  const posts = await prisma.post.findMany({
-    where: { userId },
-    orderBy: { createdAt: "desc" },
-  });
+  return [];
+}
 
-  return NextResponse.json(posts);
+// GET /api/posts?workspaceId=xxx
+export async function GET(request: NextRequest) {
+  try {
+    const workspaceIdParam = request.nextUrl.searchParams.get("workspaceId");
+    const { userId, workspaceId } = await requireWorkspaceAccess(workspaceIdParam);
+
+    const posts = await prisma.post.findMany({
+      where: {
+        OR: [
+          { workspaceId },
+          { workspaceId: null, userId },
+        ],
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    return NextResponse.json(posts);
+  } catch (error) {
+    return toErrorResponse(error);
+  }
 }
 
 // POST /api/posts
 export async function POST(request: NextRequest) {
-  const body = await request.json() as {
-    userId: string;
-    content: string;
-    platforms: string[];
-    status: string;
-    date: string;
-    time: string;
-    autoOptimize?: boolean;
-    mediaUrls?: string[];
-    platformConfig?: PostPlatformConfig;
-    scheduledAt?: string;
-  };
+  try {
+    const body = await request.json() as {
+      content?: string;
+      platforms?: string[];
+      status?: "Draft" | "Published" | "Scheduled";
+      date?: string;
+      time?: string;
+      autoOptimize?: boolean;
+      mediaUrls?: string[];
+      platformConfig?: PostPlatformConfig;
+      scheduledAt?: string | null;
+      workspaceId?: string;
+    };
 
-  const {
-    userId,
-    content,
-    platforms,
-    status,
-    date,
-    time,
-    autoOptimize = false,
-    mediaUrls = [],
-    platformConfig,
-    scheduledAt,
-  } = body;
+    const { userId, workspaceId } = await requireWorkspaceAccess(body.workspaceId);
+    const rateLimit = checkRateLimit({
+      key: `posts:create:${userId}`,
+      limit: 30,
+      windowMs: 60_000,
+    });
 
-  if (!userId || (!content && (!mediaUrls || mediaUrls.length === 0)) || !platforms || !status) {
-    return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
-  }
+    if (!rateLimit.ok) {
+      throw new ApiError(429, "Too many post mutations. Please slow down.");
+    }
 
-  const post = await prisma.post.create({
-    data: {
+    const content = body.content?.trim() ?? "";
+    const platforms = coerceStringArray(body.platforms);
+    const status = body.status ?? "Draft";
+    const mediaUrls = coerceStringArray(body.mediaUrls);
+
+    if ((!content && mediaUrls.length === 0) || platforms.length === 0) {
+      throw new ApiError(400, "Missing required post fields");
+    }
+
+    const post = await savePostGraph({
       userId,
-      content,
-      platforms,
-      platformConfig: platformConfig as Prisma.InputJsonValue | undefined,
-      status,
-      date,
-      time,
-      autoOptimize,
-      mediaUrls,
-      scheduledAt: scheduledAt ? new Date(scheduledAt) : null,
-    },
-  });
+      workspaceId,
+      payload: {
+        content,
+        platforms,
+        status,
+        date: body.date ?? new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+        time: body.time ?? new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false }),
+        autoOptimize: body.autoOptimize ?? false,
+        mediaUrls,
+        platformConfig: body.platformConfig ?? {},
+        scheduledAt: body.scheduledAt ?? null,
+      },
+    });
 
-  return NextResponse.json(post, { status: 201 });
+    return NextResponse.json(post, { status: 201 });
+  } catch (error) {
+    return toErrorResponse(error);
+  }
 }

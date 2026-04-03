@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { env } from "@/lib/env";
+import { runDuePublicationJobs } from "@/lib/publishing";
 
-// Vercel Cron calls this endpoint on schedule (see vercel.json).
-// It finds all Scheduled posts whose scheduledAt time has passed and marks them as Published.
+// Vercel Cron calls this endpoint on schedule.
+// It processes due publication jobs instead of flipping post status blindly.
 export async function GET(request: Request) {
   const secret = process.env.CRON_SECRET;
   if (secret) {
@@ -12,19 +13,10 @@ export async function GET(request: Request) {
     }
   }
 
-  const now = new Date();
+  const result = await runDuePublicationJobs(25);
 
-  const posts = await prisma.post.findMany({
-    where: { status: "Scheduled", scheduledAt: { lte: now } },
-    select: { id: true },
+  return NextResponse.json({
+    ...result,
+    appBaseUrl: env.appBaseUrl,
   });
-
-  if (posts.length > 0) {
-    await prisma.post.updateMany({
-      where: { id: { in: posts.map((p) => p.id) } },
-      data: { status: "Published" },
-    });
-  }
-
-  return NextResponse.json({ published: posts.length, checkedAt: now.toISOString() });
 }

@@ -12,6 +12,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    ".git-corrupted/**",
+    "node_modules 2/**",
+    "node_modules_old/**",
+    "src/generated/**",
   ]),
 ]);
 

@@ -50,7 +50,7 @@ export default function AdminPlanBanner() {
             </div>
 
             {/* Right: CTA — hidden for Agency (top-tier plan) */}
-            {subscription?.plan !== "agency" && (
+            {subscription?.plan !== "agency_plus" && (
               <div className="flex flex-col sm:flex-row gap-3">
                 <Link
                   href="/checkout"

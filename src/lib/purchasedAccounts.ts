@@ -1,6 +1,6 @@
-import { PendingPlanChange, SubscriptionRecord } from "@/lib/subscription";
+import { PendingPlanChange, SubscriptionRecord, type PlanId } from "@/lib/subscription";
 
-type UserType = "basic" | "pro" | "agency";
+type UserType = PlanId;
 
 export interface UserSeed {
   fullName: string;

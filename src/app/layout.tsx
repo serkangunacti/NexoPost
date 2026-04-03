@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import { SessionProvider } from "next-auth/react";
 import { AppProvider } from "@/context/AppContext";
+import { env } from "@/lib/env";
 import "./globals.css";
 
 export const metadata: Metadata = {
+  metadataBase: new URL(env.appBaseUrl),
   title: "NexoPost | Premium Social Media Management & Agency Panel",
   description: "Schedule, analyze, and manage all your social media accounts from a single ultimate platform. Empower your reach and automate your impact with NexoPost. A premium brand by Uptexx Information Technologies.",
   keywords: [
@@ -18,7 +20,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "NexoPost - Social Media Management",
     description: "Manage, schedule, and analyze your social media effortlessly.",
-    url: "https://nexopost.com",
+    url: env.appBaseUrl,
     siteName: "NexoPost",
     images: [{ url: "/logo.png", width: 800, height: 600, alt: "NexoPost Logo" }],
     locale: "tr_TR",

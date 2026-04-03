@@ -1,15 +1,20 @@
 import { NextResponse } from "next/server";
+import { env } from "@/lib/env";
 
 // GET /api/social/configured
 // Returns which platforms have their API credentials configured via env vars.
 // This is safe to expose — we only reveal whether variables are SET, not their values.
 export async function GET() {
   const checks: Record<string, boolean> = {
-    twitter: !!(process.env.TWITTER_CLIENT_ID && process.env.TWITTER_CLIENT_SECRET),
-    linkedin: !!(process.env.LINKEDIN_CLIENT_ID && process.env.LINKEDIN_CLIENT_SECRET),
-    facebook: !!(process.env.FACEBOOK_APP_ID && process.env.FACEBOOK_APP_SECRET),
-    instagram: !!(process.env.FACEBOOK_APP_ID && process.env.FACEBOOK_APP_SECRET),
-    tiktok: !!(process.env.TIKTOK_CLIENT_KEY && process.env.TIKTOK_CLIENT_SECRET),
+    twitter: !!(env.TWITTER_CLIENT_ID && env.TWITTER_CLIENT_SECRET),
+    linkedin: !!(env.LINKEDIN_CLIENT_ID && env.LINKEDIN_CLIENT_SECRET),
+    facebook: !!(env.FACEBOOK_APP_ID && env.FACEBOOK_APP_SECRET),
+    instagram: !!(env.FACEBOOK_APP_ID && env.FACEBOOK_APP_SECRET),
+    threads: !!(env.FACEBOOK_APP_ID && env.FACEBOOK_APP_SECRET),
+    tiktok: !!(env.TIKTOK_CLIENT_KEY && env.TIKTOK_CLIENT_SECRET),
+    youtube: !!(env.YOUTUBE_CLIENT_ID && env.YOUTUBE_CLIENT_SECRET),
+    pinterest: !!(env.PINTEREST_CLIENT_ID && env.PINTEREST_CLIENT_SECRET),
+    bluesky: false,
   };
 
   const configured = Object.entries(checks)

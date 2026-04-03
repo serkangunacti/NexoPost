@@ -41,7 +41,7 @@ export default function AnalyticsPage() {
         <p className="text-neutral-400 text-lg font-medium">Track your brand&apos;s cross-platform performance.</p>
       </header>
 
-      {userType === "basic" ? (
+      {userType === "free" || userType === "basic" ? (
         <div className="glass rounded-[2rem] p-12 md:p-20 text-center border border-white/5 shadow-2xl relative overflow-hidden flex flex-col items-center">
           <div className="absolute top-0 right-0 w-96 h-96 bg-violet-600/10 rounded-full blur-[100px] pointer-events-none" />
           <Lock className="w-20 h-20 text-neutral-600 mb-6 drop-shadow-2xl" />
@@ -156,7 +156,7 @@ export default function AnalyticsPage() {
             </div>
 
             {/* YouTube Analytics */}
-            {userType === "agency" ? (
+            {userType === "agency" || userType === "agency_plus" ? (
               <div className="glass p-8 rounded-[2rem] border border-white/5 lg:col-span-2 relative overflow-hidden">
                 <div className="flex items-center justify-between mb-8 relative z-10">
                   <div className="flex items-center gap-3">

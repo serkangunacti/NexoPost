@@ -5,8 +5,9 @@ import { useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useApp } from "@/context/AppContext";
 import { CheckCircle2, AlertCircle, Loader2, Link2, Unlink, Building2, ExternalLink } from "lucide-react";
-import { SiX, SiFacebook, SiInstagram, SiTiktok } from "react-icons/si";
+import { SiX, SiFacebook, SiInstagram, SiPinterest, SiTiktok, SiYoutube, SiBluesky, SiThreads } from "react-icons/si";
 import { FaLinkedin } from "react-icons/fa6";
+import { canPlanConnectPlatform, type PlanId } from "@/lib/plans";
 
 // Redacted token info returned from GET /api/users/[id]/social-tokens
 interface SafeTokenData {
@@ -31,6 +32,8 @@ interface PlatformDef {
   description: string;
   requiredEnvs: string[];
   docsUrl: string;
+  oauthReady?: boolean;
+  publishReady?: boolean;
 }
 
 const PLATFORMS: PlatformDef[] = [
@@ -41,9 +44,11 @@ const PLATFORMS: PlatformDef[] = [
     gradient: "from-neutral-900 to-neutral-800",
     ring: "ring-white/30",
     bg: "bg-black",
-    description: "Post tweets and threads. Requires Twitter Developer App with Basic ($100/mo) or higher plan for write access.",
+    description: "X publishing is available on Agency and Agency Plus plans only. Included usage is managed internally per billing period.",
     requiredEnvs: ["TWITTER_CLIENT_ID", "TWITTER_CLIENT_SECRET"],
     docsUrl: "https://developer.twitter.com/en/portal/dashboard",
+    oauthReady: true,
+    publishReady: true,
   },
   {
     id: "linkedin",
@@ -55,6 +60,8 @@ const PLATFORMS: PlatformDef[] = [
     description: "Share posts to your LinkedIn profile and company pages. Standard Developer App — no paid plan needed.",
     requiredEnvs: ["LINKEDIN_CLIENT_ID", "LINKEDIN_CLIENT_SECRET"],
     docsUrl: "https://www.linkedin.com/developers/apps",
+    oauthReady: true,
+    publishReady: true,
   },
   {
     id: "facebook",
@@ -66,6 +73,8 @@ const PLATFORMS: PlatformDef[] = [
     description: "Publish to Facebook Pages. Requires Meta Developer App. Business Verification recommended for higher rate limits.",
     requiredEnvs: ["FACEBOOK_APP_ID", "FACEBOOK_APP_SECRET"],
     docsUrl: "https://developers.facebook.com/apps",
+    oauthReady: true,
+    publishReady: true,
   },
   {
     id: "instagram",
@@ -77,6 +86,8 @@ const PLATFORMS: PlatformDef[] = [
     description: "Post to Instagram Business or Creator accounts linked to a Facebook Page. Uses the same Meta app as Facebook.",
     requiredEnvs: ["FACEBOOK_APP_ID", "FACEBOOK_APP_SECRET"],
     docsUrl: "https://developers.facebook.com/apps",
+    oauthReady: true,
+    publishReady: true,
   },
   {
     id: "tiktok",
@@ -88,35 +99,90 @@ const PLATFORMS: PlatformDef[] = [
     description: "Upload and publish videos to TikTok. Requires TikTok Developer App and Content Posting API access approval.",
     requiredEnvs: ["TIKTOK_CLIENT_KEY", "TIKTOK_CLIENT_SECRET"],
     docsUrl: "https://developers.tiktok.com/",
+    oauthReady: true,
+    publishReady: false,
+  },
+  {
+    id: "threads",
+    name: "Threads",
+    icon: <SiThreads className="w-7 h-7" />,
+    gradient: "from-black to-neutral-800",
+    ring: "ring-white/20",
+    bg: "bg-black border border-neutral-800",
+    description: "Threads is visible in the product and connection support is rolling out. Publishing unlocks progressively.",
+    requiredEnvs: ["FACEBOOK_APP_ID", "FACEBOOK_APP_SECRET"],
+    docsUrl: "https://developers.facebook.com/",
+    oauthReady: false,
+    publishReady: false,
+  },
+  {
+    id: "bluesky",
+    name: "Bluesky",
+    icon: <SiBluesky className="w-7 h-7" />,
+    gradient: "from-[#0560FF] to-[#0B80FF]",
+    ring: "ring-[#0560FF]/40",
+    bg: "bg-[#0560FF]",
+    description: "Bluesky is on the active roadmap. Connection and publishing are being released in controlled stages.",
+    requiredEnvs: [],
+    docsUrl: "https://docs.bsky.app/",
+    oauthReady: false,
+    publishReady: false,
+  },
+  {
+    id: "youtube",
+    name: "YouTube",
+    icon: <SiYoutube className="w-7 h-7 text-[#FF0000]" />,
+    gradient: "from-[#FF0000] to-[#c40000]",
+    ring: "ring-[#FF0000]/40",
+    bg: "bg-white border border-[#FF0000]/20",
+    description: "YouTube account linking and publishing are being finalized. It is visible in-product while rollout completes.",
+    requiredEnvs: ["YOUTUBE_CLIENT_ID", "YOUTUBE_CLIENT_SECRET"],
+    docsUrl: "https://console.cloud.google.com/apis/credentials",
+    oauthReady: false,
+    publishReady: false,
+  },
+  {
+    id: "pinterest",
+    name: "Pinterest",
+    icon: <SiPinterest className="w-7 h-7 text-[#E60023]" />,
+    gradient: "from-[#E60023] to-[#b0001c]",
+    ring: "ring-[#E60023]/40",
+    bg: "bg-white border border-[#E60023]/20",
+    description: "Pinterest is active in the product surface and moves through staged connection and publish rollout.",
+    requiredEnvs: ["PINTEREST_CLIENT_ID", "PINTEREST_CLIENT_SECRET"],
+    docsUrl: "https://developers.pinterest.com/apps/",
+    oauthReady: false,
+    publishReady: false,
   },
 ];
 
 function PlatformCard({
   platform,
   token,
-  activeClientId,
-  userId,
   onConnect,
   onDisconnect,
   connecting,
   disconnecting,
   configuredPlatforms,
+  userType,
 }: {
   platform: PlatformDef;
   token: SafeTokenData | null;
-  activeClientId: string;
-  userId: string;
   onConnect: (platformId: string) => void;
   onDisconnect: (platformId: string) => void;
   connecting: string | null;
   disconnecting: string | null;
   configuredPlatforms: Set<string>;
+  userType: PlanId;
 }) {
   const isConnected = !!token;
   const isConfigured = configuredPlatforms.has(platform.id);
   const isConnecting = connecting === platform.id;
   const isDisconnecting = disconnecting === platform.id;
   const isBusy = isConnecting || isDisconnecting;
+  const isOauthReady = platform.oauthReady !== false;
+  const isPublishReady = platform.publishReady !== false;
+  const isAvailableOnPlan = canPlanConnectPlatform(userType, platform.id);
 
   return (
     <div className={`glass rounded-[2rem] border p-6 flex flex-col gap-5 transition-all duration-300 ${
@@ -138,6 +204,21 @@ function PlatformCard({
             {!isConfigured && (
               <span className="flex items-center gap-1 text-xs font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full">
                 <AlertCircle className="w-3 h-3" /> Not configured
+              </span>
+            )}
+            {!isOauthReady && (
+              <span className="flex items-center gap-1 text-xs font-bold text-sky-300 bg-sky-500/10 border border-sky-500/20 px-2 py-0.5 rounded-full">
+                <AlertCircle className="w-3 h-3" /> Connection rollout
+              </span>
+            )}
+            {!isPublishReady && (
+              <span className="flex items-center gap-1 text-xs font-bold text-fuchsia-300 bg-fuchsia-500/10 border border-fuchsia-500/20 px-2 py-0.5 rounded-full">
+                <AlertCircle className="w-3 h-3" /> Publishing in rollout
+              </span>
+            )}
+            {!isAvailableOnPlan && (
+              <span className="flex items-center gap-1 text-xs font-bold text-amber-300 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full">
+                <AlertCircle className="w-3 h-3" /> Upgrade required
               </span>
             )}
           </div>
@@ -195,11 +276,11 @@ function PlatformCard({
         ) : (
           <button
             onClick={() => onConnect(platform.id)}
-            disabled={isBusy || !isConfigured}
+            disabled={isBusy || !isConfigured || !isOauthReady || !isAvailableOnPlan}
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-violet-500/10 hover:bg-violet-500/20 border border-violet-500/20 hover:border-violet-500/40 text-violet-300 hover:text-violet-200 font-semibold text-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isConnecting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Link2 className="w-4 h-4" />}
-            {isConnecting ? "Connecting…" : isConfigured ? "Connect" : "Not available"}
+            {isConnecting ? "Connecting…" : !isAvailableOnPlan ? "Upgrade" : !isOauthReady ? "Soon" : isConfigured ? "Connect" : "Not available"}
           </button>
         )}
 
@@ -218,7 +299,7 @@ function PlatformCard({
 
 export default function ConnectionsPage() {
   const { data: session } = useSession();
-  const { activeClient } = useApp();
+  const { activeClient, userType } = useApp();
   const searchParams = useSearchParams();
 
   const [tokens, setTokens] = useState<SafeTokens>({});
@@ -282,6 +363,7 @@ export default function ConnectionsPage() {
         invalid_state: "OAuth state mismatch. Please try again.",
         token_exchange_failed: `Connection failed${detail ? `: ${decodeURIComponent(detail)}` : ""}. Check your API credentials.`,
         access_denied: "Access was denied. Please authorize the app.",
+        plan_locked: detail ? decodeURIComponent(detail) : "Your current plan does not include this connection.",
       };
       showToast(messages[error] ?? `Connection error: ${error}`, "error");
       window.history.replaceState(null, "", "/connections");
@@ -378,13 +460,12 @@ export default function ConnectionsPage() {
               key={platform.id}
               platform={platform}
               token={clientTokens[platform.id] ?? null}
-              activeClientId={activeClient.id}
-              userId={userId ?? ""}
               onConnect={handleConnect}
               onDisconnect={handleDisconnect}
               connecting={connecting}
               disconnecting={disconnecting}
               configuredPlatforms={configuredPlatforms}
+              userType={userType}
             />
           ))}
         </div>

@@ -1,4 +1,4 @@
-type UserType = "basic" | "pro" | "agency";
+type UserType = "free" | "basic" | "pro" | "agency" | "agency_plus";
 
 export interface AnalyticsMetric {
   accent: string;
@@ -30,7 +30,8 @@ function compactNumber(value: number): string {
 
 export function getAnalyticsOverview(userType: UserType, connectedIds: string[]): AnalyticsMetric[] {
   const connectionScore = connectedIds.reduce((total, id) => total + (platformWeight[id] ?? 0.4), 0);
-  const planMultiplier = userType === "agency" ? 1.28 : userType === "pro" ? 1.12 : 1;
+  const planMultiplier =
+    userType === "agency_plus" ? 1.42 : userType === "agency" ? 1.28 : userType === "pro" ? 1.12 : userType === "basic" ? 1 : 0.85;
 
   const audience = Math.round((820000 + connectionScore * 92000) * planMultiplier);
   const impressions = Math.round((3400000 + connectionScore * 410000) * planMultiplier);
