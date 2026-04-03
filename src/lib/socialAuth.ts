@@ -49,6 +49,7 @@ export interface PlatformOAuthConfig {
   clientId: string | undefined;
   clientSecret: string | undefined;
   connectionMode?: "oauth" | "custom";
+  extraAuthParams?: Record<string, string>;
 }
 
 export function getPlatformConfig(platform: SupportedPlatform): PlatformOAuthConfig {
@@ -80,17 +81,18 @@ export function getPlatformConfig(platform: SupportedPlatform): PlatformOAuthCon
       clientSecret: env.FACEBOOK_APP_SECRET,
     },
     instagram: {
-      authUrl: "https://www.facebook.com/v19.0/dialog/oauth",
-      tokenUrl: "https://graph.facebook.com/v19.0/oauth/access_token",
+      authUrl: "https://www.instagram.com/oauth/authorize",
+      tokenUrl: "https://api.instagram.com/oauth/access_token",
       scopes: [
-        "pages_show_list",
-        "pages_read_engagement",
-        "instagram_basic",
-        "instagram_content_publish",
+        "instagram_business_basic",
+        "instagram_business_content_publish",
       ],
       usePKCE: false,
-      clientId: env.FACEBOOK_APP_ID,
-      clientSecret: env.FACEBOOK_APP_SECRET,
+      clientId: env.INSTAGRAM_APP_ID,
+      clientSecret: env.INSTAGRAM_APP_SECRET,
+      extraAuthParams: {
+        force_reauth: "true",
+      },
     },
     tiktok: {
       authUrl: "https://www.tiktok.com/v2/auth/authorize/",

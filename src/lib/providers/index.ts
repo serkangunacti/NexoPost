@@ -322,6 +322,12 @@ async function publishFacebook(input: ProviderPublishInput): Promise<ProviderPub
 }
 
 async function resolveInstagramBusinessId(account: SocialAccount) {
+  const metadata = parseMetadata(account);
+  const directInstagramUserId = typeof metadata.instagramUserId === "string" ? metadata.instagramUserId : undefined;
+  if (directInstagramUserId) {
+    return directInstagramUserId;
+  }
+
   if (!account.pageId) {
     throw new Error("Instagram connection is missing a linked Facebook page.");
   }

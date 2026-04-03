@@ -182,6 +182,25 @@ async function exchangeCodeForTokens(
     };
   }
 
+  if (platform === "instagram") {
+    const res = await fetch(config.tokenUrl, {
+      method: "POST",
+      body: new URLSearchParams({
+        client_id: clientId,
+        client_secret: clientSecret,
+        grant_type: "authorization_code",
+        redirect_uri: callbackUrl,
+        code,
+      }),
+    });
+    if (!res.ok) throw new Error(`Instagram token error: ${await res.text()}`);
+    const data = await res.json() as { access_token: string; user_id?: number; permissions?: string };
+    return {
+      accessToken: data.access_token,
+      scope: data.permissions,
+    };
+  }
+
   const body = new URLSearchParams({
     grant_type: "authorization_code",
     code,
@@ -320,7 +339,29 @@ async function fetchProfile(
     };
   }
 
-  if (platform === "facebook" || platform === "instagram" || platform === "threads") {
+  if (platform === "instagram") {
+    const profileRes = await fetch(
+      `https://graph.instagram.com/me?fields=user_id,username&access_token=${encodeURIComponent(accessToken)}`
+    );
+    if (!profileRes.ok) throw new Error(`Instagram profile error: ${await profileRes.text()}`);
+    const profile = await profileRes.json() as { user_id?: string | number; username?: string };
+    const accountId = String(profile.user_id ?? "");
+    if (!accountId) {
+      throw new Error("Instagram profile did not return a user_id.");
+    }
+
+    return {
+      accountId,
+      accountName: profile.username ?? "Instagram account",
+      metadata: {
+        publishTarget: "account",
+        instagramUserId: accountId,
+        authMethod: "instagram_business_login",
+      },
+    };
+  }
+
+  if (platform === "facebook" || platform === "threads") {
     const meRes = await fetch(
       `https://graph.facebook.com/v19.0/me?fields=id,name,picture.width(200)&access_token=${encodeURIComponent(accessToken)}`
     );

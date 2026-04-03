@@ -103,6 +103,9 @@ export async function GET(
     url.searchParams.set("redirect_uri", callbackUrl);
     url.searchParams.set("scope", config.scopes.join(" "));
     url.searchParams.set("state", state);
+    Object.entries(config.extraAuthParams ?? {}).forEach(([key, value]) => {
+      url.searchParams.set(key, value);
+    });
 
     const response = NextResponse.redirect(url.toString());
     response.cookies.set("oauth_nonce", nonce, {

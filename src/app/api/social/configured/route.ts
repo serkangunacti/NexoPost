@@ -9,7 +9,7 @@ export async function GET() {
     twitter: !!(env.TWITTER_CLIENT_ID && env.TWITTER_CLIENT_SECRET),
     linkedin: !!(env.LINKEDIN_CLIENT_ID && env.LINKEDIN_CLIENT_SECRET),
     facebook: !!(env.FACEBOOK_APP_ID && env.FACEBOOK_APP_SECRET),
-    instagram: !!(env.FACEBOOK_APP_ID && env.FACEBOOK_APP_SECRET),
+    instagram: !!(env.INSTAGRAM_APP_ID && env.INSTAGRAM_APP_SECRET),
     threads: !!(env.FACEBOOK_APP_ID && env.FACEBOOK_APP_SECRET),
     tiktok: !!(env.TIKTOK_CLIENT_KEY && env.TIKTOK_CLIENT_SECRET),
     youtube: !!(env.YOUTUBE_CLIENT_ID && env.YOUTUBE_CLIENT_SECRET),
