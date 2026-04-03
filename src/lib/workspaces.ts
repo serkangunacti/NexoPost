@@ -2,6 +2,7 @@ import type { Prisma, SocialAccount, WorkspaceRole } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { ApiError } from "@/lib/http";
 import type { SocialTokens, SocialTokenData } from "@/lib/socialAuth";
+import { deleteBlueskyOAuthSession } from "@/lib/blueskyOAuth";
 import { isStaffEmail, isSuperadminEmail } from "@/lib/staff";
 
 type LegacyClient = {
@@ -431,6 +432,27 @@ export async function upsertSocialAccountFromToken(
 }
 
 export async function removeSocialAccount(workspaceId: string, platform: string) {
+  if (platform === "bluesky") {
+    const existing = await prisma.socialAccount.findFirst({
+      where: {
+        workspaceId,
+        platform,
+      },
+      select: {
+        externalAccountId: true,
+        metadata: true,
+      },
+    });
+
+    const metadata = existing?.metadata && typeof existing.metadata === "object" && !Array.isArray(existing.metadata)
+      ? existing.metadata as Record<string, unknown>
+      : {};
+    const did = typeof metadata.did === "string" ? metadata.did : existing?.externalAccountId;
+    if (did) {
+      await deleteBlueskyOAuthSession(did);
+    }
+  }
+
   await prisma.socialAccount.deleteMany({
     where: {
       workspaceId,

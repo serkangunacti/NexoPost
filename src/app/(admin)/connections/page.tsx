@@ -123,12 +123,11 @@ const PLATFORMS: PlatformDef[] = [
     gradient: "from-[#0560FF] to-[#0B80FF]",
     ring: "ring-[#0560FF]/40",
     bg: "bg-[#0560FF]",
-    description: "Bluesky uses a secure app-password session. Connection is custom, and text plus image publishing is active.",
+    description: "Bluesky now connects with official OAuth. Enter your handle, approve access, and publish text plus images without app passwords.",
     requiredEnvs: [],
     docsUrl: "https://docs.bsky.app/",
     oauthReady: true,
     publishReady: true,
-    connectionMode: "custom",
   },
   {
     id: "youtube",
@@ -161,39 +160,20 @@ const PLATFORMS: PlatformDef[] = [
 function BlueskyConnectModal({
   clientId,
   onClose,
-  onSuccess,
 }: {
   clientId: string;
   onClose: () => void;
-  onSuccess: () => void;
 }) {
   const [handle, setHandle] = useState("");
-  const [appPassword, setAppPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const valid = handle.trim().length > 3 && appPassword.trim().length > 8;
+  const valid = handle.trim().length > 3;
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!valid || submitting) return;
     setSubmitting(true);
     try {
-      const response = await fetch("/api/social/connect/bluesky", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          clientId,
-          handle: handle.trim(),
-          appPassword: appPassword.trim(),
-        }),
-      });
-
-      if (!response.ok) {
-        const data = await response.json().catch(() => ({ error: "Bluesky connection failed." }));
-        throw new Error(data.error ?? "Bluesky connection failed.");
-      }
-
-      onSuccess();
-      onClose();
+      window.location.href = `/api/social/connect/bluesky?clientId=${encodeURIComponent(clientId)}&handle=${encodeURIComponent(handle.trim())}`;
     } catch (error) {
       alert(error instanceof Error ? error.message : "Bluesky connection failed.");
     } finally {
@@ -211,7 +191,7 @@ function BlueskyConnectModal({
           </div>
           <div>
             <h2 className="text-white text-xl font-bold">Connect Bluesky</h2>
-            <p className="text-sm text-neutral-400">Use your handle and an app password. Raw credentials are never shown in the dashboard.</p>
+            <p className="text-sm text-neutral-400">Enter your handle and continue through the official Bluesky OAuth approval screen.</p>
           </div>
         </div>
         <div className="space-y-4">
@@ -219,16 +199,12 @@ function BlueskyConnectModal({
             <label className="block text-sm font-semibold text-neutral-400 mb-2">Handle</label>
             <input value={handle} onChange={(e) => setHandle(e.target.value)} placeholder="you.bsky.social" className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-neutral-600 font-medium focus:outline-none focus:border-violet-500/50" />
           </div>
-          <div>
-            <label className="block text-sm font-semibold text-neutral-400 mb-2">App Password</label>
-            <input type="password" value={appPassword} onChange={(e) => setAppPassword(e.target.value)} placeholder="xxxx-xxxx-xxxx-xxxx" className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-neutral-600 font-medium focus:outline-none focus:border-violet-500/50" />
-          </div>
         </div>
         <div className="flex gap-3 pt-6">
           <button type="button" onClick={onClose} className="flex-1 py-3 rounded-xl border border-white/10 text-neutral-400 hover:text-white hover:bg-white/5 font-semibold transition-all">Cancel</button>
           <button type="submit" disabled={!valid || submitting} className="flex-1 py-3 rounded-xl bg-violet-600 hover:bg-violet-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold transition-all inline-flex items-center justify-center gap-2">
             {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-            {submitting ? "Connecting..." : "Connect"}
+            {submitting ? "Redirecting..." : "Continue to Bluesky"}
           </button>
         </div>
       </form>
@@ -497,10 +473,6 @@ export default function ConnectionsPage() {
         <BlueskyConnectModal
           clientId={activeClient.id}
           onClose={() => setShowBlueskyModal(false)}
-          onSuccess={() => {
-            showToast("Bluesky connected successfully!", "success");
-            loadTokens();
-          }}
         />
       ) : null}
 
@@ -539,7 +511,7 @@ export default function ConnectionsPage() {
       <div className="glass rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4 flex gap-3">
         <AlertCircle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
         <div className="text-sm text-amber-200/80 leading-relaxed">
-          <strong className="text-amber-300">Before connecting:</strong> Create developer apps for OAuth-based networks and add their credentials to your Vercel environment. Bluesky uses a secure app-password flow inside this dashboard, while the rest open a platform authorization window.
+          <strong className="text-amber-300">Before connecting:</strong> Create developer apps for OAuth-based networks and add their credentials to your Vercel environment. Bluesky also uses OAuth now, but it only needs the user handle because NexoPost publishes the required client metadata automatically.
         </div>
       </div>
 

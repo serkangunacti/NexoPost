@@ -439,3 +439,26 @@ model SupportRequest {
   @@index([status, createdAt])
   @@map("support_requests")
 }
+
+model OAuthStateStore {
+  key       String   @id
+  provider  String
+  value     Json
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([provider, expiresAt])
+  @@map("oauth_state_store")
+}
+
+model OAuthSessionStore {
+  key       String   @id
+  provider  String
+  value     Json
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([provider])
+  @@map("oauth_session_store")
+}

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Agent } from "@atproto/api";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import {
@@ -10,6 +11,7 @@ import {
   type SocialTokens,
   type SupportedPlatform,
 } from "@/lib/socialAuth";
+import { completeBlueskyOAuth } from "@/lib/blueskyOAuth";
 import { logAuditEvent } from "@/lib/audit";
 import { parseLegacyConnectedAccounts, upsertSocialAccountFromToken } from "@/lib/workspaces";
 
@@ -38,6 +40,45 @@ export async function GET(
   if (!code || !rawState) {
     redirectBase.searchParams.set("error", "missing_params");
     return NextResponse.redirect(redirectBase.toString());
+  }
+
+  if (platform === "bluesky") {
+    try {
+      const { session, state: appState } = await completeBlueskyOAuth(searchParams);
+      const state = appState ? decodeState(appState) : null;
+
+      if (!state || state.platform !== platform) {
+        redirectBase.searchParams.set("error", "invalid_state");
+        return NextResponse.redirect(redirectBase.toString());
+      }
+
+      const agent = new Agent(session);
+      const profileResponse = await agent.getProfile({ actor: session.did });
+      const profile = profileResponse.data;
+
+      await saveTokens(state.userId, state.clientId, platform, {
+        accessToken: `oauth:${session.did}`,
+        accountId: session.did,
+        accountName: profile.displayName || profile.handle,
+        accountAvatar: profile.avatar,
+        metadata: {
+          did: session.did,
+          handle: profile.handle,
+          oauthManaged: true,
+          authMethod: "oauth",
+        },
+      });
+
+      return NextResponse.redirect(
+        new URL(`/connections?success=${platform}`, request.url).toString()
+      );
+    } catch (err) {
+      console.error("[social-callback:bluesky]", err);
+      const errorMessage = err instanceof Error ? encodeURIComponent(err.message.slice(0, 160)) : "unknown";
+      redirectBase.searchParams.set("error", "token_exchange_failed");
+      redirectBase.searchParams.set("detail", errorMessage);
+      return NextResponse.redirect(redirectBase.toString());
+    }
   }
 
   const state = decodeState(rawState);

@@ -133,9 +133,9 @@ export function getPlatformConfig(platform: SupportedPlatform): PlatformOAuthCon
       tokenUrl: "",
       scopes: [],
       usePKCE: false,
-      clientId: undefined,
+      clientId: env.APP_BASE_URL,
       clientSecret: undefined,
-      connectionMode: "custom",
+      connectionMode: "oauth",
     },
   };
 
@@ -186,47 +186,4 @@ export function getCallbackUrl(platform: SupportedPlatform): string {
 
 export function getBlueskyServiceUrl() {
   return "https://bsky.social";
-}
-
-export async function createBlueskySession(input: { identifier: string; password: string }) {
-  const response = await fetch(`${getBlueskyServiceUrl()}/xrpc/com.atproto.server.createSession`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      identifier: input.identifier,
-      password: input.password,
-    }),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Bluesky session error: ${await response.text()}`);
-  }
-
-  return response.json() as Promise<{
-    accessJwt: string;
-    refreshJwt: string;
-    did: string;
-    handle: string;
-    email?: string;
-  }>;
-}
-
-export async function getBlueskyProfile(accessJwt: string, actor: string) {
-  const params = new URLSearchParams({ actor });
-  const response = await fetch(`${getBlueskyServiceUrl()}/xrpc/app.bsky.actor.getProfile?${params.toString()}`, {
-    headers: {
-      Authorization: `Bearer ${accessJwt}`,
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error(`Bluesky profile error: ${await response.text()}`);
-  }
-
-  return response.json() as Promise<{
-    did: string;
-    handle: string;
-    displayName?: string;
-    avatar?: string;
-  }>;
 }

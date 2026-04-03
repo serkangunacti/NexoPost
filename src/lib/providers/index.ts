@@ -1,5 +1,5 @@
 import type { SocialAccount } from "@prisma/client";
-import { getBlueskyServiceUrl } from "@/lib/socialAuth";
+import { restoreBlueskyOAuthAgent } from "@/lib/blueskyOAuth";
 import { preparePlatformMedia, type PreparedMediaAsset } from "@/lib/mediaPreparation";
 
 export const CORE_LAUNCH_PLATFORMS = [
@@ -457,70 +457,38 @@ async function publishPinterest(input: ProviderPublishInput): Promise<ProviderPu
 async function publishBluesky(input: ProviderPublishInput): Promise<ProviderPublishResult> {
   const metadata = parseMetadata(input.socialAccount);
   const did = typeof metadata.did === "string" ? metadata.did : input.socialAccount.externalAccountId;
+  const agent = await restoreBlueskyOAuthAgent(did);
   const images = input.preparedMedia.filter((asset) => asset.kind === "image").slice(0, 4);
-  const embeds: Array<{ image: { $type: string; ref: Record<string, unknown>; mimeType: string; size: number }; alt: string }> = [];
+  const embeds: Array<{ image: Record<string, unknown>; alt: string }> = [];
 
   for (const image of images) {
     const binary = await fetchArrayBuffer(image.preparedUrl);
-    const uploadResponse = await fetch(`${getBlueskyServiceUrl()}/xrpc/com.atproto.repo.uploadBlob`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${input.socialAccount.accessToken}`,
-        "Content-Type": "image/jpeg",
-      },
-      body: Buffer.from(binary),
+    const uploadResponse = await agent.uploadBlob(Buffer.from(binary), {
+      encoding: "image/jpeg",
     });
-
-    if (!uploadResponse.ok) {
-      throw new Error(`Bluesky image upload error: ${await uploadResponse.text()}`);
-    }
-
-    const blob = await uploadResponse.json() as { blob: { ref: Record<string, unknown>; mimeType: string; size: number } };
     embeds.push({
       image: {
-        $type: "blob",
-        ref: blob.blob.ref,
-        mimeType: blob.blob.mimeType,
-        size: blob.blob.size,
+        ...uploadResponse.data.blob,
       },
       alt: input.content.slice(0, 1000),
     });
   }
 
-  const response = await fetch(`${getBlueskyServiceUrl()}/xrpc/com.atproto.repo.createRecord`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${input.socialAccount.accessToken}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      repo: did,
-      collection: "app.bsky.feed.post",
-      record: {
-        $type: "app.bsky.feed.post",
-        text: input.content,
-        createdAt: new Date().toISOString(),
-        ...(embeds.length > 0
-          ? {
-              embed: {
-                $type: "app.bsky.embed.images",
-                images: embeds,
-              },
-            }
-          : {}),
-      },
-    }),
+  const response = await agent.post({
+    text: input.content,
+    ...(embeds.length > 0
+      ? {
+          embed: {
+            $type: "app.bsky.embed.images",
+            images: embeds,
+          } as never,
+        }
+      : {}),
   });
-
-  if (!response.ok) {
-    throw new Error(`Bluesky publish error: ${await response.text()}`);
-  }
-
-  const data = await response.json() as { uri?: string };
   return {
-    remoteId: data.uri,
-    remoteUrl: data.uri,
-    payload: { provider: "bluesky", response: data },
+    remoteId: response.uri,
+    remoteUrl: response.uri,
+    payload: { provider: "bluesky", response },
   };
 }
 
