@@ -60,7 +60,7 @@ export function getPlatformConfig(platform: SupportedPlatform): PlatformOAuthCon
     linkedin: {
       authUrl: "https://www.linkedin.com/oauth/v2/authorization",
       tokenUrl: "https://www.linkedin.com/oauth/v2/accessToken",
-      scopes: ["openid", "profile", "email", "w_member_social", "rw_organization_admin"],
+      scopes: ["openid", "profile", "email", "w_member_social"],
       usePKCE: false,
       clientId: env.LINKEDIN_CLIENT_ID,
       clientSecret: env.LINKEDIN_CLIENT_SECRET,
