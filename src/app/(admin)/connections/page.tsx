@@ -21,6 +21,9 @@ interface SafeTokenData {
   pageOptions?: Array<{ id: string; name: string }>;
   publishTarget?: "page";
   personalProfileSupported?: boolean;
+  linkedInTargets?: Array<{ id: string; name: string; type: "profile" | "organization" }>;
+  selectedTargetId?: string;
+  linkedInOrganizationAccessPending?: boolean;
 }
 
 type SafeTokens = Record<string, Record<string, SafeTokenData>>;
@@ -221,6 +224,7 @@ function PlatformCard({
   onConnect,
   onDisconnect,
   onSelectPage,
+  onSelectLinkedInTarget,
   connecting,
   disconnecting,
   configuredPlatforms,
@@ -231,6 +235,7 @@ function PlatformCard({
   onConnect: (platformId: string) => void;
   onDisconnect: (platformId: string) => void;
   onSelectPage: (platformId: string, pageId: string) => void;
+  onSelectLinkedInTarget: (targetId: string) => void;
   connecting: string | null;
   disconnecting: string | null;
   configuredPlatforms: Set<string>;
@@ -246,6 +251,7 @@ function PlatformCard({
   const isAvailableOnPlan = canPlanConnectPlatform(userType, platform.id);
   const supportsPageSelection = ["facebook", "instagram", "threads"].includes(platform.id);
   const pageOptions = token?.pageOptions ?? [];
+  const linkedInTargets = token?.linkedInTargets ?? [];
 
   return (
     <div className={`glass rounded-[2rem] border p-6 flex flex-col gap-5 transition-all duration-300 ${
@@ -333,6 +339,35 @@ function PlatformCard({
               <p className="text-xs text-neutral-500">
                 Personal Facebook profiles are not supported. NexoPost publishes to Pages only.
               </p>
+            </div>
+          )}
+          {platform.id === "linkedin" && (
+            <div className="space-y-2">
+              <p className="text-[11px] uppercase tracking-[0.2em] text-neutral-500">Publish target</p>
+              <select
+                value={token.selectedTargetId ?? token.accountId}
+                onChange={(event) => onSelectLinkedInTarget(event.target.value)}
+                disabled={linkedInTargets.length === 0}
+                className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-[#0A66C2]/60 disabled:opacity-50"
+              >
+                {(linkedInTargets.length === 0
+                  ? [{ id: token.accountId, name: `${token.accountName} (Profile)`, type: "profile" as const }]
+                  : linkedInTargets
+                ).map((target) => (
+                  <option key={target.id} value={target.id}>
+                    {target.name}
+                  </option>
+                ))}
+              </select>
+              {token.linkedInOrganizationAccessPending ? (
+                <p className="text-xs text-amber-300/80">
+                  Company Page options need additional LinkedIn organization access. Profile publishing is ready now.
+                </p>
+              ) : (
+                <p className="text-xs text-neutral-500">
+                  Select whether this workspace publishes to the personal profile or an available Company Page.
+                </p>
+              )}
             </div>
           )}
           {platform.id === "instagram" && (
@@ -547,6 +582,43 @@ export default function ConnectionsPage() {
     }
   };
 
+  const handleSelectLinkedInTarget = async (targetId: string) => {
+    if (!userId || !activeClient.id || !targetId) return;
+
+    try {
+      const res = await fetch(`/api/users/${userId}/social-tokens`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          clientId: activeClient.id,
+          platform: "linkedin",
+          targetId,
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({ error: "Failed to update LinkedIn publish target." }));
+        throw new Error(data.error ?? "Failed to update LinkedIn publish target.");
+      }
+
+      const data = await res.json() as { id: string; name: string };
+      setTokens((prev) => {
+        const next = { ...prev };
+        next[activeClient.id] = {
+          ...(next[activeClient.id] ?? {}),
+          linkedin: {
+            ...(next[activeClient.id]?.linkedin ?? {}),
+            selectedTargetId: data.id,
+          },
+        };
+        return next;
+      });
+      showToast(`LinkedIn publish target updated to ${data.name}.`, "success");
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "Failed to update LinkedIn publish target.");
+    }
+  };
+
   const clientTokens = tokens[activeClient.id] ?? {};
 
   return (
@@ -612,6 +684,7 @@ export default function ConnectionsPage() {
               onConnect={handleConnect}
               onDisconnect={handleDisconnect}
               onSelectPage={handleSelectPage}
+              onSelectLinkedInTarget={handleSelectLinkedInTarget}
               connecting={connecting}
               disconnecting={disconnecting}
               configuredPlatforms={configuredPlatforms}

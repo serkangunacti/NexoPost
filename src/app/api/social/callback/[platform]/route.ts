@@ -231,12 +231,91 @@ async function fetchProfile(
     });
     if (!res.ok) throw new Error(`LinkedIn profile error: ${await res.text()}`);
     const data = await res.json() as { sub: string; name: string; picture?: string };
+    const memberUrn = `urn:li:person:${data.sub}`;
+    const linkedInTargets: Array<{ id: string; name: string; type: "profile" | "organization" }> = [
+      {
+        id: memberUrn,
+        name: `${data.name} (Profile)`,
+        type: "profile",
+      },
+    ];
+
+    let organizationAccessPending = false;
+    try {
+      const aclRes = await fetch(
+        `https://api.linkedin.com/v2/organizationalEntityAcls?q=roleAssignee&role=ADMINISTRATOR&state=APPROVED&roleAssignee=${encodeURIComponent(memberUrn)}`,
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "X-Restli-Protocol-Version": "2.0.0",
+          },
+        }
+      );
+
+      if (aclRes.ok) {
+        const aclData = await aclRes.json() as {
+          elements?: Array<{ organizationalTarget?: string }>;
+        };
+
+        const organizationUrns = Array.from(new Set(
+          (aclData.elements ?? [])
+            .map((entry) => entry.organizationalTarget)
+            .filter((value): value is string => typeof value === "string" && value.startsWith("urn:li:organization:"))
+        ));
+
+        const organizations = await Promise.all(
+          organizationUrns.map(async (organizationUrn) => {
+            const organizationId = organizationUrn.split(":").at(-1);
+            if (!organizationId) {
+              return {
+                id: organizationUrn,
+                name: organizationUrn,
+                type: "organization" as const,
+              };
+            }
+
+            const orgRes = await fetch(`https://api.linkedin.com/v2/organizations/${organizationId}`, {
+              headers: {
+                Authorization: `Bearer ${accessToken}`,
+                "X-Restli-Protocol-Version": "2.0.0",
+              },
+            });
+
+            if (!orgRes.ok) {
+              return {
+                id: organizationUrn,
+                name: `Company Page ${organizationId}`,
+                type: "organization" as const,
+              };
+            }
+
+            const orgData = await orgRes.json() as { localizedName?: string };
+            return {
+              id: organizationUrn,
+              name: orgData.localizedName ?? `Company Page ${organizationId}`,
+              type: "organization" as const,
+            };
+          })
+        );
+
+        linkedInTargets.push(...organizations);
+      } else {
+        organizationAccessPending = true;
+      }
+    } catch {
+      organizationAccessPending = true;
+    }
+
     return {
-      accountId: `urn:li:person:${data.sub}`,
+      accountId: memberUrn,
       accountName: data.name,
       accountAvatar: data.picture,
       metadata: {
         linkedInMemberId: data.sub,
+        selectedPublishTarget: memberUrn,
+        publishTarget: "profile",
+        linkedInTargets,
+        organizationAccessPending,
       },
     };
   }

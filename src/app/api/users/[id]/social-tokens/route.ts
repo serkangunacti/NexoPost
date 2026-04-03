@@ -3,12 +3,23 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireSelf } from "@/lib/authz";
 import { ApiError, toErrorResponse } from "@/lib/http";
-import { removeSocialAccount, parseLegacySocialTokens, updateSocialAccountPageSelection } from "@/lib/workspaces";
+import {
+  removeSocialAccount,
+  parseLegacySocialTokens,
+  updateLinkedInPublishTarget,
+  updateSocialAccountPageSelection,
+} from "@/lib/workspaces";
 import { logAuditEvent } from "@/lib/audit";
 
 type SafePageOption = {
   id: string;
   name: string;
+};
+
+type SafeLinkedInTarget = {
+  id: string;
+  name: string;
+  type: "profile" | "organization";
 };
 
 type SafeTokenData = {
@@ -22,6 +33,9 @@ type SafeTokenData = {
   pageOptions?: SafePageOption[];
   publishTarget?: "page";
   personalProfileSupported?: boolean;
+  linkedInTargets?: SafeLinkedInTarget[];
+  selectedTargetId?: string;
+  linkedInOrganizationAccessPending?: boolean;
 };
 
 type SafeTokens = Record<string, Record<string, SafeTokenData>>;
@@ -45,6 +59,26 @@ function parseSafePageOptions(metadata: Prisma.JsonValue | null): SafePageOption
     .filter((page) => page.id && page.name);
 }
 
+function parseLinkedInTargets(metadata: Prisma.JsonValue | null): SafeLinkedInTarget[] {
+  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
+    return [];
+  }
+
+  const linkedInTargets = (metadata as Record<string, unknown>).linkedInTargets;
+  if (!Array.isArray(linkedInTargets)) {
+    return [];
+  }
+
+  return linkedInTargets
+    .filter((target): target is Record<string, unknown> => !!target && typeof target === "object" && !Array.isArray(target))
+    .map((target) => ({
+      id: typeof target.id === "string" ? target.id : "",
+      name: typeof target.name === "string" ? target.name : "",
+      type: (target.type === "organization" ? "organization" : "profile") as "profile" | "organization",
+    }))
+    .filter((target) => target.id && target.name);
+}
+
 function toSafeTokens(raw: Prisma.JsonValue | null): SafeTokens {
   const legacy = parseLegacySocialTokens(raw);
   const safe: SafeTokens = {};
@@ -63,6 +97,13 @@ function toSafeTokens(raw: Prisma.JsonValue | null): SafeTokens {
         pageOptions: parseSafePageOptions((token.metadata ?? null) as Prisma.JsonValue | null),
         publishTarget: "page",
         personalProfileSupported: false,
+        linkedInTargets: parseLinkedInTargets((token.metadata ?? null) as Prisma.JsonValue | null),
+        selectedTargetId:
+          token.metadata && typeof token.metadata === "object" && !Array.isArray(token.metadata) && typeof token.metadata.selectedPublishTarget === "string"
+            ? token.metadata.selectedPublishTarget
+            : undefined,
+        linkedInOrganizationAccessPending:
+          !!(token.metadata && typeof token.metadata === "object" && !Array.isArray(token.metadata) && token.metadata.organizationAccessPending),
       };
     }
   }
@@ -118,6 +159,13 @@ export async function GET(
           pageOptions: parseSafePageOptions(account.metadata as Prisma.JsonValue | null),
           publishTarget: "page",
           personalProfileSupported: false,
+          linkedInTargets: parseLinkedInTargets(account.metadata as Prisma.JsonValue | null),
+          selectedTargetId:
+            account.metadata && typeof account.metadata === "object" && !Array.isArray(account.metadata) && typeof account.metadata.selectedPublishTarget === "string"
+              ? account.metadata.selectedPublishTarget
+              : undefined,
+          linkedInOrganizationAccessPending:
+            !!(account.metadata && typeof account.metadata === "object" && !Array.isArray(account.metadata) && account.metadata.organizationAccessPending),
         };
       }
     }
@@ -139,18 +187,48 @@ export async function PATCH(
       clientId?: string;
       platform?: string;
       pageId?: string;
+      targetId?: string;
     };
 
     const clientId = body.clientId?.trim() ?? "";
     const platform = body.platform?.trim() ?? "";
     const pageId = body.pageId?.trim() ?? "";
+    const targetId = body.targetId?.trim() ?? "";
 
-    if (!clientId || !platform || !pageId) {
-      throw new ApiError(400, "clientId, platform, and pageId are required");
+    if (!clientId || !platform) {
+      throw new ApiError(400, "clientId and platform are required");
+    }
+
+    if (platform === "linkedin") {
+      if (!targetId) {
+        throw new ApiError(400, "targetId is required for LinkedIn target selection");
+      }
+
+      const result = await updateLinkedInPublishTarget(userId, clientId, targetId);
+
+      await logAuditEvent({
+        action: "social.target_selected",
+        entityType: "social_account",
+        entityId: `${clientId}:${platform}`,
+        userId,
+        workspaceId: clientId,
+        payload: {
+          platform,
+          targetId: result.id,
+          targetName: result.name,
+          targetType: result.type,
+        },
+      });
+
+      return NextResponse.json({ ok: true, ...result });
     }
 
     if (!["facebook", "instagram", "threads"].includes(platform)) {
-      throw new ApiError(400, "Page selection is only available for Meta family connections");
+      throw new ApiError(400, "Selection updates are only available for Meta family connections or LinkedIn");
+    }
+
+    if (!pageId) {
+      throw new ApiError(400, "pageId is required for Meta page selection");
     }
 
     const result = await updateSocialAccountPageSelection(userId, clientId, platform, pageId);

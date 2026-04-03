@@ -564,6 +564,102 @@ export async function updateSocialAccountPageSelection(
   };
 }
 
+type LinkedInTargetOption = {
+  id: string;
+  name: string;
+  type: "profile" | "organization";
+};
+
+function parseLinkedInTargets(metadata: unknown): LinkedInTargetOption[] {
+  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
+    return [];
+  }
+
+  const rawTargets = (metadata as Record<string, unknown>).linkedInTargets;
+  if (!Array.isArray(rawTargets)) {
+    return [];
+  }
+
+  return rawTargets
+    .filter((target): target is Record<string, unknown> => !!target && typeof target === "object" && !Array.isArray(target))
+    .map((target) => ({
+      id: typeof target.id === "string" ? target.id : "",
+      name: typeof target.name === "string" ? target.name : "",
+      type: (target.type === "organization" ? "organization" : "profile") as "profile" | "organization",
+    }))
+    .filter((target) => target.id && target.name);
+}
+
+export async function updateLinkedInPublishTarget(
+  userId: string,
+  workspaceId: string,
+  targetId: string
+) {
+  const socialAccount = await prisma.socialAccount.findUnique({
+    where: {
+      workspaceId_platform: {
+        workspaceId,
+        platform: "linkedin",
+      },
+    },
+  });
+
+  if (!socialAccount) {
+    throw new ApiError(404, "Connected LinkedIn account not found");
+  }
+
+  const availableTargets = parseLinkedInTargets(socialAccount.metadata);
+  const selectedTarget = availableTargets.find((target) => target.id === targetId);
+  if (!selectedTarget) {
+    throw new ApiError(400, "Selected LinkedIn target is not available for this connection");
+  }
+
+  const nextMetadata = {
+    ...(socialAccount.metadata && typeof socialAccount.metadata === "object" && !Array.isArray(socialAccount.metadata)
+      ? socialAccount.metadata as Record<string, unknown>
+      : {}),
+    selectedPublishTarget: selectedTarget.id,
+    publishTarget: selectedTarget.type,
+  };
+
+  await prisma.socialAccount.update({
+    where: {
+      workspaceId_platform: {
+        workspaceId,
+        platform: "linkedin",
+      },
+    },
+    data: {
+      metadata: nextMetadata,
+    },
+  });
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { socialTokens: true },
+  });
+  const tokens = parseLegacySocialTokens(user?.socialTokens);
+  if (tokens[workspaceId]?.linkedin) {
+    tokens[workspaceId].linkedin = {
+      ...tokens[workspaceId].linkedin,
+      metadata: {
+        ...(tokens[workspaceId].linkedin.metadata ?? {}),
+        selectedPublishTarget: selectedTarget.id,
+        publishTarget: selectedTarget.type,
+      },
+    };
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        socialTokens: tokens as unknown as Prisma.InputJsonValue,
+      },
+    });
+  }
+
+  return selectedTarget;
+}
+
 export async function getWorkspaceSocialAccounts(workspaceId: string) {
   return prisma.socialAccount.findMany({
     where: { workspaceId },

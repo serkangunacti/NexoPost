@@ -164,9 +164,14 @@ async function publishLinkedIn(input: ProviderPublishInput): Promise<ProviderPub
     throw new ProviderNotReadyError("linkedin", "Media publishing is staged after the text-first release.");
   }
 
-  const ownerUrn = input.socialAccount.externalAccountId.startsWith("urn:")
-    ? input.socialAccount.externalAccountId
-    : `urn:li:person:${input.socialAccount.externalAccountId}`;
+  const metadata = parseMetadata(input.socialAccount);
+  const selectedTarget = typeof metadata.selectedPublishTarget === "string"
+    ? metadata.selectedPublishTarget
+    : undefined;
+  const ownerUrn = selectedTarget
+    ?? (input.socialAccount.externalAccountId.startsWith("urn:")
+      ? input.socialAccount.externalAccountId
+      : `urn:li:person:${input.socialAccount.externalAccountId}`);
 
   const response = await fetch("https://api.linkedin.com/v2/ugcPosts", {
     method: "POST",
