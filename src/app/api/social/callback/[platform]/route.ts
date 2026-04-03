@@ -201,6 +201,25 @@ async function exchangeCodeForTokens(
     };
   }
 
+  if (platform === "threads") {
+    const res = await fetch(config.tokenUrl, {
+      method: "POST",
+      body: new URLSearchParams({
+        client_id: clientId,
+        client_secret: clientSecret,
+        grant_type: "authorization_code",
+        redirect_uri: callbackUrl,
+        code,
+      }),
+    });
+    if (!res.ok) throw new Error(`Threads token error: ${await res.text()}`);
+    const data = await res.json() as { access_token: string; scope?: string };
+    return {
+      accessToken: data.access_token,
+      scope: data.scope,
+    };
+  }
+
   const body = new URLSearchParams({
     grant_type: "authorization_code",
     code,
@@ -361,7 +380,29 @@ async function fetchProfile(
     };
   }
 
-  if (platform === "facebook" || platform === "threads") {
+  if (platform === "threads") {
+    const profileRes = await fetch(
+      `https://graph.threads.net/v1.0/me?fields=id,username,threads_profile_picture_url&access_token=${encodeURIComponent(accessToken)}`
+    );
+    if (!profileRes.ok) throw new Error(`Threads profile error: ${await profileRes.text()}`);
+    const profile = await profileRes.json() as { id?: string; username?: string; threads_profile_picture_url?: string };
+    if (!profile.id) {
+      throw new Error("Threads profile did not return an id.");
+    }
+
+    return {
+      accountId: profile.id,
+      accountName: profile.username ? `@${profile.username}` : "Threads account",
+      accountAvatar: profile.threads_profile_picture_url,
+      metadata: {
+        publishTarget: "account",
+        threadsUserId: profile.id,
+        authMethod: "threads_oauth",
+      },
+    };
+  }
+
+  if (platform === "facebook") {
     const meRes = await fetch(
       `https://graph.facebook.com/v19.0/me?fields=id,name,picture.width(200)&access_token=${encodeURIComponent(accessToken)}`
     );
@@ -390,7 +431,7 @@ async function fetchProfile(
       pageAccessToken: firstPage?.access_token,
       metadata: {
         metaFamily: true,
-        threadsCapable: platform === "threads",
+        threadsCapable: false,
         publishTarget: "page",
         personalProfilePublishingSupported: false,
         availablePages,

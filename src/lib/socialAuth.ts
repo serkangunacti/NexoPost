@@ -125,16 +125,15 @@ export function getPlatformConfig(platform: SupportedPlatform): PlatformOAuthCon
       clientSecret: env.PINTEREST_CLIENT_SECRET,
     },
     threads: {
-      authUrl: "https://www.facebook.com/v19.0/dialog/oauth",
-      tokenUrl: "https://graph.facebook.com/v19.0/oauth/access_token",
+      authUrl: "https://threads.net/oauth/authorize",
+      tokenUrl: "https://graph.threads.net/oauth/access_token",
       scopes: [
-        ...metaScopes,
         "threads_basic",
         "threads_content_publish",
       ],
       usePKCE: false,
-      clientId: env.FACEBOOK_APP_ID,
-      clientSecret: env.FACEBOOK_APP_SECRET,
+      clientId: env.THREADS_APP_ID,
+      clientSecret: env.THREADS_APP_SECRET,
     },
     bluesky: {
       authUrl: "",
