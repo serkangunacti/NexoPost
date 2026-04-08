@@ -93,6 +93,19 @@ function normalizeSubscription(raw: unknown, fallbackPlan: string): Subscription
   };
 }
 
+function getEffectivePlanId(subscription: SubscriptionRecord): PlanId {
+  if (subscription.phase === "free" || subscription.plan === "free") {
+    return "free";
+  }
+
+  const expiration = subscription.currentPeriodEnd ?? subscription.expiresAt;
+  if (!expiration) {
+    return subscription.plan;
+  }
+
+  return new Date(expiration).getTime() > Date.now() ? subscription.plan : "free";
+}
+
 function getPeriodBounds(subscription: SubscriptionRecord, now = new Date()) {
   const start = subscription.currentPeriodStart ? new Date(subscription.currentPeriodStart) : now;
   const end = subscription.currentPeriodEnd ? new Date(subscription.currentPeriodEnd) : now;
@@ -116,10 +129,11 @@ async function getWorkspacePlanContext(workspaceId: string): Promise<WorkspacePl
     },
   });
 
-  const planId = workspace?.owner?.userType ?? "free";
-  const subscription = normalizeSubscription(workspace?.owner?.subscription, planId);
+  const ownerPlanId = workspace?.owner?.userType ?? "free";
+  const subscription = normalizeSubscription(workspace?.owner?.subscription, ownerPlanId);
+  const effectivePlanId = getEffectivePlanId(subscription);
   return {
-    plan: getPlanConfig(subscription.plan),
+    plan: getPlanConfig(effectivePlanId),
     subscription,
     workspaceStatus: workspace?.status ?? "ACTIVE",
   };
