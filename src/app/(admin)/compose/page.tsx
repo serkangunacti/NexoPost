@@ -535,24 +535,26 @@ export default function ComposePage() {
       // Upload new media files to Cloudinary
       let uploadedUrls: string[] = [];
       if (mediaFiles.length > 0) {
-        const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-        const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
+        if (!activeClient.id) {
+          throw new Error("Select a workspace before uploading media");
+        }
+
         uploadedUrls = await Promise.race([
           Promise.all(
             mediaFiles.map(async (file) => {
               const formData = new FormData();
               formData.append("file", file);
-              formData.append("upload_preset", uploadPreset!);
-              const res = await fetch(
-                `https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`,
-                { method: "POST", body: formData }
-              );
+              formData.append("workspaceId", activeClient.id);
+              const res = await fetch("/api/media/upload", {
+                method: "POST",
+                body: formData,
+              });
               if (!res.ok) {
                 const errData = await res.json().catch(() => ({}));
-                throw new Error(`Cloudinary: ${errData?.error?.message || res.status}`);
+                throw new Error(`Upload: ${errData?.error || res.status}`);
               }
               const data = await res.json();
-              return data.secure_url as string;
+              return data.secureUrl as string;
             })
           ),
           new Promise<never>((_, reject) =>
@@ -647,8 +649,8 @@ export default function ComposePage() {
     } catch (error) {
       console.error("handleSavePost error:", error);
       const errMsg = (error instanceof Error ? error.message : String(error)).toLowerCase();
-      if (errMsg.includes("cloudinary")) {
-        showToast(`Image upload failed — ${error instanceof Error ? error.message : "Cloudinary error"}`);
+      if (errMsg.includes("upload")) {
+        showToast(`Image upload failed — ${error instanceof Error ? error.message : "Upload error"}`);
       } else if (errMsg.includes("not authenticated")) {
         showToast("You must be logged in to save posts.");
       } else {

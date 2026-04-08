@@ -40,6 +40,8 @@ interface AppSession {
   userType: UserType;
 }
 
+type PersistableAppSessionFields = Pick<AppSession, "activeClientId" | "userProfile">;
+
 interface StartPlanResult {
   effectiveAt: string;
   phase: "free" | "trial" | "paid";
@@ -94,26 +96,6 @@ const defaultSession: AppSession = {
   userProfile: null,
   userType: "free",
 };
-
-function resolveSessionDates(session: AppSession): AppSession {
-  if (!session.pendingChange) return session;
-
-  const effectiveAt = new Date(session.pendingChange.effectiveAt);
-  if (effectiveAt.getTime() > Date.now()) return session;
-
-  return {
-    ...session,
-    pendingChange: null,
-    subscription: buildSubscriptionRecord({
-      billingCycle: session.pendingChange.billingCycle,
-      hasUsedTrial: true,
-      phase: "paid",
-      plan: session.pendingChange.plan,
-      startedAt: effectiveAt,
-    }),
-    userType: session.pendingChange.plan,
-  };
-}
 
 const defaultContextValue: AppContextType = {
   isHydrated: false,
@@ -172,7 +154,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       .then(async (res) => {
         if (!res.ok) return;
         const data = await res.json() as AppSession;
-        const resolved = resolveSessionDates({
+        setSession({
           activeClientId: data.activeClientId ?? "",
           clients: data.clients ?? [],
           connectedAccounts: data.connectedAccounts ?? {},
@@ -184,21 +166,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           userProfile: data.userProfile ?? null,
           userType: data.userType ?? "free",
         });
-        setSession(resolved);
-
-        if (data.pendingChange && !resolved.pendingChange) {
-          fetch(`/api/users/${uid}`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ pendingChange: null, subscription: resolved.subscription, userType: resolved.userType }),
-          }).catch(console.error);
-        }
       })
       .catch(console.error)
       .finally(() => setIsHydrated(true));
   }, [status, authSession?.user?.id]);
 
-  const persist = (updates: Partial<AppSession>) => {
+  const persist = (updates: Partial<PersistableAppSessionFields>) => {
     const uid = uidRef.current;
     if (!uid) return;
     fetch(`/api/users/${uid}`, {
@@ -224,7 +197,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const setUserType = (type: UserType) => {
     setSession((prev) => ({ ...prev, userType: type }));
-    persist({ userType: type });
   };
 
   const setIsLoggedIn = (status: boolean) => {
@@ -238,7 +210,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const login = ({ email, fullName, userType }: { email: string; fullName: string; userType: UserType }) => {
     const userProfile = buildUserProfile({ email, fullName }, session.userProfile);
     setSession((prev) => ({ ...prev, isLoggedIn: true, userProfile, userType }));
-    persist({ isLoggedIn: true, userProfile, userType });
+    persist({ userProfile });
   };
 
   const logout = async () => {
@@ -287,7 +259,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const pendingChange: PendingPlanChange = { billingCycle, effectiveAt, plan };
       const userProfile = buildUserProfile({ email, fullName, companyName, phone }, session.userProfile);
       setSession((prev) => ({ ...prev, isLoggedIn: true, pendingChange, userProfile }));
-      persist({ isLoggedIn: true, pendingChange, userProfile });
+      persist({ userProfile });
       return { effectiveAt, phase: "paid", scheduled: true };
     }
 
@@ -334,25 +306,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     };
 
     setSession(nextSession);
-
-    const uid = uidRef.current;
-    if (uid) {
-      fetch(`/api/users/${uid}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          activeClientId: nextSession.activeClientId,
-          clients: nextSession.clients,
-        connectedAccounts: nextSession.connectedAccounts,
-        isStaff: nextSession.isStaff,
-        isSuperadmin: nextSession.isSuperadmin,
-        pendingChange: null,
-          subscription,
-          userProfile,
-          userType: plan,
-        }),
-      }).catch(console.error);
-    }
+    persist({ userProfile });
 
     return { effectiveAt: now.toISOString(), phase, scheduled: false };
   };
@@ -364,7 +318,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       : [...current, platformId];
     const connectedAccounts = { ...session.connectedAccounts, [clientId]: next };
     setSession((prev) => ({ ...prev, connectedAccounts }));
-    persist({ connectedAccounts });
   };
 
   const addClient = (name: string) => {
@@ -372,7 +325,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const clients = [...session.clients, newClient];
     const connectedAccounts = { ...session.connectedAccounts, [newClient.id]: [] };
     setSession((prev) => ({ ...prev, activeClientId: newClient.id, clients, connectedAccounts }));
-    persist({ activeClientId: newClient.id, clients, connectedAccounts });
   };
 
   const renameClient = (clientId: string, name: string) => {
@@ -380,7 +332,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (!trimmedName) return;
     const clients = session.clients.map((c) => c.id === clientId ? { ...c, name: trimmedName } : c);
     setSession((prev) => ({ ...prev, clients }));
-    persist({ clients });
   };
 
   const removeClient = (clientId: string) => {
@@ -392,7 +343,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const activeClientId =
       session.activeClientId === clientId ? clients[0].id : session.activeClientId;
     setSession((prev) => ({ ...prev, activeClientId, clients, connectedAccounts }));
-    persist({ activeClientId, clients, connectedAccounts });
   };
 
   const setActiveClient = (client: Client) => {

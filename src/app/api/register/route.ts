@@ -12,12 +12,9 @@ export async function POST(request: NextRequest) {
     fullName?: string;
     companyName?: string;
     phone?: string;
-    userType?: string;
-    subscription?: unknown;
-    pendingChange?: unknown;
   };
 
-  const { email, password, fullName = "", companyName = "", phone = "", userType = "free", subscription = null, pendingChange = null } = body;
+  const { email, password, fullName = "", companyName = "", phone = "" } = body;
 
   if (!email || !password) {
     return NextResponse.json({ error: "Email and password are required" }, { status: 400 });
@@ -44,16 +41,16 @@ export async function POST(request: NextRequest) {
     data: {
       email,
       hashedPassword,
-      userType: (seed?.userType ?? userType) as string,
+      userType: (seed?.userType ?? "free") as string,
       activeClientId: seed?.workspaces?.[0]?.id ?? "",
       clients: (seed?.workspaces ?? []) as object[],
       connectedAccounts: (seed?.connectedAccounts ?? {}) as object,
-      subscription: ((seed?.subscription ?? subscription) ?? buildSubscriptionRecord({
+      subscription: ((seed?.subscription ?? null) ?? buildSubscriptionRecord({
         billingCycle: "monthly",
         phase: "free",
         plan: "free",
-      })) as Prisma.InputJsonValue,
-      pendingChange: ((seed?.pendingChange ?? pendingChange) ?? Prisma.JsonNull) as Prisma.InputJsonValue,
+      })) as unknown as Prisma.InputJsonValue,
+      pendingChange: ((seed?.pendingChange ?? null) ?? Prisma.JsonNull) as unknown as Prisma.InputJsonValue,
       userProfile: userProfile as object,
     },
   });

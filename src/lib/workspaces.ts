@@ -347,20 +347,13 @@ export async function syncWorkspacesForUser(userId: string, clients: LegacyClien
   const currentIds = new Set(current.map((workspace) => workspace.id));
 
   for (const client of clients) {
-    await prisma.workspace.upsert({
-      where: { id: client.id },
-      create: {
-        id: client.id,
-        name: client.name,
-        ownerId: userId,
-        members: {
-          create: {
-            userId,
-            role: "OWNER",
-          },
-        },
-      },
-      update: {
+    if (!currentIds.has(client.id)) {
+      throw new ApiError(400, "Workspace sync cannot create arbitrary workspace identifiers");
+    }
+
+    await prisma.workspace.updateMany({
+      where: { id: client.id, ownerId: userId },
+      data: {
         name: client.name,
       },
     });

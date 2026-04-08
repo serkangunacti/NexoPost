@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { requireSelf } from "@/lib/authz";
 import { checkRateLimit } from "@/lib/rateLimit";
 import { ApiError, toErrorResponse } from "@/lib/http";
-import { buildAppSession, parseLegacyClients, syncWorkspacesForUser } from "@/lib/workspaces";
+import { buildAppSession, ensureWorkspaceMembership, resolveActiveWorkspaceId } from "@/lib/workspaces";
 import { logAuditEvent } from "@/lib/audit";
 
 type JsonNullable = Prisma.InputJsonValue | typeof Prisma.JsonNull;
@@ -23,7 +23,9 @@ export async function GET(
     await requireSelf(id);
 
     const appSession = await buildAppSession(id);
-    return NextResponse.json(appSession);
+    return NextResponse.json(appSession, {
+      headers: { "Cache-Control": "no-store" },
+    });
   } catch (error) {
     return toErrorResponse(error);
   }
@@ -48,24 +50,39 @@ export async function PUT(
     }
 
     const body = await request.json() as {
-      userType?: string;
       activeClientId?: string | null;
-      clients?: Prisma.InputJsonValue;
-      connectedAccounts?: Prisma.InputJsonValue;
-      subscription?: unknown;
-      pendingChange?: unknown;
       userProfile?: unknown;
     };
 
-    const data = {
-      ...(body.userType !== undefined && { userType: body.userType }),
-      ...(body.activeClientId !== undefined && { activeClientId: body.activeClientId }),
-      ...(body.clients !== undefined && { clients: body.clients }),
-      ...(body.connectedAccounts !== undefined && { connectedAccounts: body.connectedAccounts }),
-      ...(body.subscription !== undefined && { subscription: toJsonField(body.subscription) }),
-      ...(body.pendingChange !== undefined && { pendingChange: toJsonField(body.pendingChange) }),
-      ...(body.userProfile !== undefined && { userProfile: toJsonField(body.userProfile) }),
-    };
+    const data: {
+      activeClientId?: string;
+      userProfile?: JsonNullable;
+    } = {};
+
+    if (body.activeClientId !== undefined) {
+      if (body.activeClientId) {
+        await ensureWorkspaceMembership(userId, body.activeClientId);
+        data.activeClientId = body.activeClientId;
+      } else {
+        data.activeClientId = await resolveActiveWorkspaceId(userId);
+      }
+    }
+
+    if (body.userProfile !== undefined) {
+      const isObject =
+        body.userProfile === null ||
+        (typeof body.userProfile === "object" && !Array.isArray(body.userProfile));
+
+      if (!isObject) {
+        throw new ApiError(400, "Invalid profile payload");
+      }
+
+      data.userProfile = toJsonField(body.userProfile);
+    }
+
+    if (Object.keys(data).length === 0) {
+      throw new ApiError(400, "No editable fields provided");
+    }
 
     await prisma.user.upsert({
       where: { id: userId },
@@ -73,24 +90,21 @@ export async function PUT(
       update: data,
     });
 
-    if (body.clients !== undefined) {
-      await syncWorkspacesForUser(userId, parseLegacyClients(body.clients));
-    }
-
     await logAuditEvent({
       action: "user.session.updated",
       entityType: "user",
       entityId: userId,
       userId,
       payload: {
-        hasClientsPayload: body.clients !== undefined,
-        hasConnectedAccountsPayload: body.connectedAccounts !== undefined,
-        hasSubscriptionPayload: body.subscription !== undefined,
+        updatedActiveClientId: body.activeClientId !== undefined,
+        updatedUserProfile: body.userProfile !== undefined,
       },
     });
 
     const nextSession = await buildAppSession(userId);
-    return NextResponse.json(nextSession);
+    return NextResponse.json(nextSession, {
+      headers: { "Cache-Control": "no-store" },
+    });
   } catch (error) {
     return toErrorResponse(error);
   }

@@ -31,8 +31,8 @@ type SuperadminUser = {
       displayName: string;
       connectedAt: string;
       tokenExpiresAt: string | null;
-      maskedAccessToken: string | null;
-      maskedRefreshToken: string | null;
+      hasAccessToken: boolean;
+      hasRefreshToken: boolean;
     }>;
   }>;
 };
@@ -100,7 +100,7 @@ export default function SuperadminDashboard() {
         <div>
           <p className="text-xs font-bold uppercase tracking-widest text-violet-400 mb-2">Founder Access</p>
           <h1 className="text-4xl font-extrabold text-white tracking-tight mb-3">Superadmin Overview</h1>
-          <p className="text-neutral-400 text-lg font-medium">Customer plans, masked tokens, workspace health, and safe controls in one place.</p>
+          <p className="text-neutral-400 text-lg font-medium">Customer plans, token health, workspace status, and safe controls in one place.</p>
         </div>
         <button onClick={() => load()} className="shrink-0 inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-white/10 text-neutral-300 hover:text-white hover:bg-white/5 transition-colors font-semibold">
           <RefreshCw className="w-4 h-4" /> Refresh
@@ -199,7 +199,9 @@ export default function SuperadminDashboard() {
                               ) : null}
                             </div>
                             <p className="text-xs text-neutral-500">Connected: {formatDate(account.connectedAt)} • Expires: {formatDate(account.tokenExpiresAt)}</p>
-                            <p className="text-xs text-neutral-500">Access token: {account.maskedAccessToken ?? "—"} • Refresh token: {account.maskedRefreshToken ?? "—"}</p>
+                            <p className="text-xs text-neutral-500">
+                              Token health: access {account.hasAccessToken ? "stored" : "missing"} • refresh {account.hasRefreshToken ? "stored" : "missing"}
+                            </p>
                           </div>
                           <select
                             defaultValue={account.status}

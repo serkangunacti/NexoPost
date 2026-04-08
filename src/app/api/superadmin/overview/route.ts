@@ -6,12 +6,6 @@ import { ApiError, toErrorResponse } from "@/lib/http";
 import { logAuditEvent } from "@/lib/audit";
 import type { SubscriptionRecord } from "@/lib/subscription";
 
-function maskSecret(value: string | null | undefined) {
-  if (!value) return null;
-  if (value.length <= 8) return "••••••••";
-  return `${value.slice(0, 4)}••••${value.slice(-4)}`;
-}
-
 function parseSubscription(value: Prisma.JsonValue | null): SubscriptionRecord | null {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
   const candidate = value as Record<string, unknown>;
@@ -107,8 +101,8 @@ export async function GET() {
             displayName: account.displayName,
             connectedAt: account.connectedAt.toISOString(),
             tokenExpiresAt: account.tokenExpiresAt?.toISOString() ?? null,
-            maskedAccessToken: maskSecret(account.accessToken),
-            maskedRefreshToken: maskSecret(account.refreshToken),
+            hasAccessToken: !!account.accessToken,
+            hasRefreshToken: !!account.refreshToken,
           })),
         };
       });
@@ -129,7 +123,9 @@ export async function GET() {
       };
     });
 
-    return NextResponse.json({ users: payload });
+    return NextResponse.json({ users: payload }, {
+      headers: { "Cache-Control": "no-store" },
+    });
   } catch (error) {
     return toErrorResponse(error);
   }

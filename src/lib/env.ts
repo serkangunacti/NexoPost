@@ -24,6 +24,10 @@ const envSchema = z.object({
   YOUTUBE_CLIENT_SECRET: z.string().min(1).optional(),
   PINTEREST_CLIENT_ID: z.string().min(1).optional(),
   PINTEREST_CLIENT_SECRET: z.string().min(1).optional(),
+  CLOUDINARY_CLOUD_NAME: z.string().min(1).optional(),
+  CLOUDINARY_UPLOAD_PRESET: z.string().min(1).optional(),
+  CLOUDINARY_API_KEY: z.string().min(1).optional(),
+  CLOUDINARY_API_SECRET: z.string().min(1).optional(),
   SUPERADMIN_EMAILS: z.string().optional(),
 });
 
@@ -55,6 +59,10 @@ const parsed = envSchema.parse({
   YOUTUBE_CLIENT_SECRET: process.env.YOUTUBE_CLIENT_SECRET,
   PINTEREST_CLIENT_ID: process.env.PINTEREST_CLIENT_ID,
   PINTEREST_CLIENT_SECRET: process.env.PINTEREST_CLIENT_SECRET,
+  CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME,
+  CLOUDINARY_UPLOAD_PRESET: process.env.CLOUDINARY_UPLOAD_PRESET,
+  CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY,
+  CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET,
   SUPERADMIN_EMAILS: process.env.SUPERADMIN_EMAILS,
 });
 
