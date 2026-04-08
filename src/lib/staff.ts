@@ -12,7 +12,7 @@ function parseEmailList(raw: string | undefined, fallback: string[] = []) {
 }
 
 export function getStaffEmails() {
-  return new Set(parseEmailList(process.env.ADMIN_EMAILS, ["admin@nexopost.com"]));
+  return new Set(parseEmailList(process.env.ADMIN_EMAILS));
 }
 
 export function getSuperadminEmails() {
@@ -22,7 +22,7 @@ export function getSuperadminEmails() {
 export function isStaffEmail(email: string) {
   const normalized = email.trim().toLowerCase();
   const staffEmails = getStaffEmails();
-  return staffEmails.has(normalized) || normalized.endsWith("@nexopost.com");
+  return staffEmails.has(normalized);
 }
 
 export function isSuperadminEmail(email: string) {
