@@ -1,4 +1,5 @@
 import { env } from "@/lib/env";
+import { createHmac, timingSafeEqual } from "node:crypto";
 
 export interface SocialTokenData {
   accessToken: string;
@@ -176,13 +177,32 @@ export interface OAuthState {
   nonce: string;
 }
 
+function signStatePayload(payload: string) {
+  return createHmac("sha256", env.AUTH_SECRET).update(payload).digest("base64url");
+}
+
 export function encodeState(state: OAuthState): string {
-  return Buffer.from(JSON.stringify(state)).toString("base64url");
+  const payload = Buffer.from(JSON.stringify(state)).toString("base64url");
+  const signature = signStatePayload(payload);
+  return `${payload}.${signature}`;
 }
 
 export function decodeState(raw: string): OAuthState | null {
   try {
-    return JSON.parse(Buffer.from(raw, "base64url").toString("utf-8")) as OAuthState;
+    const [payload, signature] = raw.split(".");
+    if (!payload || !signature) {
+      return null;
+    }
+
+    const expectedSignature = signStatePayload(payload);
+    const provided = Buffer.from(signature);
+    const expected = Buffer.from(expectedSignature);
+
+    if (provided.length !== expected.length || !timingSafeEqual(provided, expected)) {
+      return null;
+    }
+
+    return JSON.parse(Buffer.from(payload, "base64url").toString("utf-8")) as OAuthState;
   } catch {
     return null;
   }

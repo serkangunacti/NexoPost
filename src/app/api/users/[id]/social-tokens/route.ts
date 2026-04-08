@@ -170,7 +170,9 @@ export async function GET(
       }
     }
 
-    return NextResponse.json(safe);
+    return NextResponse.json(safe, {
+      headers: { "Cache-Control": "no-store" },
+    });
   } catch (error) {
     return toErrorResponse(error);
   }
@@ -220,7 +222,9 @@ export async function PATCH(
         },
       });
 
-      return NextResponse.json({ ok: true, ...result });
+      return NextResponse.json({ ok: true, ...result }, {
+        headers: { "Cache-Control": "no-store" },
+      });
     }
 
     if (!["facebook", "instagram", "threads"].includes(platform)) {
@@ -246,7 +250,9 @@ export async function PATCH(
       },
     });
 
-    return NextResponse.json({ ok: true, ...result });
+    return NextResponse.json({ ok: true, ...result }, {
+      headers: { "Cache-Control": "no-store" },
+    });
   } catch (error) {
     return toErrorResponse(error);
   }
@@ -306,7 +312,9 @@ export async function DELETE(
       payload: { platform },
     });
 
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true }, {
+      headers: { "Cache-Control": "no-store" },
+    });
   } catch (error) {
     return toErrorResponse(error);
   }
