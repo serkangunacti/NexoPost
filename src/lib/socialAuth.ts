@@ -99,7 +99,7 @@ export function getPlatformConfig(platform: SupportedPlatform): PlatformOAuthCon
     tiktok: {
       authUrl: "https://www.tiktok.com/v2/auth/authorize/",
       tokenUrl: "https://open.tiktokapis.com/v2/oauth/token/",
-      scopes: ["user.info.basic", "video.publish", "video.upload"],
+      scopes: ["user.info.basic"],
       usePKCE: true,
       clientId: env.TIKTOK_CLIENT_KEY,
       clientSecret: env.TIKTOK_CLIENT_SECRET,
