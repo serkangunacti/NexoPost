@@ -25,6 +25,16 @@ type AppSessionPayload = {
   userType: string;
 };
 
+const SOCIAL_ACCOUNT_AVATAR_MAX_LENGTH = 191;
+
+function normalizeAvatarUrl(value?: string | null) {
+  if (!value) {
+    return undefined;
+  }
+
+  return value.slice(0, SOCIAL_ACCOUNT_AVATAR_MAX_LENGTH);
+}
+
 function parseArrayJson<T>(value: unknown): T[] {
   if (Array.isArray(value)) {
     return value as T[];
@@ -381,6 +391,7 @@ export async function upsertSocialAccountFromToken(
     scope: token.scope ?? null,
     ...(token.metadata ?? {}),
   };
+  const avatarUrl = normalizeAvatarUrl(token.accountAvatar);
 
   return prisma.socialAccount.upsert({
     where: {
@@ -394,7 +405,7 @@ export async function upsertSocialAccountFromToken(
       platform,
       externalAccountId: token.accountId ?? `${workspaceId}:${platform}`,
       displayName: token.accountName ?? platform,
-      avatarUrl: token.accountAvatar,
+      avatarUrl,
       accessToken: token.accessToken,
       refreshToken: token.refreshToken,
       tokenExpiresAt: token.expiresAt ? new Date(token.expiresAt) : null,
@@ -409,7 +420,7 @@ export async function upsertSocialAccountFromToken(
     update: {
       externalAccountId: token.accountId ?? `${workspaceId}:${platform}`,
       displayName: token.accountName ?? platform,
-      avatarUrl: token.accountAvatar,
+      avatarUrl,
       accessToken: token.accessToken,
       refreshToken: token.refreshToken,
       tokenExpiresAt: token.expiresAt ? new Date(token.expiresAt) : null,
