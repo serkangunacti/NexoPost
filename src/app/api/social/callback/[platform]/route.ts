@@ -225,8 +225,19 @@ async function exchangeCodeForTokens(
     code,
     redirect_uri: callbackUrl,
     client_id: clientId,
-    client_secret: clientSecret,
   });
+
+  if (clientSecret) {
+    body.set("client_secret", clientSecret);
+  }
+
+  if (config.usePKCE) {
+    const verifier = request.cookies.get("oauth_pkce")?.value ?? "";
+    if (!verifier) {
+      throw new Error(`${platform} token exchange is missing the PKCE verifier.`);
+    }
+    body.set("code_verifier", verifier);
+  }
 
   const res = await fetch(config.tokenUrl, {
     method: "POST",
@@ -440,17 +451,27 @@ async function fetchProfile(
   }
 
   if (platform === "tiktok") {
-    const res = await fetch("https://open.tiktokapis.com/v2/user/info/?fields=open_id,display_name,avatar_url", {
+    const res = await fetch("https://open.tiktokapis.com/v2/user/info/?fields=open_id,display_name,avatar_large_url,avatar_url_100,avatar_url", {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
     if (!res.ok) throw new Error(`TikTok profile error: ${await res.text()}`);
-    const data = await res.json() as { data?: { user?: { open_id: string; display_name: string; avatar_url?: string } } };
+    const data = await res.json() as {
+      data?: {
+        user?: {
+          open_id: string;
+          display_name: string;
+          avatar_large_url?: string;
+          avatar_url_100?: string;
+          avatar_url?: string;
+        };
+      };
+    };
     const user = data.data?.user;
     if (!user) throw new Error("TikTok: empty profile");
     return {
       accountId: user.open_id,
       accountName: user.display_name,
-      accountAvatar: user.avatar_url,
+      accountAvatar: user.avatar_large_url ?? user.avatar_url_100 ?? user.avatar_url,
     };
   }
 

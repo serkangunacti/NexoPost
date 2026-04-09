@@ -44,6 +44,11 @@ interface PlatformDef {
   connectionMode?: "oauth" | "custom";
 }
 
+function isDefaultTikTokAvatar(url?: string) {
+  if (!url) return false;
+  return url.includes("tiktokcdn.com") && url.includes("1594805258216454");
+}
+
 const PLATFORMS: PlatformDef[] = [
   {
     id: "twitter",
@@ -307,7 +312,7 @@ function PlatformCard({
       {isConnected && token && (
         <div className="bg-white/5 rounded-xl p-3 border border-white/5 space-y-3">
           <div className="flex items-center gap-3">
-            {token.accountAvatar ? (
+            {token.accountAvatar && !isDefaultTikTokAvatar(token.accountAvatar) ? (
               <img src={token.accountAvatar} alt="" className="w-10 h-10 rounded-full object-cover shrink-0" />
             ) : (
               <div className="w-10 h-10 rounded-full bg-violet-500/20 flex items-center justify-center shrink-0">
