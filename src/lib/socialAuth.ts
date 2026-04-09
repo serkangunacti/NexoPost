@@ -129,10 +129,7 @@ export function getPlatformConfig(platform: SupportedPlatform): PlatformOAuthCon
     threads: {
       authUrl: "https://threads.net/oauth/authorize",
       tokenUrl: "https://graph.threads.net/oauth/access_token",
-      scopes: [
-        "threads_basic",
-        "threads_content_publish",
-      ],
+      scopes: ["threads_basic"],
       scopeSeparator: "comma",
       usePKCE: false,
       clientId: env.THREADS_APP_ID,
