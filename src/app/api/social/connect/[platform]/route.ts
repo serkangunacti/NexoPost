@@ -99,7 +99,7 @@ export async function GET(
     const callbackUrl = getCallbackUrl(platform);
     const url = new URL(config.authUrl);
     url.searchParams.set("response_type", "code");
-    url.searchParams.set("client_id", config.clientId);
+    url.searchParams.set(platform === "tiktok" ? "client_key" : "client_id", config.clientId);
     url.searchParams.set("redirect_uri", callbackUrl);
     url.searchParams.set(
       "scope",
@@ -110,14 +110,16 @@ export async function GET(
       url.searchParams.set(key, value);
     });
 
-    const response = NextResponse.redirect(url.toString());
-    response.cookies.set("oauth_nonce", nonce, {
+    const oauthCookieOptions = {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
+      sameSite: (process.env.NODE_ENV === "production" ? "none" : "lax") as "none" | "lax",
       maxAge: 600,
       path: "/",
-    });
+    };
+
+    const response = NextResponse.redirect(url.toString());
+    response.cookies.set("oauth_nonce", nonce, oauthCookieOptions);
 
     if (config.usePKCE) {
       const verifier = generateCodeVerifier();
@@ -126,20 +128,8 @@ export async function GET(
       url.searchParams.set("code_challenge_method", "S256");
 
       const pkceResponse = NextResponse.redirect(url.toString());
-      pkceResponse.cookies.set("oauth_nonce", nonce, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        maxAge: 600,
-        path: "/",
-      });
-      pkceResponse.cookies.set("oauth_pkce", verifier, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        maxAge: 600,
-        path: "/",
-      });
+      pkceResponse.cookies.set("oauth_nonce", nonce, oauthCookieOptions);
+      pkceResponse.cookies.set("oauth_pkce", verifier, oauthCookieOptions);
       return pkceResponse;
     }
 
