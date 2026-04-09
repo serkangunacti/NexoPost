@@ -228,7 +228,6 @@ function PlatformCard({
   platform,
   token,
   onConnect,
-  onEnableLinkedInCompanyPages,
   onDisconnect,
   onSelectPage,
   onSelectLinkedInTarget,
@@ -240,7 +239,6 @@ function PlatformCard({
   platform: PlatformDef;
   token: SafeTokenData | null;
   onConnect: (platformId: string) => void;
-  onEnableLinkedInCompanyPages: () => void;
   onDisconnect: (platformId: string) => void;
   onSelectPage: (platformId: string, pageId: string) => void;
   onSelectLinkedInTarget: (targetId: string) => void;
@@ -386,26 +384,11 @@ function PlatformCard({
                   </option>
                 ))}
               </select>
-              {token.linkedInOrganizationAccessPending ? (
-                <div className="space-y-2">
-                  <p className="text-xs text-amber-300/80">
-                    Company Page options need additional LinkedIn organization access. Profile publishing is ready now.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={onEnableLinkedInCompanyPages}
-                    disabled={isBusy}
-                    className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-[#0A66C2]/30 bg-[#0A66C2]/10 text-[#7cc2ff] text-xs font-semibold hover:bg-[#0A66C2]/20 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isConnecting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Building2 className="w-3.5 h-3.5" />}
-                    Enable Company Pages
-                  </button>
-                </div>
-              ) : (
-                <p className="text-xs text-neutral-500">
-                  Select whether this workspace publishes to the personal profile or an available Company Page.
-                </p>
-              )}
+              <p className={token.linkedInOrganizationAccessPending ? "text-xs text-amber-300/80" : "text-xs text-neutral-500"}>
+                {token.linkedInOrganizationAccessPending
+                  ? "LinkedIn Company Pages are not available for this app yet. Profile publishing is ready now."
+                  : "Select whether this workspace publishes to the personal profile or an available Company Page."}
+              </p>
             </div>
           )}
           {platform.id === "instagram" && (
@@ -728,7 +711,6 @@ export default function ConnectionsPage() {
               platform={platform}
               token={clientTokens[platform.id] ?? null}
               onConnect={handleConnect}
-              onEnableLinkedInCompanyPages={() => handleConnect("linkedin", { companyPages: true })}
               onDisconnect={handleDisconnect}
               onSelectPage={handleSelectPage}
               onSelectLinkedInTarget={handleSelectLinkedInTarget}
