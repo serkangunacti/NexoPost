@@ -19,11 +19,12 @@ interface SafeTokenData {
   pageName?: string;
   scope?: string;
   pageOptions?: Array<{ id: string; name: string }>;
-  publishTarget?: "page";
+  publishTarget?: "page" | "profile" | "organization" | "account";
   personalProfileSupported?: boolean;
   linkedInTargets?: Array<{ id: string; name: string; type: "profile" | "organization" }>;
   selectedTargetId?: string;
   linkedInOrganizationAccessPending?: boolean;
+  authMethod?: string;
 }
 
 type SafeTokens = Record<string, Record<string, SafeTokenData>>;
@@ -249,9 +250,16 @@ function PlatformCard({
   const isOauthReady = platform.oauthReady !== false;
   const isPublishReady = platform.publishReady !== false;
   const isAvailableOnPlan = canPlanConnectPlatform(userType, platform.id);
-  const supportsPageSelection = ["facebook", "instagram", "threads"].includes(platform.id);
   const pageOptions = token?.pageOptions ?? [];
   const linkedInTargets = token?.linkedInTargets ?? [];
+  const usesMetaPageSelection =
+    ["facebook", "instagram", "threads"].includes(platform.id) &&
+    !(
+      (platform.id === "instagram" &&
+        (token?.publishTarget === "account" || token?.authMethod === "instagram_business_login")) ||
+      (platform.id === "threads" && token?.publishTarget === "account")
+    ) &&
+    ((token?.publishTarget ?? "page") === "page" || pageOptions.length > 0);
 
   return (
     <div className={`glass rounded-[2rem] border p-6 flex flex-col gap-5 transition-all duration-300 ${
@@ -317,7 +325,7 @@ function PlatformCard({
             </div>
           </div>
 
-          {supportsPageSelection && (
+          {usesMetaPageSelection && (
             <div className="space-y-2">
               <p className="text-[11px] uppercase tracking-[0.2em] text-neutral-500">Publish target</p>
               <select
@@ -336,9 +344,21 @@ function PlatformCard({
                   ))
                 )}
               </select>
-              <p className="text-xs text-neutral-500">
-                Personal Facebook profiles are not supported. NexoPost publishes to Pages only.
-              </p>
+              {platform.id === "facebook" && (
+                <p className="text-xs text-neutral-500">
+                  Personal Facebook profiles are not supported. NexoPost publishes to Pages only.
+                </p>
+              )}
+              {platform.id === "instagram" && (
+                <p className="text-xs text-neutral-500">
+                  Instagram publishing in page-context mode requires a Business or Creator account linked to the selected Facebook Page.
+                </p>
+              )}
+              {platform.id === "threads" && (
+                <p className="text-xs text-neutral-500">
+                  Threads will use the selected Meta Page context while the page-linked rollout path remains enabled.
+                </p>
+              )}
             </div>
           )}
           {platform.id === "linkedin" && (
@@ -372,12 +392,16 @@ function PlatformCard({
           )}
           {platform.id === "instagram" && (
             <p className="text-xs text-neutral-500">
-              Instagram publishing requires a Business or Creator account linked to the selected Facebook Page.
+              {usesMetaPageSelection
+                ? "Instagram publishing requires a Business or Creator account linked to the selected Facebook Page."
+                : "Connected with Instagram Business Login. NexoPost will publish directly to this professional account, not to a personal Facebook profile."}
             </p>
           )}
           {platform.id === "threads" && (
             <p className="text-xs text-neutral-500">
-              Threads will also use the selected Page context once the Meta rollout is enabled.
+              {usesMetaPageSelection
+                ? "Threads will also use the selected Page context once the Meta rollout is enabled."
+                : "Threads will publish directly to the connected account once the dedicated rollout path is enabled."}
             </p>
           )}
         </div>
