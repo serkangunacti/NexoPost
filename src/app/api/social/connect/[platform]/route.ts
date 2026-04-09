@@ -97,13 +97,21 @@ export async function GET(
     });
 
     const callbackUrl = getCallbackUrl(platform);
+    const scopes = [...config.scopes];
+    if (
+      platform === "linkedin" &&
+      request.nextUrl.searchParams.get("companyPages") === "1" &&
+      !scopes.includes("rw_organization_admin")
+    ) {
+      scopes.push("rw_organization_admin");
+    }
     const url = new URL(config.authUrl);
     url.searchParams.set("response_type", "code");
     url.searchParams.set(platform === "tiktok" ? "client_key" : "client_id", config.clientId);
     url.searchParams.set("redirect_uri", callbackUrl);
     url.searchParams.set(
       "scope",
-      config.scopes.join(config.scopeSeparator === "comma" ? "," : " ")
+      scopes.join(config.scopeSeparator === "comma" ? "," : " ")
     );
     url.searchParams.set("state", state);
     Object.entries(config.extraAuthParams ?? {}).forEach(([key, value]) => {

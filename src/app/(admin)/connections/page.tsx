@@ -228,6 +228,7 @@ function PlatformCard({
   platform,
   token,
   onConnect,
+  onEnableLinkedInCompanyPages,
   onDisconnect,
   onSelectPage,
   onSelectLinkedInTarget,
@@ -239,6 +240,7 @@ function PlatformCard({
   platform: PlatformDef;
   token: SafeTokenData | null;
   onConnect: (platformId: string) => void;
+  onEnableLinkedInCompanyPages: () => void;
   onDisconnect: (platformId: string) => void;
   onSelectPage: (platformId: string, pageId: string) => void;
   onSelectLinkedInTarget: (targetId: string) => void;
@@ -385,9 +387,20 @@ function PlatformCard({
                 ))}
               </select>
               {token.linkedInOrganizationAccessPending ? (
-                <p className="text-xs text-amber-300/80">
-                  Company Page options need additional LinkedIn organization access. Profile publishing is ready now.
-                </p>
+                <div className="space-y-2">
+                  <p className="text-xs text-amber-300/80">
+                    Company Page options need additional LinkedIn organization access. Profile publishing is ready now.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={onEnableLinkedInCompanyPages}
+                    disabled={isBusy}
+                    className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-[#0A66C2]/30 bg-[#0A66C2]/10 text-[#7cc2ff] text-xs font-semibold hover:bg-[#0A66C2]/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isConnecting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Building2 className="w-3.5 h-3.5" />}
+                    Enable Company Pages
+                  </button>
+                </div>
               ) : (
                 <p className="text-xs text-neutral-500">
                   Select whether this workspace publishes to the personal profile or an available Company Page.
@@ -535,15 +548,19 @@ export default function ConnectionsPage() {
     }
   }, [searchParams, showToast, loadTokens]);
 
-  const handleConnect = (platformId: string) => {
+  const handleConnect = (platformId: string, options?: { companyPages?: boolean }) => {
     if (!activeClient.id || !userId) return;
     if (platformId === "bluesky") {
       setShowBlueskyModal(true);
       return;
     }
     setConnecting(platformId);
-    // Navigate to OAuth initiation route — page will redirect to platform
-    window.location.href = `/api/social/connect/${platformId}?clientId=${encodeURIComponent(activeClient.id)}`;
+    const url = new URL(`/api/social/connect/${platformId}`, window.location.origin);
+    url.searchParams.set("clientId", activeClient.id);
+    if (platformId === "linkedin" && options?.companyPages) {
+      url.searchParams.set("companyPages", "1");
+    }
+    window.location.href = url.toString();
   };
 
   const handleDisconnect = async (platformId: string) => {
@@ -711,6 +728,7 @@ export default function ConnectionsPage() {
               platform={platform}
               token={clientTokens[platform.id] ?? null}
               onConnect={handleConnect}
+              onEnableLinkedInCompanyPages={() => handleConnect("linkedin", { companyPages: true })}
               onDisconnect={handleDisconnect}
               onSelectPage={handleSelectPage}
               onSelectLinkedInTarget={handleSelectLinkedInTarget}
