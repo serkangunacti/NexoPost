@@ -31,11 +31,12 @@ type SafeTokenData = {
   pageName?: string;
   scope?: string;
   pageOptions?: SafePageOption[];
-  publishTarget?: "page";
+  publishTarget?: "page" | "profile" | "organization" | "account";
   personalProfileSupported?: boolean;
   linkedInTargets?: SafeLinkedInTarget[];
   selectedTargetId?: string;
   linkedInOrganizationAccessPending?: boolean;
+  authMethod?: string;
 };
 
 type SafeTokens = Record<string, Record<string, SafeTokenData>>;
@@ -79,6 +80,33 @@ function parseLinkedInTargets(metadata: Prisma.JsonValue | null): SafeLinkedInTa
     .filter((target) => target.id && target.name);
 }
 
+function parseMetadataRecord(metadata: Prisma.JsonValue | null): Record<string, unknown> {
+  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
+    return {};
+  }
+
+  return metadata as Record<string, unknown>;
+}
+
+function parsePublishTarget(metadata: Prisma.JsonValue | null): SafeTokenData["publishTarget"] {
+  const value = parseMetadataRecord(metadata).publishTarget;
+  if (value === "page" || value === "profile" || value === "organization" || value === "account") {
+    return value;
+  }
+
+  return "page";
+}
+
+function parseBooleanFlag(metadata: Prisma.JsonValue | null, key: string): boolean | undefined {
+  const value = parseMetadataRecord(metadata)[key];
+  return typeof value === "boolean" ? value : undefined;
+}
+
+function parseStringFlag(metadata: Prisma.JsonValue | null, key: string): string | undefined {
+  const value = parseMetadataRecord(metadata)[key];
+  return typeof value === "string" ? value : undefined;
+}
+
 function toSafeTokens(raw: Prisma.JsonValue | null): SafeTokens {
   const legacy = parseLegacySocialTokens(raw);
   const safe: SafeTokens = {};
@@ -86,6 +114,7 @@ function toSafeTokens(raw: Prisma.JsonValue | null): SafeTokens {
   for (const [workspaceId, platforms] of Object.entries(legacy)) {
     safe[workspaceId] = {};
     for (const [platform, token] of Object.entries(platforms)) {
+      const metadata = (token.metadata ?? null) as Prisma.JsonValue | null;
       safe[workspaceId][platform] = {
         accountId: token.accountId,
         accountName: token.accountName,
@@ -94,16 +123,13 @@ function toSafeTokens(raw: Prisma.JsonValue | null): SafeTokens {
         pageId: token.pageId,
         pageName: token.pageName,
         scope: token.scope,
-        pageOptions: parseSafePageOptions((token.metadata ?? null) as Prisma.JsonValue | null),
-        publishTarget: "page",
-        personalProfileSupported: false,
-        linkedInTargets: parseLinkedInTargets((token.metadata ?? null) as Prisma.JsonValue | null),
-        selectedTargetId:
-          token.metadata && typeof token.metadata === "object" && !Array.isArray(token.metadata) && typeof token.metadata.selectedPublishTarget === "string"
-            ? token.metadata.selectedPublishTarget
-            : undefined,
-        linkedInOrganizationAccessPending:
-          !!(token.metadata && typeof token.metadata === "object" && !Array.isArray(token.metadata) && token.metadata.organizationAccessPending),
+        pageOptions: parseSafePageOptions(metadata),
+        publishTarget: parsePublishTarget(metadata),
+        personalProfileSupported: parseBooleanFlag(metadata, "personalProfilePublishingSupported") ?? false,
+        linkedInTargets: parseLinkedInTargets(metadata),
+        selectedTargetId: parseStringFlag(metadata, "selectedPublishTarget"),
+        linkedInOrganizationAccessPending: parseBooleanFlag(metadata, "organizationAccessPending") ?? false,
+        authMethod: parseStringFlag(metadata, "authMethod"),
       };
     }
   }
@@ -148,6 +174,7 @@ export async function GET(
       safe[membership.workspaceId] ??= {};
 
       for (const account of membership.workspace.socialAccounts) {
+        const metadata = account.metadata as Prisma.JsonValue | null;
         safe[membership.workspaceId][account.platform] = {
           accountId: account.externalAccountId,
           accountName: account.displayName,
@@ -156,16 +183,13 @@ export async function GET(
           pageId: account.pageId ?? undefined,
           pageName: account.pageName ?? undefined,
           scope: Array.isArray(account.scopes) ? account.scopes.join(",") : undefined,
-          pageOptions: parseSafePageOptions(account.metadata as Prisma.JsonValue | null),
-          publishTarget: "page",
-          personalProfileSupported: false,
-          linkedInTargets: parseLinkedInTargets(account.metadata as Prisma.JsonValue | null),
-          selectedTargetId:
-            account.metadata && typeof account.metadata === "object" && !Array.isArray(account.metadata) && typeof account.metadata.selectedPublishTarget === "string"
-              ? account.metadata.selectedPublishTarget
-              : undefined,
-          linkedInOrganizationAccessPending:
-            !!(account.metadata && typeof account.metadata === "object" && !Array.isArray(account.metadata) && account.metadata.organizationAccessPending),
+          pageOptions: parseSafePageOptions(metadata),
+          publishTarget: parsePublishTarget(metadata),
+          personalProfileSupported: parseBooleanFlag(metadata, "personalProfilePublishingSupported") ?? false,
+          linkedInTargets: parseLinkedInTargets(metadata),
+          selectedTargetId: parseStringFlag(metadata, "selectedPublishTarget"),
+          linkedInOrganizationAccessPending: parseBooleanFlag(metadata, "organizationAccessPending") ?? false,
+          authMethod: parseStringFlag(metadata, "authMethod"),
         };
       }
     }
