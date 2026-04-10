@@ -3,6 +3,39 @@ import { prisma } from "@/lib/prisma";
 import { ApiError, toErrorResponse } from "@/lib/http";
 import { requireSessionUser, requireWorkspaceAccess } from "@/lib/authz";
 import { logAuditEvent } from "@/lib/audit";
+
+export async function GET() {
+  try {
+    const userId = await requireSessionUser();
+    const requests = await prisma.supportRequest.findMany({
+      where: { userId },
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        subject: true,
+        message: true,
+        status: true,
+        workspaceId: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    return NextResponse.json(
+      {
+        requests: requests.map((request) => ({
+          ...request,
+          createdAt: request.createdAt.toISOString(),
+          updatedAt: request.updatedAt.toISOString(),
+        })),
+      },
+      { headers: { "Cache-Control": "no-store" } }
+    );
+  } catch (error) {
+    return toErrorResponse(error);
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const userId = await requireSessionUser();

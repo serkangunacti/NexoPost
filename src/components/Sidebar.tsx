@@ -26,7 +26,6 @@ import {
   Link2,
   LifeBuoy,
   Shield,
-  Send,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -234,79 +233,6 @@ function WorkspaceLimitModal({ userType, onClose }: { userType: PlanId; onClose:
   );
 }
 
-function SupportModal({
-  activeClientId,
-  onClose,
-}: {
-  activeClientId: string;
-  onClose: () => void;
-}) {
-  const [subject, setSubject] = useState("");
-  const [message, setMessage] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [done, setDone] = useState(false);
-
-  const valid = subject.trim().length >= 4 && message.trim().length >= 10;
-
-  const handleSubmit = async (e: React.SyntheticEvent) => {
-    e.preventDefault();
-    if (!valid || submitting) return;
-    setSubmitting(true);
-    try {
-      const response = await fetch("/api/support-requests", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          workspaceId: activeClientId || null,
-          subject: subject.trim(),
-          message: message.trim(),
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Support request could not be created.");
-      }
-
-      setDone(true);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  return (
-    <Modal title="Support Request" icon={<LifeBuoy className="w-5 h-5 text-violet-400" />} onClose={onClose}>
-      {done ? (
-        <div className="space-y-5 text-center py-4">
-          <div className="w-14 h-14 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mx-auto">
-            <Send className="w-6 h-6 text-emerald-400" />
-          </div>
-          <p className="text-white font-semibold">Support request saved. We can route it from the external support panel later.</p>
-          <button onClick={onClose} className="w-full py-3 rounded-xl bg-violet-600 hover:bg-violet-500 text-white font-bold transition-all">Close</button>
-        </div>
-      ) : (
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className={labelCls}>Subject</label>
-            <input value={subject} onChange={(e) => setSubject(e.target.value)} className={inputCls} placeholder="Short summary of the issue" />
-          </div>
-          <div>
-            <label className={labelCls}>Message</label>
-            <textarea value={message} onChange={(e) => setMessage(e.target.value)} className={`${inputCls} min-h-32 resize-none`} placeholder="Describe the issue, affected platform, and any error you saw." />
-          </div>
-          <div className="flex gap-3 pt-2">
-            <button type="button" onClick={onClose} className="flex-1 py-3 rounded-xl border border-white/10 text-neutral-400 hover:text-white hover:bg-white/5 font-semibold transition-all">Cancel</button>
-            <button type="submit" disabled={!valid || submitting} className="flex-1 py-3 rounded-xl bg-violet-600 hover:bg-violet-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold transition-all flex items-center justify-center gap-2">
-              {submitting ? "Sending..." : "Create Request"}
-            </button>
-          </div>
-        </form>
-      )}
-    </Modal>
-  );
-}
-
 /* ── Sidebar ── */
 export default function Sidebar({ className }: SidebarProps) {
   const pathname = usePathname();
@@ -320,7 +246,6 @@ export default function Sidebar({ className }: SidebarProps) {
   const [showSwitchWorkspace, setShowSwitchWorkspace] = useState(false);
   const [showLimitModal, setShowLimitModal] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
-  const [showSupportModal, setShowSupportModal] = useState(false);
 
   const navLinks = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -374,10 +299,6 @@ export default function Sidebar({ className }: SidebarProps) {
       {showChangePassword && (
         <ChangePasswordModal onClose={() => setShowChangePassword(false)} />
       )}
-      {showSupportModal && (
-        <SupportModal activeClientId={activeClient.id} onClose={() => setShowSupportModal(false)} />
-      )}
-
       {/* Hamburger button — mobile only, always visible when sidebar is closed */}
       <button
         onClick={() => setMobileOpen(true)}
@@ -502,13 +423,14 @@ export default function Sidebar({ className }: SidebarProps) {
 
         {/* Sign out */}
         <div className="mt-auto px-4 space-y-2 pt-8 relative z-10 border-t border-white/5 mx-4 pb-12">
-          <button
-            onClick={() => setShowSupportModal(true)}
+          <Link
+            href="/support"
+            onClick={closeMobile}
             className="flex items-center gap-4 px-4 py-3 rounded-2xl text-neutral-400 hover:text-white hover:bg-white/[0.04] transition-all font-semibold group cursor-pointer w-full text-left"
           >
             <LifeBuoy className="w-5 h-5 group-hover:text-violet-400 transition-colors shrink-0" />
             <span className="tracking-wide text-sm">Support</span>
-          </button>
+          </Link>
           <button
             onClick={() => { logout(); router.push("/"); }}
             className="flex items-center gap-4 px-4 py-3 rounded-2xl text-neutral-500 hover:text-red-400 hover:bg-red-500/10 transition-all font-semibold group cursor-pointer w-full text-left"
