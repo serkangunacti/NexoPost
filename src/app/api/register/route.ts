@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { getSeedForEmail } from "@/lib/purchasedAccounts";
 import { buildSubscriptionRecord } from "@/lib/subscription";
 
 export async function POST(request: NextRequest) {
@@ -14,7 +13,11 @@ export async function POST(request: NextRequest) {
     phone?: string;
   };
 
-  const { email, password, fullName = "", companyName = "", phone = "" } = body;
+  const email = body.email?.trim().toLowerCase() ?? "";
+  const password = body.password ?? "";
+  const fullName = body.fullName?.trim() ?? "";
+  const companyName = body.companyName?.trim() ?? "";
+  const phone = body.phone?.trim() ?? "";
 
   if (!email || !password) {
     return NextResponse.json({ error: "Email and password are required" }, { status: 400 });
@@ -27,11 +30,10 @@ export async function POST(request: NextRequest) {
 
   const hashedPassword = await bcrypt.hash(password, 12);
 
-  const seed = getSeedForEmail(email);
   const userProfile = {
-    companyName: companyName || seed?.fullName || "",
+    companyName,
     email,
-    fullName: fullName || seed?.fullName || "",
+    fullName,
     phone,
     sessionId: crypto.randomUUID(),
     signedInAt: new Date().toISOString(),
@@ -41,16 +43,16 @@ export async function POST(request: NextRequest) {
     data: {
       email,
       hashedPassword,
-      userType: (seed?.userType ?? "free") as string,
-      activeClientId: seed?.workspaces?.[0]?.id ?? "",
-      clients: (seed?.workspaces ?? []) as object[],
-      connectedAccounts: (seed?.connectedAccounts ?? {}) as object,
-      subscription: ((seed?.subscription ?? null) ?? buildSubscriptionRecord({
+      userType: "free",
+      activeClientId: "",
+      clients: [] as object[],
+      connectedAccounts: {} as object,
+      subscription: buildSubscriptionRecord({
         billingCycle: "monthly",
         phase: "free",
         plan: "free",
-      })) as unknown as Prisma.InputJsonValue,
-      pendingChange: ((seed?.pendingChange ?? null) ?? Prisma.JsonNull) as unknown as Prisma.InputJsonValue,
+      }) as unknown as Prisma.InputJsonValue,
+      pendingChange: Prisma.JsonNull as unknown as Prisma.InputJsonValue,
       userProfile: userProfile as object,
     },
   });

@@ -155,13 +155,12 @@ function CheckoutContent() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           billingCycle,
-          codeId: appliedDiscount.codeId,
+          code: appliedDiscount.code,
           email: email.trim(),
           orderContext: {
             finalPriceCents,
             originalPriceCents: basePriceCents,
           },
-          percentOff: appliedDiscount.percentOff,
           plan: selectedPlan,
         }),
       }).catch(() => undefined);

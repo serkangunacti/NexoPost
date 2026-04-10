@@ -3,7 +3,6 @@ import { prisma } from "@/lib/prisma";
 import { ApiError, toErrorResponse } from "@/lib/http";
 import { requireSessionUser, requireWorkspaceAccess } from "@/lib/authz";
 import { logAuditEvent } from "@/lib/audit";
-
 export async function POST(request: NextRequest) {
   try {
     const userId = await requireSessionUser();
@@ -45,7 +44,6 @@ export async function POST(request: NextRequest) {
         subject,
       },
     });
-
     return NextResponse.json({ id: supportRequest.id, ok: true }, { status: 201 });
   } catch (error) {
     return toErrorResponse(error);

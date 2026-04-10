@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { redeemDiscountCode } from "@/lib/discountCodes";
+import { redeemDiscountCode, validateDiscountCode } from "@/lib/discountCodes";
 import { ApiError, toErrorResponse } from "@/lib/http";
 import { isPlanId, type BillingCycle } from "@/lib/plans";
 
@@ -9,15 +9,14 @@ export async function POST(request: NextRequest) {
     const session = await auth();
     const body = await request.json() as {
       billingCycle?: BillingCycle;
-      codeId?: string;
+      code?: string;
       email?: string | null;
       orderContext?: Record<string, unknown>;
-      percentOff?: number;
       plan?: string;
     };
 
-    if (!body.codeId) {
-      throw new ApiError(400, "codeId is required.");
+    if (!body.code?.trim()) {
+      throw new ApiError(400, "code is required.");
     }
 
     if (!body.plan || !isPlanId(body.plan)) {
@@ -28,12 +27,18 @@ export async function POST(request: NextRequest) {
       throw new ApiError(400, "Valid billing cycle is required.");
     }
 
+    const discount = await validateDiscountCode({
+      billingCycle: body.billingCycle,
+      code: body.code,
+      plan: body.plan,
+      userId: session?.user?.id ?? null,
+    });
+
     await redeemDiscountCode({
       billingCycle: body.billingCycle,
-      codeId: body.codeId,
+      discount,
       email: body.email ?? session?.user?.email ?? null,
       orderContext: body.orderContext,
-      percentOff: body.percentOff ?? 0,
       plan: body.plan,
       userId: session?.user?.id ?? null,
     });

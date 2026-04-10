@@ -531,27 +531,25 @@ export default function ComposePage() {
         : now.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
       const displayTime = overrideTime || now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false });
 
-      // Upload new media files to Cloudinary
+      // Upload new media files through the authenticated media route
       let uploadedUrls: string[] = [];
       if (mediaFiles.length > 0) {
-        const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-        const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
         uploadedUrls = await Promise.race([
           Promise.all(
             mediaFiles.map(async (file) => {
               const formData = new FormData();
               formData.append("file", file);
-              formData.append("upload_preset", uploadPreset!);
-              const res = await fetch(
-                `https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`,
-                { method: "POST", body: formData }
-              );
+              formData.append("workspaceId", activeClient.id);
+              const res = await fetch("/api/media/upload", {
+                method: "POST",
+                body: formData,
+              });
               if (!res.ok) {
                 const errData = await res.json().catch(() => ({}));
-                throw new Error(`Cloudinary: ${errData?.error?.message || res.status}`);
+                throw new Error(errData?.error || `Upload failed (${res.status})`);
               }
               const data = await res.json();
-              return data.secure_url as string;
+              return data.url as string;
             })
           ),
           new Promise<never>((_, reject) =>

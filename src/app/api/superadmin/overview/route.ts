@@ -54,8 +54,6 @@ export async function GET() {
                     platform: true,
                     status: true,
                     displayName: true,
-                    accessToken: true,
-                    refreshToken: true,
                     tokenExpiresAt: true,
                     connectedAt: true,
                   },
@@ -101,8 +99,6 @@ export async function GET() {
             displayName: account.displayName,
             connectedAt: account.connectedAt.toISOString(),
             tokenExpiresAt: account.tokenExpiresAt?.toISOString() ?? null,
-            hasAccessToken: !!account.accessToken,
-            hasRefreshToken: !!account.refreshToken,
           })),
         };
       });

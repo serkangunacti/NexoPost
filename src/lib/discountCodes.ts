@@ -91,16 +91,15 @@ export async function validateDiscountCode(input: {
 
 export async function redeemDiscountCode(input: {
   billingCycle: BillingCycle;
-  codeId: string;
+  discount: DiscountValidation;
   email?: string | null;
   orderContext?: Record<string, unknown>;
-  percentOff: number;
   plan: PlanId;
   userId?: string | null;
 }) {
   await prisma.$transaction(async (tx) => {
     await tx.discountCode.update({
-      where: { id: input.codeId },
+      where: { id: input.discount.codeId },
       data: {
         redeemedCount: { increment: 1 },
       },
@@ -109,10 +108,10 @@ export async function redeemDiscountCode(input: {
     await tx.discountRedemption.create({
       data: {
         billingCycle: input.billingCycle,
-        discountCodeId: input.codeId,
+        discountCodeId: input.discount.codeId,
         email: input.email ?? null,
         orderContext: (input.orderContext ?? {}) as Prisma.InputJsonValue,
-        percentOff: input.percentOff,
+        percentOff: input.discount.percentOff,
         plan: input.plan,
         userId: input.userId ?? null,
       },

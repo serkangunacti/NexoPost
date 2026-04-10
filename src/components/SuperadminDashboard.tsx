@@ -31,8 +31,6 @@ type SuperadminUser = {
       displayName: string;
       connectedAt: string;
       tokenExpiresAt: string | null;
-      hasAccessToken: boolean;
-      hasRefreshToken: boolean;
     }>;
   }>;
 };
@@ -199,9 +197,6 @@ export default function SuperadminDashboard() {
                               ) : null}
                             </div>
                             <p className="text-xs text-neutral-500">Connected: {formatDate(account.connectedAt)} • Expires: {formatDate(account.tokenExpiresAt)}</p>
-                            <p className="text-xs text-neutral-500">
-                              Token health: access {account.hasAccessToken ? "stored" : "missing"} • refresh {account.hasRefreshToken ? "stored" : "missing"}
-                            </p>
                           </div>
                           <select
                             defaultValue={account.status}
