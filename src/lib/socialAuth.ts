@@ -32,7 +32,6 @@ export const SUPPORTED_PLATFORMS = [
   "tiktok",
   "youtube",
   "pinterest",
-  "threads",
   "bluesky",
 ] as const;
 
@@ -117,6 +116,11 @@ export function getPlatformConfig(platform: SupportedPlatform): PlatformOAuthCon
       usePKCE: true,
       clientId: env.YOUTUBE_CLIENT_ID,
       clientSecret: env.YOUTUBE_CLIENT_SECRET,
+      extraAuthParams: {
+        access_type: "offline",
+        include_granted_scopes: "true",
+        prompt: "consent",
+      },
     },
     pinterest: {
       authUrl: "https://www.pinterest.com/oauth/",
@@ -125,15 +129,6 @@ export function getPlatformConfig(platform: SupportedPlatform): PlatformOAuthCon
       usePKCE: false,
       clientId: env.PINTEREST_CLIENT_ID,
       clientSecret: env.PINTEREST_CLIENT_SECRET,
-    },
-    threads: {
-      authUrl: "https://threads.net/oauth/authorize",
-      tokenUrl: "https://graph.threads.net/oauth/access_token",
-      scopes: ["threads_basic"],
-      scopeSeparator: "comma",
-      usePKCE: false,
-      clientId: env.THREADS_APP_ID,
-      clientSecret: env.THREADS_APP_SECRET,
     },
     bluesky: {
       authUrl: "",

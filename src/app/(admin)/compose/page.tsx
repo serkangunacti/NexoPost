@@ -13,7 +13,7 @@ import {
 import { getSubscriptionSnapshot } from "@/lib/subscription";
 import { canPlanPublishToPlatform, getPlanConfig } from "@/lib/plans";
 import { preparePlatformMedia } from "@/lib/mediaPreparation";
-import { SiX, SiFacebook, SiInstagram, SiTiktok, SiBluesky, SiThreads, SiPinterest, SiYoutube } from "react-icons/si";
+import { SiX, SiFacebook, SiInstagram, SiTiktok, SiBluesky, SiPinterest, SiYoutube } from "react-icons/si";
 import { FaLinkedin } from "react-icons/fa6";
 
 // ── Emoji Data (Unicode 15.1) ─────────────────────────────────────────────────
@@ -292,7 +292,6 @@ export default function ComposePage() {
     { id: "facebook", name: "Facebook", icon: <SiFacebook className="w-6 h-6" />, color: "hover:bg-[#1877F2]/80 bg-[#1877F2]/40 text-white/70", activeColor: "bg-[#1877F2] ring-2 ring-white text-white" },
     { id: "instagram", name: "Instagram", icon: <SiInstagram className="w-6 h-6" />, color: "hover:bg-gradient-to-tr hover:from-[#FD1D1D]/80 hover:to-[#833AB4]/80 bg-gradient-to-tr from-[#FD1D1D]/40 to-[#833AB4]/40 text-white/70", activeColor: "bg-gradient-to-tr from-[#FD1D1D] to-[#833AB4] ring-2 ring-white text-white" },
     { id: "tiktok", name: "TikTok", icon: <SiTiktok className="w-6 h-6 drop-shadow-[1px_1px_0_#fe0979]" />, color: "hover:bg-[#000000]/80 bg-[#000000]/40 border border-[#fe0979]/30 text-[#00f2fe]/70", activeColor: "bg-black ring-2 ring-[#00f2fe] text-[#00f2fe] shadow-[0_0_15px_#fe0979]" },
-    { id: "threads", name: "Threads", icon: <SiThreads className="w-6 h-6" />, color: "hover:bg-neutral-800 bg-neutral-900 border border-neutral-800 text-white/70", activeColor: "bg-black ring-2 ring-white text-white" },
     { id: "bluesky", name: "Bluesky", icon: <SiBluesky className="w-6 h-6" />, color: "hover:bg-[#0560FF]/80 bg-[#0560FF]/40 text-white/70", activeColor: "bg-[#0560FF] ring-2 ring-white text-white" },
     { id: "pinterest", name: "Pinterest", icon: <SiPinterest className="w-6 h-6" />, color: "hover:bg-[#E60023]/80 bg-[#E60023]/40 text-white/70", activeColor: "bg-[#E60023] ring-2 ring-white text-white" },
     { id: "youtube", name: "YouTube Shorts", icon: <SiYoutube className="w-6 h-6" />, color: "hover:bg-[#FF0000]/80 bg-[#FF0000]/40 text-white/70", activeColor: "bg-[#FF0000] ring-2 ring-white text-white shadow-[0_0_15px_#FF0000]" },
@@ -535,26 +534,24 @@ export default function ComposePage() {
       // Upload new media files to Cloudinary
       let uploadedUrls: string[] = [];
       if (mediaFiles.length > 0) {
-        if (!activeClient.id) {
-          throw new Error("Select a workspace before uploading media");
-        }
-
+        const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+        const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
         uploadedUrls = await Promise.race([
           Promise.all(
             mediaFiles.map(async (file) => {
               const formData = new FormData();
               formData.append("file", file);
-              formData.append("workspaceId", activeClient.id);
-              const res = await fetch("/api/media/upload", {
-                method: "POST",
-                body: formData,
-              });
+              formData.append("upload_preset", uploadPreset!);
+              const res = await fetch(
+                `https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`,
+                { method: "POST", body: formData }
+              );
               if (!res.ok) {
                 const errData = await res.json().catch(() => ({}));
-                throw new Error(`Upload: ${errData?.error || res.status}`);
+                throw new Error(`Cloudinary: ${errData?.error?.message || res.status}`);
               }
               const data = await res.json();
-              return data.secureUrl as string;
+              return data.secure_url as string;
             })
           ),
           new Promise<never>((_, reject) =>
@@ -649,8 +646,8 @@ export default function ComposePage() {
     } catch (error) {
       console.error("handleSavePost error:", error);
       const errMsg = (error instanceof Error ? error.message : String(error)).toLowerCase();
-      if (errMsg.includes("upload")) {
-        showToast(`Image upload failed — ${error instanceof Error ? error.message : "Upload error"}`);
+      if (errMsg.includes("cloudinary")) {
+        showToast(`Image upload failed — ${error instanceof Error ? error.message : "Cloudinary error"}`);
       } else if (errMsg.includes("not authenticated")) {
         showToast("You must be logged in to save posts.");
       } else {

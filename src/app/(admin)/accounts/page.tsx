@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback } from "react";
 import { Check, AlertCircle, Building2, Pencil, Trash2, AlertTriangle } from "lucide-react";
-import { SiX, SiFacebook, SiInstagram, SiTiktok, SiBluesky, SiThreads, SiPinterest, SiYoutube } from "react-icons/si";
+import { SiX, SiFacebook, SiInstagram, SiTiktok, SiBluesky, SiPinterest, SiYoutube } from "react-icons/si";
 import { FaLinkedin } from "react-icons/fa6";
 import { useApp } from "@/context/AppContext";
 
@@ -44,7 +44,6 @@ export default function AccountsPage() {
     { id: "facebook", name: "Facebook", icon: <SiFacebook className="w-6 h-6" />, color: "bg-[#1877F2]" },
     { id: "instagram", name: "Instagram", icon: <SiInstagram className="w-6 h-6" />, color: "bg-gradient-to-tr from-[#FD1D1D] to-[#833AB4]" },
     { id: "tiktok", name: "TikTok", icon: <SiTiktok className="w-6 h-6 text-[#00f2fe] drop-shadow-[1px_1px_0_#fe0979]" />, color: "bg-black border border-white/10" },
-    { id: "threads", name: "Threads", icon: <SiThreads className="w-6 h-6" />, color: "bg-black border border-neutral-800" },
     { id: "bluesky", name: "Bluesky", icon: <SiBluesky className="w-6 h-6" />, color: "bg-[#0560FF]" },
     { id: "pinterest", name: "Pinterest", icon: <SiPinterest className="w-6 h-6" />, color: "bg-[#E60023]" },
     { id: "youtube", name: "YouTube", icon: <SiYoutube className="w-6 h-6 text-[#FF0000]" />, color: "bg-white border border-neutral-200" },

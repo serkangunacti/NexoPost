@@ -1,6 +1,8 @@
 import type { SocialAccount } from "@prisma/client";
 import { restoreBlueskyOAuthAgent } from "@/lib/blueskyOAuth";
+import { env } from "@/lib/env";
 import { preparePlatformMedia, type PreparedMediaAsset } from "@/lib/mediaPreparation";
+import { prisma } from "@/lib/prisma";
 
 export const CORE_LAUNCH_PLATFORMS = [
   "twitter",
@@ -10,7 +12,6 @@ export const CORE_LAUNCH_PLATFORMS = [
   "tiktok",
   "youtube",
   "pinterest",
-  "threads",
   "bluesky",
 ] as const;
 
@@ -89,6 +90,25 @@ async function fetchArrayBuffer(url: string) {
   return response.arrayBuffer();
 }
 
+function guessMimeType(url: string) {
+  const normalized = url.toLowerCase();
+  if (normalized.includes(".mov")) return "video/quicktime";
+  if (normalized.includes(".webm")) return "video/webm";
+  if (normalized.includes(".m4v")) return "video/x-m4v";
+  return "video/mp4";
+}
+
+function buildYouTubeTitle(content: string) {
+  const collapsed = content.replace(/\s+/g, " ").trim();
+  const withoutTags = collapsed.replace(/[<>]/g, "");
+  const firstLine = withoutTags.split("\n").map((line) => line.trim()).find(Boolean) ?? "NexoPost Short";
+  return firstLine.slice(0, 100);
+}
+
+function buildYouTubeDescription(content: string) {
+  return content.replace(/[<>]/g, "").trim().slice(0, 4900);
+}
+
 function buildValidationRules(platform: ProviderPlatform, input: ProviderNormalizedContent) {
   const issues = [...input.warnings];
 
@@ -100,7 +120,6 @@ function buildValidationRules(platform: ProviderPlatform, input: ProviderNormali
     tiktok: 2200,
     youtube: 5000,
     pinterest: 500,
-    threads: 500,
     bluesky: 300,
   };
 
@@ -112,7 +131,6 @@ function buildValidationRules(platform: ProviderPlatform, input: ProviderNormali
     tiktok: 1,
     youtube: 1,
     pinterest: 1,
-    threads: 10,
     bluesky: 4,
   };
 
@@ -503,10 +521,132 @@ async function publishBluesky(input: ProviderPublishInput): Promise<ProviderPubl
   };
 }
 
+async function refreshYouTubeAccount(account: SocialAccount) {
+  if (!account.refreshToken || !env.YOUTUBE_CLIENT_ID || !env.YOUTUBE_CLIENT_SECRET) {
+    return account;
+  }
+
+  const expiresAt = account.tokenExpiresAt?.getTime() ?? 0;
+  const refreshThreshold = Date.now() + 5 * 60 * 1000;
+  if (expiresAt > refreshThreshold && account.accessToken) {
+    return account;
+  }
+
+  const response = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      client_id: env.YOUTUBE_CLIENT_ID,
+      client_secret: env.YOUTUBE_CLIENT_SECRET,
+      grant_type: "refresh_token",
+      refresh_token: account.refreshToken,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`YouTube refresh error: ${await response.text()}`);
+  }
+
+  const payload = await response.json() as {
+    access_token?: string;
+    expires_in?: number;
+    refresh_token?: string;
+  };
+
+  if (!payload.access_token) {
+    throw new Error("YouTube refresh did not return an access token.");
+  }
+
+  const updated = await prisma.socialAccount.update({
+    where: { id: account.id },
+    data: {
+      accessToken: payload.access_token,
+      refreshToken: payload.refresh_token ?? account.refreshToken,
+      tokenExpiresAt: payload.expires_in ? new Date(Date.now() + payload.expires_in * 1000) : null,
+    },
+  });
+
+  return updated;
+}
+
+async function publishYouTube(input: ProviderPublishInput): Promise<ProviderPublishResult> {
+  const video = input.preparedMedia[0];
+
+  if (!video || video.kind !== "video") {
+    throw new Error("YouTube Shorts publishing requires exactly one video asset.");
+  }
+
+  const account = await refreshYouTubeAccount(input.socialAccount);
+  const binary = Buffer.from(await fetchArrayBuffer(video.preparedUrl));
+  const mimeType = guessMimeType(video.preparedUrl);
+  const title = buildYouTubeTitle(input.content);
+  const description = buildYouTubeDescription(input.content);
+
+  const initResponse = await fetch("https://www.googleapis.com/upload/youtube/v3/videos?part=snippet,status&uploadType=resumable", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${account.accessToken}`,
+      "Content-Type": "application/json; charset=UTF-8",
+      "X-Upload-Content-Length": String(binary.byteLength),
+      "X-Upload-Content-Type": mimeType,
+    },
+    body: JSON.stringify({
+      snippet: {
+        title,
+        description,
+        categoryId: "22",
+      },
+      status: {
+        privacyStatus: "private",
+        selfDeclaredMadeForKids: false,
+      },
+    }),
+  });
+
+  if (!initResponse.ok) {
+    throw new Error(`YouTube upload session error: ${await initResponse.text()}`);
+  }
+
+  const uploadUrl = initResponse.headers.get("location");
+  if (!uploadUrl) {
+    throw new Error("YouTube upload session did not return a resumable upload URL.");
+  }
+
+  const uploadResponse = await fetch(uploadUrl, {
+    method: "PUT",
+    headers: {
+      "Content-Length": String(binary.byteLength),
+      "Content-Type": mimeType,
+    },
+    body: binary,
+  });
+
+  if (!uploadResponse.ok) {
+    throw new Error(`YouTube upload error: ${await uploadResponse.text()}`);
+  }
+
+  const data = await uploadResponse.json() as { id?: string; status?: { privacyStatus?: string } };
+  return {
+    remoteId: data.id,
+    remoteUrl: data.id ? `https://www.youtube.com/watch?v=${data.id}` : undefined,
+    payload: {
+      provider: "youtube",
+      title,
+      privacyStatus: data.status?.privacyStatus ?? "private",
+      shortsOnly: true,
+    },
+  };
+}
+
 function createAdapter(
   platform: ProviderPlatform,
   publishImpl: (input: ProviderPublishInput) => Promise<ProviderPublishResult>,
-  options?: { publishReady?: boolean }
+  options?: {
+    publishReady?: boolean;
+    refreshImpl?: (account: SocialAccount) => Promise<SocialAccount>;
+    normalizeImpl?: (input: { content: string; mediaUrls: string[] }) => Promise<ProviderNormalizedContent>;
+    validateImpl?: (input: ProviderNormalizedContent) => Promise<ProviderValidationResult>;
+  }
 ): ProviderAdapter {
   return {
     platform,
@@ -514,9 +654,12 @@ function createAdapter(
       return;
     },
     async refreshToken(account) {
-      return account;
+      return options?.refreshImpl ? options.refreshImpl(account) : account;
     },
     async normalizeContent(input) {
+      if (options?.normalizeImpl) {
+        return options.normalizeImpl(input);
+      }
       const prepared = preparePlatformMedia(platform, input.mediaUrls);
       return {
         content: input.content.trim(),
@@ -526,6 +669,9 @@ function createAdapter(
       };
     },
     async validateMedia(input) {
+      if (options?.validateImpl) {
+        return options.validateImpl(input);
+      }
       const issues = buildValidationRules(platform, input);
       if (options?.publishReady === false) {
         issues.push(`${platform} publish adapter is in controlled rollout. Connection works, publish is not enabled for this provider yet.`);
@@ -569,13 +715,33 @@ const adapters: Record<ProviderPlatform, ProviderAdapter> = {
   tiktok: createAdapter("tiktok", async () => {
     throw new ProviderNotReadyError("tiktok", "TikTok publish requires Content Posting API approval and is staged after connection rollout.");
   }, { publishReady: false }),
-  youtube: createAdapter("youtube", async () => {
-    throw new ProviderNotReadyError("youtube", "YouTube upload is queued for the next provider release slice.");
-  }, { publishReady: false }),
+  youtube: createAdapter("youtube", publishYouTube, {
+    publishReady: true,
+    refreshImpl: refreshYouTubeAccount,
+    normalizeImpl: async (input) => {
+      const prepared = preparePlatformMedia("youtube", input.mediaUrls);
+      return {
+        content: input.content.trim(),
+        mediaUrls: prepared.assets.map((asset) => asset.preparedUrl),
+        preparedMedia: prepared.assets,
+        warnings: [
+          ...prepared.issues,
+          "YouTube Shorts uploads are currently created as private by default in NexoPost.",
+        ],
+      };
+    },
+    validateImpl: async (input) => {
+      const issues = buildValidationRules("youtube", input);
+      if (input.preparedMedia.length !== 1) {
+        issues.push("YouTube Shorts currently requires exactly one video asset.");
+      }
+      if (input.preparedMedia.some((asset) => asset.kind !== "video")) {
+        issues.push("YouTube Shorts only accepts a single video in the current release.");
+      }
+      return { ok: issues.length === 0, issues };
+    },
+  }),
   pinterest: createAdapter("pinterest", publishPinterest),
-  threads: createAdapter("threads", async () => {
-    throw new ProviderNotReadyError("threads", "Threads publish is in the Meta rollout tranche right after account connection.");
-  }, { publishReady: false }),
   bluesky: createAdapter("bluesky", publishBluesky),
 };
 

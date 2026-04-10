@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useApp } from "@/context/AppContext";
 import { CheckCircle2, AlertCircle, Loader2, Link2, Unlink, Building2, ExternalLink, ShieldCheck, Send } from "lucide-react";
-import { SiX, SiFacebook, SiInstagram, SiPinterest, SiTiktok, SiYoutube, SiBluesky, SiThreads } from "react-icons/si";
+import { SiX, SiFacebook, SiInstagram, SiPinterest, SiTiktok, SiYoutube, SiBluesky } from "react-icons/si";
 import { FaLinkedin } from "react-icons/fa6";
 import { canPlanConnectPlatform, type PlanId } from "@/lib/plans";
 
@@ -112,19 +112,6 @@ const PLATFORMS: PlatformDef[] = [
     description: "Upload and publish videos to TikTok. Requires TikTok Developer App and Content Posting API access approval.",
     requiredEnvs: ["TIKTOK_CLIENT_KEY", "TIKTOK_CLIENT_SECRET"],
     docsUrl: "https://developers.tiktok.com/",
-    oauthReady: true,
-    publishReady: false,
-  },
-  {
-    id: "threads",
-    name: "Threads",
-    icon: <SiThreads className="w-7 h-7" />,
-    gradient: "from-black to-neutral-800",
-    ring: "ring-white/20",
-    bg: "bg-black border border-neutral-800",
-    description: "Threads connects through the dedicated Threads app and OAuth flow. Publish enablement follows right after connection rollout.",
-    requiredEnvs: ["THREADS_APP_ID", "THREADS_APP_SECRET"],
-    docsUrl: "https://developers.facebook.com/",
     oauthReady: true,
     publishReady: false,
   },
@@ -258,11 +245,10 @@ function PlatformCard({
   const pageOptions = token?.pageOptions ?? [];
   const linkedInTargets = token?.linkedInTargets ?? [];
   const usesMetaPageSelection =
-    ["facebook", "instagram", "threads"].includes(platform.id) &&
+    ["facebook", "instagram"].includes(platform.id) &&
     !(
       (platform.id === "instagram" &&
-        (token?.publishTarget === "account" || token?.authMethod === "instagram_business_login")) ||
-      (platform.id === "threads" && token?.publishTarget === "account")
+        (token?.publishTarget === "account" || token?.authMethod === "instagram_business_login"))
     ) &&
     ((token?.publishTarget ?? "page") === "page" || pageOptions.length > 0);
 
@@ -359,11 +345,6 @@ function PlatformCard({
                   Instagram publishing in page-context mode requires a Business or Creator account linked to the selected Facebook Page.
                 </p>
               )}
-              {platform.id === "threads" && (
-                <p className="text-xs text-neutral-500">
-                  Threads will use the selected Meta Page context while the page-linked rollout path remains enabled.
-                </p>
-              )}
             </div>
           )}
           {platform.id === "linkedin" && (
@@ -396,13 +377,6 @@ function PlatformCard({
               {usesMetaPageSelection
                 ? "Instagram publishing requires a Business or Creator account linked to the selected Facebook Page."
                 : "Connected with Instagram Business Login. NexoPost will publish directly to this professional account, not to a personal Facebook profile."}
-            </p>
-          )}
-          {platform.id === "threads" && (
-            <p className="text-xs text-neutral-500">
-              {usesMetaPageSelection
-                ? "Threads will also use the selected Page context once the Meta rollout is enabled."
-                : "Threads will publish directly to the connected account once the dedicated rollout path is enabled."}
             </p>
           )}
         </div>
@@ -758,7 +732,7 @@ export default function ConnectionsPage() {
             <h3 className="text-white font-semibold">Callback URLs to Register</h3>
             <p className="text-neutral-500">Add these redirect URIs in each platform&apos;s developer console:</p>
             <div className="space-y-1">
-              {["twitter", "linkedin", "facebook", "instagram", "tiktok", "youtube", "pinterest", "threads"].map((p) => (
+              {["twitter", "linkedin", "facebook", "instagram", "tiktok", "youtube", "pinterest"].map((p) => (
                 <code key={p} className="block text-xs bg-black/40 border border-white/10 text-violet-300 px-3 py-1.5 rounded-lg font-mono">
                   {typeof window !== "undefined" ? window.location.origin : "https://your-domain.com"}/api/social/callback/{p}
                 </code>

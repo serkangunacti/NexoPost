@@ -15,7 +15,6 @@ const platformWeight: Record<string, number> = {
   instagram: 1.4,
   linkedin: 0.8,
   pinterest: 0.5,
-  threads: 0.6,
   tiktok: 1.5,
   twitter: 1,
   youtube: 1.8,

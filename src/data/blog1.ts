@@ -178,7 +178,7 @@ export const postsPart1: BlogPost[] = [
         <ol>
           <li><strong>Average Watch Time (TikTok/Reels):</strong> Video completions matter more than impressions. If algorithms see people watching 80% of your video, they push it to the FYP (For You Page).</li>
           <li><strong>Share Rate:</strong> Shares are the true measure of viral potential. When a user shares your content, they are actively endorsing it to their close network.</li>
-          <li><strong>Link Click-Through-Rate (CTR):</strong> The ultimate conversion metric. Are your Instagram stories and X threads successfully funneling users to your landing page?</li>
+          <li><strong>Link Click-Through-Rate (CTR):</strong> The ultimate conversion metric. Are your Instagram stories and X conversations successfully funneling users to your landing page?</li>
           <li><strong>Save/Bookmark Rate:</strong> Highly relevant for educational brands. High saves indicate that your content provides genuine, lasting value.</li>
           <li><strong>Audience Time-Block Activity:</strong> Knowing exactly what hours your specific audience is online allows you to optimize your scheduling queue within NexoPost to hit the newsfeed precisely when demand is highest.</li>
         </ol>

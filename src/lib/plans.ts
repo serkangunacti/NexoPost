@@ -9,8 +9,7 @@ export type PlatformId =
   | "tiktok"
   | "youtube"
   | "pinterest"
-  | "bluesky"
-  | "threads";
+  | "bluesky";
 
 export type PlanEntitlements = {
   id: PlanId;
@@ -41,7 +40,6 @@ const PAID_ACTIVE_PLATFORMS: PlatformId[] = [
   "youtube",
   "pinterest",
   "bluesky",
-  "threads",
 ];
 
 export const PLAN_CATALOG: Record<PlanId, PlanEntitlements> = {

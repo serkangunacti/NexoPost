@@ -7,7 +7,7 @@ import { useApp } from "@/context/AppContext";
 import { useSession } from "next-auth/react";
 import { type PostPlatformConfig } from "@/lib/postPlatformConfig";
 import { getSubscriptionSnapshot } from "@/lib/subscription";
-import { SiX, SiFacebook, SiInstagram, SiTiktok, SiBluesky, SiThreads, SiPinterest } from "react-icons/si";
+import { SiX, SiFacebook, SiInstagram, SiTiktok, SiBluesky, SiPinterest } from "react-icons/si";
 import { FaLinkedin } from "react-icons/fa6";
 
 interface Post {
@@ -169,7 +169,6 @@ export default function ScheduledPage() {
       case 'facebook': return <SiFacebook className="w-4 h-4 text-[#1877F2]" />;
       case 'instagram': return <SiInstagram className="w-4 h-4 text-[#E1306C]" />;
       case 'tiktok': return <SiTiktok className="w-4 h-4 text-[#00f2fe] drop-shadow-[1px_1px_0_#fe0979]" />;
-      case 'threads': return <SiThreads className="w-4 h-4" />;
       case 'bluesky': return <SiBluesky className="w-4 h-4 text-[#0560FF]" />;
       case 'pinterest': return <SiPinterest className="w-4 h-4 text-[#E60023]" />;
       default: return p;

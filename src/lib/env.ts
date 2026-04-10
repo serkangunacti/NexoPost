@@ -16,8 +16,6 @@ const envSchema = z.object({
   FACEBOOK_APP_SECRET: z.string().min(1).optional(),
   INSTAGRAM_APP_ID: z.string().min(1).optional(),
   INSTAGRAM_APP_SECRET: z.string().min(1).optional(),
-  THREADS_APP_ID: z.string().min(1).optional(),
-  THREADS_APP_SECRET: z.string().min(1).optional(),
   TIKTOK_CLIENT_KEY: z.string().min(1).optional(),
   TIKTOK_CLIENT_SECRET: z.string().min(1).optional(),
   YOUTUBE_CLIENT_ID: z.string().min(1).optional(),
@@ -28,6 +26,11 @@ const envSchema = z.object({
   CLOUDINARY_UPLOAD_PRESET: z.string().min(1).optional(),
   CLOUDINARY_API_KEY: z.string().min(1).optional(),
   CLOUDINARY_API_SECRET: z.string().min(1).optional(),
+  MICROSOFT_TENANT_ID: z.string().min(1).optional(),
+  MICROSOFT_CLIENT_ID: z.string().min(1).optional(),
+  MICROSOFT_CLIENT_SECRET: z.string().min(1).optional(),
+  MICROSOFT_MAIL_SENDER: z.string().email().optional(),
+  SUPPORT_NOTIFICATION_EMAIL: z.string().email().optional(),
   SUPERADMIN_EMAILS: z.string().optional(),
 });
 
@@ -51,8 +54,6 @@ const parsed = envSchema.parse({
   FACEBOOK_APP_SECRET: process.env.FACEBOOK_APP_SECRET,
   INSTAGRAM_APP_ID: process.env.INSTAGRAM_APP_ID,
   INSTAGRAM_APP_SECRET: process.env.INSTAGRAM_APP_SECRET,
-  THREADS_APP_ID: process.env.THREADS_APP_ID,
-  THREADS_APP_SECRET: process.env.THREADS_APP_SECRET,
   TIKTOK_CLIENT_KEY: process.env.TIKTOK_CLIENT_KEY,
   TIKTOK_CLIENT_SECRET: process.env.TIKTOK_CLIENT_SECRET,
   YOUTUBE_CLIENT_ID: process.env.YOUTUBE_CLIENT_ID,
@@ -63,6 +64,11 @@ const parsed = envSchema.parse({
   CLOUDINARY_UPLOAD_PRESET: process.env.CLOUDINARY_UPLOAD_PRESET,
   CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY,
   CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET,
+  MICROSOFT_TENANT_ID: process.env.MICROSOFT_TENANT_ID,
+  MICROSOFT_CLIENT_ID: process.env.MICROSOFT_CLIENT_ID,
+  MICROSOFT_CLIENT_SECRET: process.env.MICROSOFT_CLIENT_SECRET,
+  MICROSOFT_MAIL_SENDER: process.env.MICROSOFT_MAIL_SENDER,
+  SUPPORT_NOTIFICATION_EMAIL: process.env.SUPPORT_NOTIFICATION_EMAIL,
   SUPERADMIN_EMAILS: process.env.SUPERADMIN_EMAILS,
 });
 

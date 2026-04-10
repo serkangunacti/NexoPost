@@ -25,7 +25,6 @@ const PLATFORM_MEDIA_PROFILES: Record<string, PlatformMediaProfile> = {
   tiktok: { maxMediaCount: 1, targetAspectRatio: "9:16", targetWidth: 1080, targetHeight: 1920, allowImages: false, allowVideos: true },
   youtube: { maxMediaCount: 1, targetAspectRatio: "9:16", targetWidth: 1080, targetHeight: 1920, allowImages: false, allowVideos: true },
   pinterest: { maxMediaCount: 1, targetAspectRatio: "2:3", targetWidth: 1000, targetHeight: 1500, allowImages: true, allowVideos: true },
-  threads: { maxMediaCount: 10, targetAspectRatio: "4:5", targetWidth: 1080, targetHeight: 1350, allowImages: true, allowVideos: true },
   bluesky: { maxMediaCount: 4, targetAspectRatio: "1.91:1", targetWidth: 1200, targetHeight: 627, allowImages: true, allowVideos: false },
 };
 

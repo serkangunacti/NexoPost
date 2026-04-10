@@ -82,7 +82,7 @@ export const blogsPart5: BlogPost[] = [
       excerpt: "Tüketici dikkati tam olarak nereye akıyor? Küresel internet trafiğini şekillendiren baskın platformların anatomisi.",
       content: `
         <h2>Dikkat Ekonomisinin Devleri</h2>
-        <p>Sosyal medyada kazanmak istiyorsanız, önce arazinin yapısını anlamalısınız. Her ne kadar her ay yeni platformlar (Bluesky, Threads vb.) piyasaya çıksa da, tartışmasız bir avuç dev, küresel ekran süresinin ezici bölümünü kontrol ediyor. Odaklı ve isabetli bir büyüme için bu <strong>dünyanın en çok kullanılan sosyal medya uygulamalarının</strong> benzersiz psikolojisini ve işlevini idrak etmek tartışılmaz bir şarttır.</p>
+        <p>Sosyal medyada kazanmak istiyorsanız, önce arazinin yapısını anlamalısınız. Her ne kadar her ay yeni platformlar (Bluesky vb.) piyasaya çıksa da, tartışmasız bir avuç dev, küresel ekran süresinin ezici bölümünü kontrol ediyor. Odaklı ve isabetli bir büyüme için bu <strong>dünyanın en çok kullanılan sosyal medya uygulamalarının</strong> benzersiz psikolojisini ve işlevini idrak etmek tartışılmaz bir şarttır.</p>
         
         <h3>Mevcut Sosyal Medya Şampiyonları</h3>
         <ul>

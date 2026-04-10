@@ -251,7 +251,7 @@ export async function PATCH(
       });
     }
 
-    if (!["facebook", "instagram", "threads"].includes(platform)) {
+    if (!["facebook", "instagram"].includes(platform)) {
       throw new ApiError(400, "Selection updates are only available for Meta family connections or LinkedIn");
     }
 
