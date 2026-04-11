@@ -1,17 +1,14 @@
 import { NextResponse } from "next/server";
-import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { toErrorResponse } from "@/lib/http";
 import { requireStaffUser } from "@/lib/staff";
-
-function parseUserProfile(value: Prisma.JsonValue | null): { fullName?: string } | null {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
-  return value as { fullName?: string };
-}
+import { serializeSupportRequest } from "@/lib/support";
+import { syncSupportMailboxReplies } from "@/lib/supportMailboxSync";
 
 export async function GET() {
   try {
     await requireStaffUser();
+    await syncSupportMailboxReplies();
 
     const requests = await prisma.supportRequest.findMany({
       orderBy: [{ status: "asc" }, { createdAt: "desc" }],
@@ -21,6 +18,7 @@ export async function GET() {
         message: true,
         status: true,
         workspaceId: true,
+        attachmentUrls: true,
         createdAt: true,
         updatedAt: true,
         user: {
@@ -34,20 +32,32 @@ export async function GET() {
             name: true,
           },
         },
+        replies: {
+          orderBy: { createdAt: "asc" },
+          select: {
+            id: true,
+            body: true,
+            authorType: true,
+            source: true,
+            attachmentUrls: true,
+            seenByUserAt: true,
+            seenByStaffAt: true,
+            createdAt: true,
+            updatedAt: true,
+            authorUser: {
+              select: {
+                email: true,
+                userProfile: true,
+              },
+            },
+          },
+        },
       },
     });
 
     return NextResponse.json(
       {
-        requests: requests.map((request) => ({
-          ...request,
-          user: {
-            email: request.user.email,
-            name: parseUserProfile(request.user.userProfile)?.fullName ?? null,
-          },
-          createdAt: request.createdAt.toISOString(),
-          updatedAt: request.updatedAt.toISOString(),
-        })),
+        requests: requests.map(serializeSupportRequest),
       },
       { headers: { "Cache-Control": "no-store" } }
     );

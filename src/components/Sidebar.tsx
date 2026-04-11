@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { useApp } from "@/context/AppContext";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { getPlanConfig, getPlanLabel, isUnlimited, type PlanId } from "@/lib/plans";
 import {
   LayoutDashboard,
@@ -238,6 +238,7 @@ export default function Sidebar({ className }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { userType, activeClient, setActiveClient, clients, addClient, renameClient, logout, userProfile, updateUserProfile, isStaff, isSuperadmin } = useApp();
+  const [supportUnreadCount, setSupportUnreadCount] = useState(0);
 
   const [mobileOpen, setMobileOpen] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -259,6 +260,21 @@ export default function Sidebar({ className }: SidebarProps) {
   ];
 
   const closeMobile = () => setMobileOpen(false);
+
+  useEffect(() => {
+    if (isStaff) {
+      setSupportUnreadCount(0);
+      return;
+    }
+
+    fetch("/api/support-requests/unread-count", { cache: "no-store" })
+      .then(async (response) => {
+        if (!response.ok) return;
+        const payload = (await response.json()) as { unread?: number };
+        setSupportUnreadCount(payload.unread ?? 0);
+      })
+      .catch(() => setSupportUnreadCount(0));
+  }, [isStaff, pathname]);
 
   return (
     <>
@@ -430,6 +446,11 @@ export default function Sidebar({ className }: SidebarProps) {
           >
             <LifeBuoy className="w-5 h-5 group-hover:text-violet-400 transition-colors shrink-0" />
             <span className="tracking-wide text-sm">Support</span>
+            {!isStaff && supportUnreadCount > 0 ? (
+              <span className="ml-auto inline-flex min-w-6 items-center justify-center rounded-full bg-violet-500 px-2 py-0.5 text-[11px] font-bold text-white">
+                {supportUnreadCount}
+              </span>
+            ) : null}
           </Link>
           <button
             onClick={() => { logout(); router.push("/"); }}
