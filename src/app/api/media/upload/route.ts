@@ -1,4 +1,3 @@
-import { createHash } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { env } from "@/lib/env";
 import { requireWorkspaceAccess } from "@/lib/authz";
@@ -8,20 +7,9 @@ export const runtime = "nodejs";
 
 const MAX_UPLOAD_BYTES = 100 * 1024 * 1024;
 
-function buildCloudinarySignature(params: Record<string, string>) {
-  const serialized = Object.entries(params)
-    .sort(([left], [right]) => left.localeCompare(right))
-    .map(([key, value]) => `${key}=${value}`)
-    .join("&");
-
-  return createHash("sha1")
-    .update(`${serialized}${env.CLOUDINARY_API_SECRET ?? ""}`)
-    .digest("hex");
-}
-
 export async function POST(request: NextRequest) {
   try {
-    if (!env.CLOUDINARY_CLOUD_NAME || !env.CLOUDINARY_API_KEY || !env.CLOUDINARY_API_SECRET) {
+    if (!env.CLOUDINARY_CLOUD_NAME || !env.CLOUDINARY_UPLOAD_PRESET) {
       throw new ApiError(503, "Media uploads are not configured.");
     }
 
@@ -50,27 +38,12 @@ export async function POST(request: NextRequest) {
     }
 
     const { workspaceId } = await requireWorkspaceAccess(workspaceIdValue.trim());
-    const timestamp = Math.floor(Date.now() / 1000).toString();
     const uploadFolder = `nexopost/${workspaceId}`;
-    const signatureParams: Record<string, string> = {
-      folder: uploadFolder,
-      timestamp,
-    };
-
-    if (env.CLOUDINARY_UPLOAD_PRESET) {
-      signatureParams.upload_preset = env.CLOUDINARY_UPLOAD_PRESET;
-    }
 
     const cloudinaryBody = new FormData();
     cloudinaryBody.append("file", file);
-    cloudinaryBody.append("api_key", env.CLOUDINARY_API_KEY);
     cloudinaryBody.append("folder", uploadFolder);
-    cloudinaryBody.append("signature", buildCloudinarySignature(signatureParams));
-    cloudinaryBody.append("timestamp", timestamp);
-
-    if (env.CLOUDINARY_UPLOAD_PRESET) {
-      cloudinaryBody.append("upload_preset", env.CLOUDINARY_UPLOAD_PRESET);
-    }
+    cloudinaryBody.append("upload_preset", env.CLOUDINARY_UPLOAD_PRESET);
 
     const response = await fetch(
       `https://api.cloudinary.com/v1_1/${env.CLOUDINARY_CLOUD_NAME}/auto/upload`,
