@@ -3,12 +3,12 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "dev:3001": "next dev --webpack --hostname 127.0.0.1 --port 3001",
-    "dev:3001:clean": "node -e \"require('fs').rmSync('.next',{ recursive: true, force: true })\" && npm run dev:3001",
-    "build": "prisma generate && next build",
+    "dev": "NEXT_TELEMETRY_DISABLED=1 next dev",
+    "dev:3001": "NEXT_TELEMETRY_DISABLED=1 next dev --webpack --hostname 127.0.0.1 --port 3001",
+    "dev:3001:clean": "node -e \"require('fs').rmSync('.next_runtime',{ recursive: true, force: true });require('fs').rmSync('tmp',{ recursive: true, force: true })\" && npm run dev:3001",
+    "build": "node -e \"require('fs').rmSync('.next_runtime',{ recursive: true, force: true })\" && NEXT_TELEMETRY_DISABLED=1 prisma generate && NEXT_TELEMETRY_DISABLED=1 next build --webpack",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint src"
   },
   "engines": {
     "node": ">=20.0.0"
