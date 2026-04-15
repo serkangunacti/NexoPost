@@ -97,7 +97,7 @@ export async function GET(
 
   try {
     const tokenData = await exchangeCodeForTokens(platform, code, config.clientId, config.clientSecret, request);
-    const profile = await fetchProfile(platform, tokenData.accessToken, config.clientId, config.clientSecret, tokenData);
+    const profile = await fetchProfile(platform, tokenData.accessToken);
     await saveTokens(state.userId, state.clientId, platform, { ...tokenData, ...profile });
 
     const successRedirect = NextResponse.redirect(
@@ -237,10 +237,7 @@ async function exchangeCodeForTokens(
 
 async function fetchProfile(
   platform: SupportedPlatform,
-  accessToken: string,
-  _clientId: string,
-  _clientSecret: string,
-  _tokenData: Pick<SocialTokenData, "accessToken" | "refreshToken" | "expiresAt" | "scope">
+  accessToken: string
 ): Promise<Partial<SocialTokenData>> {
   if (platform === "twitter") {
     const res = await fetch("https://api.twitter.com/2/users/me?user.fields=profile_image_url,name,username", {

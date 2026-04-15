@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useState, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
@@ -299,7 +300,14 @@ function PlatformCard({
         <div className="bg-white/5 rounded-xl p-3 border border-white/5 space-y-3">
           <div className="flex items-center gap-3">
             {token.accountAvatar && !isDefaultTikTokAvatar(token.accountAvatar) ? (
-              <img src={token.accountAvatar} alt="" className="w-10 h-10 rounded-full object-cover shrink-0" />
+              <Image
+                src={token.accountAvatar}
+                alt={`${token.accountName} avatar`}
+                width={40}
+                height={40}
+                unoptimized
+                className="w-10 h-10 rounded-full object-cover shrink-0"
+              />
             ) : (
               <div className="w-10 h-10 rounded-full bg-violet-500/20 flex items-center justify-center shrink-0">
                 <span className="text-violet-300 font-bold text-sm">{token.accountName.charAt(0).toUpperCase()}</span>

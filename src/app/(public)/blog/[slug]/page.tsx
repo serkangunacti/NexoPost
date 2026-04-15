@@ -3,6 +3,10 @@ import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import BlogPostClient from "./BlogPostClient";
 
+type BlogPageProps = {
+  params: Promise<{ slug: string }>;
+};
+
 // Pre-render pages at build time
 export async function generateStaticParams() {
   return allBlogs.map((post) => ({
@@ -11,8 +15,8 @@ export async function generateStaticParams() {
 }
 
 // Dynamically generate SEO metadata based on the slug
-export async function generateMetadata({ params }: { params: Promise<{ slug: string }> | { slug: string } }): Promise<Metadata> {
-  const resolvedParams = await Promise.resolve(params);
+export async function generateMetadata({ params }: BlogPageProps): Promise<Metadata> {
+  const resolvedParams = await params;
   const post = getBlogPost(resolvedParams.slug);
   if (!post) {
     return { title: 'Post Not Found | NexoPost' };
@@ -30,8 +34,8 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   };
 }
 
-export default async function SingleBlogPage({ params }: { params: Promise<{ slug: string }> | { slug: string } }) {
-  const resolvedParams = await Promise.resolve(params);
+export default async function SingleBlogPage({ params }: BlogPageProps) {
+  const resolvedParams = await params;
   const post = getBlogPost(resolvedParams.slug);
   
   if (!post) {

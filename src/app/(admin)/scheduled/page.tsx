@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Calendar as CalendarIcon, Send, Loader2, Trash2, Pencil, Check, X, Clock, ExternalLink, AlertTriangle } from "lucide-react";
@@ -327,11 +328,11 @@ export default function ScheduledPage() {
                         {post.mediaUrls && post.mediaUrls.length > 0 && (
                           <div className="flex gap-2 flex-wrap">
                             {post.mediaUrls.map((url, i) => (
-                              <div key={i} className="w-20 h-20 rounded-xl overflow-hidden bg-black/30 border border-white/10 shrink-0">
+                              <div key={i} className="relative w-20 h-20 rounded-xl overflow-hidden bg-black/30 border border-white/10 shrink-0">
                                 {/\.(mp4|mov|webm|avi)/i.test(url) ? (
                                   <video src={url} className="w-full h-full object-cover" muted />
                                 ) : (
-                                  <img src={url} alt="media" className="w-full h-full object-cover" />
+                                  <Image src={url} alt="media" fill unoptimized sizes="80px" className="object-cover" />
                                 )}
                               </div>
                             ))}
@@ -364,11 +365,11 @@ export default function ScheduledPage() {
                         {post.mediaUrls && post.mediaUrls.length > 0 && (
                           <div className="flex gap-2 flex-wrap">
                             {post.mediaUrls.map((url, i) => (
-                              <div key={i} className="w-20 h-20 rounded-xl overflow-hidden bg-black/30 border border-white/10 shrink-0">
+                              <div key={i} className="relative w-20 h-20 rounded-xl overflow-hidden bg-black/30 border border-white/10 shrink-0">
                                 {/\.(mp4|mov|webm|avi)/i.test(url) ? (
                                   <video src={url} className="w-full h-full object-cover" muted />
                                 ) : (
-                                  <img src={url} alt="media" className="w-full h-full object-cover" />
+                                  <Image src={url} alt="media" fill unoptimized sizes="80px" className="object-cover" />
                                 )}
                               </div>
                             ))}

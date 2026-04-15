@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { useLanguage } from "@/context/LanguageContext";
 import { SiX, SiFacebook, SiInstagram, SiTiktok } from "react-icons/si";
@@ -200,7 +201,7 @@ export default function AnimatedShowcase() {
                      </p>
                      
                      <div className={`w-full h-[220px] bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center mt-4 transition-all duration-700 ${step >= 6 ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
-                         <img src="/logo.png" className="w-20 h-20 object-contain opacity-50 drop-shadow-2xl" alt="Preview Media" />
+                       <Image src="/logo.png" width={80} height={80} alt="Preview Media" className="w-20 h-20 object-contain opacity-50 drop-shadow-2xl" />
                      </div>
                   </div>
 
@@ -208,15 +209,15 @@ export default function AnimatedShowcase() {
                   {step === 9 && (
                     <div className="absolute inset-0 bg-black px-4 pt-10 pb-4 z-40 animate-in slide-in-from-right-10 fade-in duration-500">
                        <div className="flex items-center gap-3 mb-3 mt-1">
-                          <img src="/logo.png" className="w-10 h-10 rounded-full bg-neutral-900 border border-neutral-800 p-1.5 object-contain" />
+                        <Image src="/logo.png" width={40} height={40} alt="" className="w-10 h-10 rounded-full bg-neutral-900 border border-neutral-800 p-1.5 object-contain" />
                           <div>
                              <div className="text-[15px] font-bold text-white flex items-center gap-1 leading-tight">NexoPost <span className="text-blue-400 text-[11px]">✔</span></div>
                              <div className="text-[13px] text-neutral-500">@nexopost</div>
                           </div>
                        </div>
                        <p className="text-[14px] text-white leading-normal mb-3 whitespace-pre-wrap">{text}</p>
-                       <div className="w-full aspect-square border border-neutral-800 rounded-2xl bg-neutral-900 flex items-center justify-center overflow-hidden mb-3">
-                          <img src="/logo.png" className="w-full h-full object-cover" />
+                      <div className="relative w-full aspect-square border border-neutral-800 rounded-2xl bg-neutral-900 flex items-center justify-center overflow-hidden mb-3">
+                        <Image src="/logo.png" alt="" fill sizes="300px" className="object-cover" />
                        </div>
                        <div className="flex items-center justify-between text-neutral-500 px-2 mt-2">
                           <MessageCircle className="w-[18px] h-[18px]" />
@@ -233,7 +234,7 @@ export default function AnimatedShowcase() {
                      <div className="absolute inset-0 bg-[#e9e5df] pt-8 z-40 animate-in slide-in-from-right-10 fade-in duration-500 flex flex-col">
                         <div className="bg-white p-4 pb-2">
                            <div className="flex items-center gap-3 mb-3 mt-1">
-                              <img src="/logo.png" className="w-12 h-12 rounded bg-white border border-neutral-200 p-1.5 object-contain" />
+                          <Image src="/logo.png" width={48} height={48} alt="" className="w-12 h-12 rounded bg-white border border-neutral-200 p-1.5 object-contain" />
                               <div className="leading-tight">
                                  <div className="text-[14px] font-bold text-black flex items-center gap-1">NexoPost <span className="text-neutral-500 text-[10px] font-normal">1st</span></div>
                                  <div className="text-[12px] text-neutral-500">{t.showcase.linkedin_role}</div>
@@ -242,8 +243,8 @@ export default function AnimatedShowcase() {
                            </div>
                            <p className="text-[13px] text-black leading-normal mb-3 whitespace-pre-wrap">{text}</p>
                         </div>
-                        <div className="bg-white w-full aspect-square flex items-center justify-center border-b border-neutral-200 overflow-hidden">
-                           <img src="/logo.png" className="w-full h-full object-cover" />
+                      <div className="relative bg-white w-full aspect-square flex items-center justify-center border-b border-neutral-200 overflow-hidden">
+                        <Image src="/logo.png" alt="" fill sizes="300px" className="object-cover" />
                         </div>
                         <div className="bg-white px-5 py-3 flex items-center justify-between text-neutral-500 font-semibold text-[11px]">
                            <div className="flex flex-col items-center gap-1"><ThumbsUp className="w-4 h-4" /> Like</div>
@@ -259,7 +260,7 @@ export default function AnimatedShowcase() {
                      <div className="absolute inset-0 bg-[#c9ccd1] pt-8 z-40 animate-in slide-in-from-right-10 fade-in duration-500 flex flex-col">
                         <div className="bg-white p-4 pb-3">
                            <div className="flex items-center gap-2 mb-3 mt-1">
-                              <img src="/logo.png" className="w-10 h-10 rounded-full border border-neutral-200 bg-neutral-100 p-1.5 object-contain" />
+                          <Image src="/logo.png" width={40} height={40} alt="" className="w-10 h-10 rounded-full border border-neutral-200 bg-neutral-100 p-1.5 object-contain" />
                               <div className="leading-tight">
                                  <div className="text-[14px] font-bold text-[#050505]">NexoPost</div>
                                  <div className="text-[12px] text-[#65676B]">{t.showcase.facebook_time} • 🌍</div>
@@ -268,8 +269,8 @@ export default function AnimatedShowcase() {
                            </div>
                            <p className="text-[14px] text-[#050505] leading-normal">{text}</p>
                         </div>
-                        <div className="bg-white w-full aspect-square flex items-center justify-center border-y border-neutral-200 overflow-hidden">
-                           <img src="/logo.png" className="w-full h-full object-cover" />
+                      <div className="relative bg-white w-full aspect-square flex items-center justify-center border-y border-neutral-200 overflow-hidden">
+                        <Image src="/logo.png" alt="" fill sizes="300px" className="object-cover" />
                         </div>
                         <div className="bg-white p-2 border-b border-neutral-300">
                         </div>
@@ -285,12 +286,12 @@ export default function AnimatedShowcase() {
                   {step === 12 && (
                      <div className="absolute inset-0 bg-white pt-8 z-40 animate-in slide-in-from-right-10 fade-in duration-500 flex flex-col">
                         <div className="flex items-center gap-3 p-3 border-b border-neutral-100 mt-1">
-                           <img src="/logo.png" className="w-8 h-8 rounded-full border border-neutral-300 p-1 object-contain" />
+                        <Image src="/logo.png" width={32} height={32} alt="" className="w-8 h-8 rounded-full border border-neutral-300 p-1 object-contain" />
                            <div className="text-[13px] font-bold text-black">nexopostcom</div>
                            <MoreHorizontal className="w-5 h-5 text-black ml-auto" />
                         </div>
-                        <div className="w-full aspect-square bg-neutral-50 border-y border-neutral-100 flex items-center justify-center overflow-hidden">
-                           <img src="/logo.png" className="w-full h-full object-cover" />
+                      <div className="relative w-full aspect-square bg-neutral-50 border-y border-neutral-100 flex items-center justify-center overflow-hidden">
+                        <Image src="/logo.png" alt="" fill sizes="300px" className="object-cover" />
                         </div>
                         <div className="p-3">
                            <div className="flex items-center gap-4 mb-3">
@@ -311,7 +312,7 @@ export default function AnimatedShowcase() {
                   {step === 13 && (
                      <div className="absolute inset-0 bg-black z-40 animate-in slide-in-from-right-10 fade-in duration-500 pt-8 flex flex-col">
                         <div className="absolute inset-0 overflow-hidden flex items-center justify-center">
-                           <img src="/logo.png" className="absolute inset-0 w-full h-full object-cover opacity-90" />
+                        <Image src="/logo.png" alt="" fill sizes="300px" className="object-cover opacity-90" />
                         </div>
                         
                         {/* Top bar */}
@@ -323,7 +324,7 @@ export default function AnimatedShowcase() {
                         {/* Right Actions */}
                         <div className="absolute bottom-8 right-2 flex flex-col gap-5 items-center z-20">
                            <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center p-1 border border-white">
-                              <img src="/logo.png" className="w-full h-full object-contain rounded-full" />
+                            <Image src="/logo.png" width={48} height={48} alt="" className="w-full h-full object-contain rounded-full" />
                            </div>
                            <div className="flex flex-col items-center"><Heart className="w-8 h-8 fill-white/90 text-transparent drop-shadow-md" /><span className="text-white text-xs font-bold font-sans mt-0.5">12K</span></div>
                            <div className="flex flex-col items-center"><MessageCircle className="w-8 h-8 fill-white/90 text-transparent drop-shadow-md" /><span className="text-white text-xs font-bold font-sans mt-0.5">340</span></div>

@@ -2,6 +2,7 @@
 
 import { useLanguage } from "@/context/LanguageContext";
 import { allBlogs } from "@/data/blog";
+import Image from "next/image";
 import Link from "next/link";
 import { Calendar, Clock, ChevronRight } from "lucide-react";
 
@@ -35,10 +36,13 @@ export default function BlogListClient() {
               >
                 {/* Real Image Cover */}
                 <div className="h-56 w-full relative bg-neutral-900 border-b border-white/5 overflow-hidden">
-                  <img 
+                  <Image
                     key={post.coverImage}
-                    src={post.coverImage} 
-                    alt={content.title} 
+                    src={post.coverImage}
+                    alt={content.title}
+                    fill
+                    unoptimized
+                    sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 opacity-90 group-hover:opacity-100"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0f] to-transparent opacity-80" />

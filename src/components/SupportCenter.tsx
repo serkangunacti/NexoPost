@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { LifeBuoy, LoaderCircle, MessageSquareText, Paperclip, RefreshCcw, Send } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 
@@ -117,12 +117,12 @@ export default function SupportCenter() {
     [subject, message]
   );
 
-  async function markRead() {
+  const markRead = useCallback(async () => {
     if (isStaff) return;
     await fetch("/api/support-requests/read", { method: "POST" }).catch(console.error);
-  }
+  }, [isStaff]);
 
-  async function loadRequests() {
+  const loadRequests = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -141,11 +141,11 @@ export default function SupportCenter() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [isStaff, markRead]);
 
   useEffect(() => {
     void loadRequests();
-  }, [isStaff]);
+  }, [loadRequests]);
 
   async function uploadFiles(files: FileList | null) {
     if (!files?.length || !activeClient?.id) return [];

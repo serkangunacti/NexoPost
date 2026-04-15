@@ -35,7 +35,7 @@ function FeaturesContent() {
       const el = document.getElementById("feature-tabs");
       if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
     }
-  }, []);
+  }, [tabParam]);
 
   const tabs = [
     {

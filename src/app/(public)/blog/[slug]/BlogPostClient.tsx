@@ -1,9 +1,10 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 
 import { BlogPost, allBlogs } from "@/data/blog";
 import { useLanguage } from "@/context/LanguageContext";
-import { Calendar, Clock, ArrowLeft, ChevronRight, Search, ArrowUp } from "lucide-react";
+import { Calendar, Clock, ArrowLeft, Search, ArrowUp } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 
 export default function BlogPostClient({ post }: { post: BlogPost }) {
@@ -14,11 +15,17 @@ export default function BlogPostClient({ post }: { post: BlogPost }) {
   const [activePost, setActivePost] = useState<BlogPost>(post);
 
   const currentIndex = allBlogs.findIndex(p => p.id === post.id);
-  const postsToRender = [
-    allBlogs[currentIndex],
-    ...allBlogs.slice(currentIndex + 1),
-    ...allBlogs.slice(0, currentIndex)
-  ];
+  const postsToRender = useMemo(() => {
+    if (currentIndex === -1) {
+      return [post];
+    }
+
+    return [
+      allBlogs[currentIndex],
+      ...allBlogs.slice(currentIndex + 1),
+      ...allBlogs.slice(0, currentIndex)
+    ];
+  }, [currentIndex, post]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -126,12 +133,15 @@ export default function BlogPostClient({ post }: { post: BlogPost }) {
                   
                   {/* Real Featured Image */}
                   <div className="w-full h-64 md:h-80 rounded-3xl mb-12 relative overflow-hidden glass border border-white/10 shadow-2xl">
-                    <img 
+                    <Image
                       key={p.coverImage}
-                      src={p.coverImage} 
-                      alt={c.title} 
-                      className="w-full h-full object-cover"
-                      loading={isFirst ? "eager" : "lazy"}
+                      src={p.coverImage}
+                      alt={c.title}
+                      fill
+                      unoptimized
+                      priority={isFirst}
+                      sizes="(min-width: 1024px) 66vw, 100vw"
+                      className="object-cover"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0f] to-transparent opacity-60" />
                   </div>
@@ -198,11 +208,13 @@ export default function BlogPostClient({ post }: { post: BlogPost }) {
                         className="group flex gap-4 items-center hover:bg-white/5 rounded-xl p-2 -mx-2 transition-colors"
                       >
                         <div className="w-20 h-20 rounded-lg overflow-hidden relative shrink-0">
-                          <img 
-                            src={related.coverImage} 
+                          <Image
+                            src={related.coverImage}
                             alt={relContent.title}
-                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                            loading="lazy"
+                            fill
+                            unoptimized
+                            sizes="80px"
+                            className="object-cover group-hover:scale-110 transition-transform duration-500"
                           />
                         </div>
                         <div>
