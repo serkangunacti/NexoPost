@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { env } from "@/lib/env";
-import { requireWorkspaceAccess } from "@/lib/authz";
+import { requireSessionUser, requireWorkspaceAccess } from "@/lib/authz";
 import { ApiError, toErrorResponse } from "@/lib/http";
 
 export const runtime = "nodejs";
@@ -13,7 +13,12 @@ export async function POST(request: NextRequest) {
       throw new ApiError(503, "Media uploads are not configured.");
     }
 
-    const formData = await request.formData();
+    // Reject anonymous callers before reading a potentially large body.
+    await requireSessionUser();
+
+    const formData = await request.formData().catch(() => {
+      throw new ApiError(400, "Expected a multipart form upload.");
+    });
     const workspaceIdValue = formData.get("workspaceId");
     const file = formData.get("file");
 
