@@ -1,3 +1,4 @@
+import type { Subscription } from "@prisma/client";
 import {
   BillingCycle,
   type PlanId,
@@ -154,25 +155,28 @@ export function addPaidDuration(startDate: Date, billingCycle: BillingCycle): Da
   return nextDate;
 }
 
-export function buildSubscriptionRecord(input: {
-  billingCycle: BillingCycle;
-  hasUsedTrial?: boolean;
-  phase: SubscriptionRecord["phase"];
-  plan: PlanId;
-  startedAt?: Date;
-}) {
-  const startedAt = input.startedAt ?? new Date();
-  const currentPeriodEnd =
-    input.phase === "free" ? null : addPaidDuration(startedAt, input.billingCycle).toISOString();
+export function toSubscriptionRecord(row: Subscription): SubscriptionRecord {
+  const periodEnd = row.currentPeriodEnd?.toISOString() ?? null;
+  return {
+    billingCycle: row.billingCycle,
+    currentPeriodEnd: periodEnd,
+    currentPeriodStart: row.currentPeriodStart?.toISOString() ?? null,
+    expiresAt: periodEnd,
+    hasUsedTrial: row.hasUsedTrial,
+    phase: row.phase,
+    plan: row.plan,
+    startedAt: row.startedAt.toISOString(),
+  };
+}
+
+export function toPendingPlanChange(row: Subscription): PendingPlanChange | null {
+  if (!row.pendingPlan || !row.pendingBillingCycle || !row.pendingEffectiveAt) {
+    return null;
+  }
 
   return {
-    billingCycle: input.billingCycle,
-    currentPeriodEnd,
-    currentPeriodStart: input.phase === "free" ? null : startedAt.toISOString(),
-    expiresAt: currentPeriodEnd,
-    hasUsedTrial: input.hasUsedTrial ?? input.phase !== "free",
-    phase: input.phase,
-    plan: input.plan,
-    startedAt: startedAt.toISOString(),
-  } satisfies SubscriptionRecord;
+    billingCycle: row.pendingBillingCycle,
+    effectiveAt: row.pendingEffectiveAt.toISOString(),
+    plan: row.pendingPlan,
+  };
 }

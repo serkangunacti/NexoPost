@@ -5,13 +5,11 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Lock, ShieldCheck, User } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
-import { useApp } from "@/context/AppContext";
 import { signIn } from "next-auth/react";
 import { PLAN_ORDER, formatPriceCents, getPlanConfig, getPlanPriceCents, type PlanId } from "@/lib/plans";
 
 function LoginContent() {
   const { t } = useLanguage();
-  const { startPlan } = useApp();
   const router = useRouter();
   const nextPath = "/dashboard";
   const [mode, setMode] = useState<"login" | "register">("login");
@@ -93,18 +91,6 @@ function LoginContent() {
 
     setLoading(true);
     try {
-      // Determine plan details via startPlan (computes trial/paid phase, expiry, etc.)
-      const planResult = startPlan({
-        activationMode: trialPlan === "free" ? "paid" : registrationMode,
-        billingCycle: "monthly",
-        companyName: companyName.trim(),
-        email: registerEmail.trim(),
-        fullName: registerName.trim(),
-        phone: phone.trim(),
-        plan: trialPlan,
-      });
-
-      // Create user in MySQL via register API
       const regRes = await fetch("/api/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -114,12 +100,14 @@ function LoginContent() {
           fullName: registerName.trim(),
           companyName: companyName.trim(),
           phone: phone.trim(),
-          userType: trialPlan,
+          plan: trialPlan,
+          activationMode: registrationMode,
         }),
       });
 
+      const registration = await regRes.json().catch(() => ({})) as { error?: string; phase?: string };
       if (!regRes.ok) {
-        const err = await regRes.json().catch(() => ({})) as { error?: string };
+        const err = registration;
         if (regRes.status === 409) {
           setError("This email is already registered. Please sign in instead.");
         } else {
@@ -140,7 +128,7 @@ function LoginContent() {
         return;
       }
 
-      setSuccess(planResult.phase === "trial" ? t.login_page.register_success_trial : t.login_page.register_success_paid);
+      setSuccess(registration.phase === "trial" ? t.login_page.register_success_trial : t.login_page.register_success_paid);
       router.push(nextPath);
     } catch {
       setError("Registration failed. Please try again.");

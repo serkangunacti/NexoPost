@@ -1,4 +1,3 @@
-import type { Prisma } from "@prisma/client";
 import { Agent } from "@atproto/api";
 import {
   NodeOAuthClient,
@@ -8,6 +7,7 @@ import {
 } from "@atproto/oauth-client-node";
 import { env } from "@/lib/env";
 import { prisma } from "@/lib/prisma";
+import { decryptJson, encryptJson } from "@/lib/secrets";
 import { getCallbackUrl } from "@/lib/socialAuth";
 
 const BLUESKY_PROVIDER = "bluesky";
@@ -25,25 +25,6 @@ function getBaseUrl() {
 
 export function getBlueskyClientMetadataUrl() {
   return `${getBaseUrl()}${BLUESKY_CLIENT_METADATA_PATH}`;
-}
-
-function parseStoreValue<T>(value: unknown): T | undefined {
-  if (value && typeof value === "object" && !Array.isArray(value)) {
-    return value as T;
-  }
-
-  if (typeof value === "string") {
-    try {
-      const parsed = JSON.parse(value);
-      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
-        return parsed as T;
-      }
-    } catch {
-      return undefined;
-    }
-  }
-
-  return undefined;
 }
 
 export function getBlueskyClientMetadata(): OAuthClientMetadataInput {
@@ -85,7 +66,7 @@ function getOAuthClient() {
           return undefined;
         }
 
-        return parseStoreValue<NodeSavedState>(row.value);
+        return decryptJson<NodeSavedState>(row.value);
       },
       async set(key: string, value: NodeSavedState) {
         await prisma.oAuthStateStore.upsert({
@@ -93,12 +74,12 @@ function getOAuthClient() {
           create: {
             key,
             provider: BLUESKY_PROVIDER,
-            value: value as unknown as Prisma.InputJsonValue,
+            value: encryptJson(value),
             expiresAt: new Date(Date.now() + BLUESKY_STATE_TTL_MS),
           },
           update: {
             provider: BLUESKY_PROVIDER,
-            value: value as unknown as Prisma.InputJsonValue,
+            value: encryptJson(value),
             expiresAt: new Date(Date.now() + BLUESKY_STATE_TTL_MS),
           },
         });
@@ -119,7 +100,7 @@ function getOAuthClient() {
           return undefined;
         }
 
-        return parseStoreValue<NodeSavedSession>(row.value);
+        return decryptJson<NodeSavedSession>(row.value);
       },
       async set(key: string, value: NodeSavedSession) {
         await prisma.oAuthSessionStore.upsert({
@@ -127,11 +108,11 @@ function getOAuthClient() {
           create: {
             key,
             provider: BLUESKY_PROVIDER,
-            value: value as unknown as Prisma.InputJsonValue,
+            value: encryptJson(value),
           },
           update: {
             provider: BLUESKY_PROVIDER,
-            value: value as unknown as Prisma.InputJsonValue,
+            value: encryptJson(value),
           },
         });
       },

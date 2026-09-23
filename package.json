@@ -7,6 +7,7 @@
     "dev:3001": "NEXT_TELEMETRY_DISABLED=1 next dev --webpack --hostname 127.0.0.1 --port 3001",
     "dev:3001:clean": "node -e \"require('fs').rmSync('.next_runtime',{ recursive: true, force: true });require('fs').rmSync('tmp',{ recursive: true, force: true })\" && npm run dev:3001",
     "build": "node -e \"require('fs').rmSync('.next_runtime',{ recursive: true, force: true })\" && NEXT_TELEMETRY_DISABLED=1 prisma generate && NEXT_TELEMETRY_DISABLED=1 next build --webpack",
+    "vercel-build": "prisma generate && prisma migrate deploy && next build --webpack",
     "start": "next start",
     "lint": "eslint src"
   },
@@ -22,13 +23,13 @@
     "clsx": "^2.1.1",
     "lightningcss": "^1.32.0",
     "lucide-react": "^0.577.0",
-    "mysql2": "^3.20.0",
     "next": "16.2.0",
     "next-auth": "^5.0.0-beta.30",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "react-icons": "^5.6.0",
-    "tailwind-merge": "^3.5.0"
+    "tailwind-merge": "^3.5.0",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

@@ -1,20 +1,19 @@
-import type { Prisma, PrismaClient, PublicationJob, WorkspaceDailyUsage, WorkspaceUsagePeriod } from "@prisma/client";
+import type { Prisma, PrismaClient, PublicationJob, Subscription, WorkspaceDailyUsage, WorkspaceUsagePeriod } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import {
   canPlanConnectPlatform,
   canPlanPublishToPlatform,
   getDailyPlatformCap,
   getPlanConfig,
-  isPlanId,
   type PlanId,
 } from "@/lib/plans";
-import type { SubscriptionRecord } from "@/lib/subscription";
+import { getSubscription } from "@/lib/billing";
 
 type TxClient = Prisma.TransactionClient | PrismaClient;
 
 type WorkspacePlanContext = {
   plan: ReturnType<typeof getPlanConfig>;
-  subscription: SubscriptionRecord;
+  subscription: Subscription;
   workspaceStatus: "ACTIVE" | "PAUSED" | "ARCHIVED";
 };
 
@@ -40,12 +39,6 @@ const DEFAULT_X_RATE_CARD: Record<string, number> = {
   tweet_text_publish: 8,
 };
 
-function isSubscriptionRecord(value: unknown): value is SubscriptionRecord {
-  if (!value || typeof value !== "object") return false;
-  const candidate = value as Record<string, unknown>;
-  return typeof candidate.plan === "string" && typeof candidate.startedAt === "string";
-}
-
 function getUtcDayStart(date = new Date()) {
   return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
 }
@@ -69,73 +62,50 @@ function parseJsonObject(value: unknown): Record<string, number> {
   return {};
 }
 
-function normalizeSubscription(raw: unknown, fallbackPlan: string): SubscriptionRecord {
-  if (isSubscriptionRecord(raw) && isPlanId(raw.plan)) {
-    return {
-      ...raw,
-      currentPeriodEnd: raw.currentPeriodEnd ?? raw.expiresAt ?? null,
-      currentPeriodStart: raw.currentPeriodStart ?? raw.startedAt ?? null,
-      expiresAt: raw.expiresAt ?? raw.currentPeriodEnd ?? null,
-    };
-  }
-
-  const normalizedPlan: PlanId = isPlanId(fallbackPlan) ? fallbackPlan : "free";
-  const now = new Date();
-  return {
-    billingCycle: "monthly",
-    currentPeriodEnd: normalizedPlan === "free" ? null : now.toISOString(),
-    currentPeriodStart: normalizedPlan === "free" ? null : now.toISOString(),
-    expiresAt: normalizedPlan === "free" ? null : now.toISOString(),
-    hasUsedTrial: normalizedPlan !== "free",
-    phase: normalizedPlan === "free" ? "free" : "paid",
-    plan: normalizedPlan,
-    startedAt: now.toISOString(),
-  };
-}
-
-function getEffectivePlanId(subscription: SubscriptionRecord): PlanId {
+function getEffectivePlanId(subscription: Subscription): PlanId {
   if (subscription.phase === "free" || subscription.plan === "free") {
     return "free";
   }
 
-  const expiration = subscription.currentPeriodEnd ?? subscription.expiresAt;
-  if (!expiration) {
+  if (!subscription.currentPeriodEnd) {
     return subscription.plan;
   }
 
-  return new Date(expiration).getTime() > Date.now() ? subscription.plan : "free";
+  return subscription.currentPeriodEnd.getTime() > Date.now() ? subscription.plan : "free";
 }
 
-function getPeriodBounds(subscription: SubscriptionRecord, now = new Date()) {
-  const start = subscription.currentPeriodStart ? new Date(subscription.currentPeriodStart) : now;
-  const end = subscription.currentPeriodEnd ? new Date(subscription.currentPeriodEnd) : now;
+// Free plans have no billing period, so their quotas roll over each calendar month (UTC).
+function getPeriodBounds(subscription: Subscription, now = new Date()) {
+  if (subscription.currentPeriodStart && subscription.currentPeriodEnd) {
+    return { start: subscription.currentPeriodStart, end: subscription.currentPeriodEnd };
+  }
+
   return {
-    start,
-    end,
+    start: new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)),
+    end: new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1)),
   };
+}
+
+export async function getUserPlan(userId: string) {
+  const subscription = await getSubscription(userId);
+  return getPlanConfig(getEffectivePlanId(subscription));
 }
 
 async function getWorkspacePlanContext(workspaceId: string): Promise<WorkspacePlanContext> {
   const workspace = await prisma.workspace.findUnique({
     where: { id: workspaceId },
-    select: {
-      owner: {
-        select: {
-          subscription: true,
-          userType: true,
-        },
-      },
-      status: true,
-    },
+    select: { ownerId: true, status: true },
   });
 
-  const ownerPlanId = workspace?.owner?.userType ?? "free";
-  const subscription = normalizeSubscription(workspace?.owner?.subscription, ownerPlanId);
-  const effectivePlanId = getEffectivePlanId(subscription);
+  if (!workspace) {
+    throw new Error(`Workspace ${workspaceId} not found`);
+  }
+
+  const subscription = await getSubscription(workspace.ownerId);
   return {
-    plan: getPlanConfig(effectivePlanId),
+    plan: getPlanConfig(getEffectivePlanId(subscription)),
     subscription,
-    workspaceStatus: workspace?.status ?? "ACTIVE",
+    workspaceStatus: workspace.status,
   };
 }
 

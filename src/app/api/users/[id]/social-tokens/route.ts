@@ -1,27 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Prisma } from "@prisma/client";
+import type { Prisma, SocialAccount } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { requireSelf } from "@/lib/authz";
+import { requireSelf, requireWorkspaceAccess } from "@/lib/authz";
 import { ApiError, toErrorResponse } from "@/lib/http";
 import {
+  parseLinkedInTargets,
+  parseMetadata,
   removeSocialAccount,
-  parseLegacySocialTokens,
-  updateLinkedInPublishTarget,
-  updateSocialAccountPageSelection,
-} from "@/lib/workspaces";
+  selectLinkedInTarget,
+  selectMetaPage,
+  type LinkedInTargetOption,
+} from "@/lib/socialAccounts";
 import { logAuditEvent } from "@/lib/audit";
 
-type SafePageOption = {
-  id: string;
-  name: string;
-};
-
-type SafeLinkedInTarget = {
-  id: string;
-  name: string;
-  type: "profile" | "organization";
-};
-
+// Token-free view of a connection for the Connections page.
 type SafeTokenData = {
   accountId: string;
   accountName: string;
@@ -30,28 +22,35 @@ type SafeTokenData = {
   pageId?: string;
   pageName?: string;
   scope?: string;
-  pageOptions?: SafePageOption[];
+  pageOptions?: Array<{ id: string; name: string }>;
   publishTarget?: "page" | "profile" | "organization" | "account";
   personalProfileSupported?: boolean;
-  linkedInTargets?: SafeLinkedInTarget[];
+  linkedInTargets?: LinkedInTargetOption[];
   selectedTargetId?: string;
   linkedInOrganizationAccessPending?: boolean;
   authMethod?: string;
 };
 
-type SafeTokens = Record<string, Record<string, SafeTokenData>>;
+function readString(metadata: Record<string, unknown>, key: string) {
+  const value = metadata[key];
+  return typeof value === "string" ? value : undefined;
+}
 
-function parseSafePageOptions(metadata: Prisma.JsonValue | null): SafePageOption[] {
-  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
-    return [];
-  }
+function readBoolean(metadata: Record<string, unknown>, key: string) {
+  const value = metadata[key];
+  return typeof value === "boolean" ? value : undefined;
+}
 
-  const availablePages = (metadata as Record<string, unknown>).availablePages;
-  if (!Array.isArray(availablePages)) {
-    return [];
-  }
+function readPublishTarget(metadata: Record<string, unknown>): SafeTokenData["publishTarget"] {
+  const value = metadata.publishTarget;
+  return value === "page" || value === "profile" || value === "organization" || value === "account" ? value : "page";
+}
 
-  return availablePages
+function readPageOptions(metadata: Record<string, unknown>) {
+  const pages = metadata.availablePages;
+  if (!Array.isArray(pages)) return [];
+
+  return pages
     .filter((page): page is Record<string, unknown> => !!page && typeof page === "object" && !Array.isArray(page))
     .map((page) => ({
       id: typeof page.id === "string" ? page.id : "",
@@ -60,81 +59,24 @@ function parseSafePageOptions(metadata: Prisma.JsonValue | null): SafePageOption
     .filter((page) => page.id && page.name);
 }
 
-function parseLinkedInTargets(metadata: Prisma.JsonValue | null): SafeLinkedInTarget[] {
-  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
-    return [];
-  }
-
-  const linkedInTargets = (metadata as Record<string, unknown>).linkedInTargets;
-  if (!Array.isArray(linkedInTargets)) {
-    return [];
-  }
-
-  return linkedInTargets
-    .filter((target): target is Record<string, unknown> => !!target && typeof target === "object" && !Array.isArray(target))
-    .map((target) => ({
-      id: typeof target.id === "string" ? target.id : "",
-      name: typeof target.name === "string" ? target.name : "",
-      type: (target.type === "organization" ? "organization" : "profile") as "profile" | "organization",
-    }))
-    .filter((target) => target.id && target.name);
-}
-
-function parseMetadataRecord(metadata: Prisma.JsonValue | null): Record<string, unknown> {
-  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
-    return {};
-  }
-
-  return metadata as Record<string, unknown>;
-}
-
-function parsePublishTarget(metadata: Prisma.JsonValue | null): SafeTokenData["publishTarget"] {
-  const value = parseMetadataRecord(metadata).publishTarget;
-  if (value === "page" || value === "profile" || value === "organization" || value === "account") {
-    return value;
-  }
-
-  return "page";
-}
-
-function parseBooleanFlag(metadata: Prisma.JsonValue | null, key: string): boolean | undefined {
-  const value = parseMetadataRecord(metadata)[key];
-  return typeof value === "boolean" ? value : undefined;
-}
-
-function parseStringFlag(metadata: Prisma.JsonValue | null, key: string): string | undefined {
-  const value = parseMetadataRecord(metadata)[key];
-  return typeof value === "string" ? value : undefined;
-}
-
-function toSafeTokens(raw: Prisma.JsonValue | null): SafeTokens {
-  const legacy = parseLegacySocialTokens(raw);
-  const safe: SafeTokens = {};
-
-  for (const [workspaceId, platforms] of Object.entries(legacy)) {
-    safe[workspaceId] = {};
-    for (const [platform, token] of Object.entries(platforms)) {
-      const metadata = (token.metadata ?? null) as Prisma.JsonValue | null;
-      safe[workspaceId][platform] = {
-        accountId: token.accountId,
-        accountName: token.accountName,
-        accountAvatar: token.accountAvatar,
-        connectedAt: token.connectedAt,
-        pageId: token.pageId,
-        pageName: token.pageName,
-        scope: token.scope,
-        pageOptions: parseSafePageOptions(metadata),
-        publishTarget: parsePublishTarget(metadata),
-        personalProfileSupported: parseBooleanFlag(metadata, "personalProfilePublishingSupported") ?? false,
-        linkedInTargets: parseLinkedInTargets(metadata),
-        selectedTargetId: parseStringFlag(metadata, "selectedPublishTarget"),
-        linkedInOrganizationAccessPending: parseBooleanFlag(metadata, "organizationAccessPending") ?? false,
-        authMethod: parseStringFlag(metadata, "authMethod"),
-      };
-    }
-  }
-
-  return safe;
+function toSafeTokenData(account: SocialAccount): SafeTokenData {
+  const metadata = parseMetadata(account.metadata as Prisma.JsonValue | null);
+  return {
+    accountId: account.externalAccountId,
+    accountName: account.displayName,
+    accountAvatar: account.avatarUrl ?? undefined,
+    connectedAt: account.connectedAt.toISOString(),
+    pageId: account.pageId ?? undefined,
+    pageName: account.pageName ?? undefined,
+    scope: Array.isArray(account.scopes) ? account.scopes.join(",") : undefined,
+    pageOptions: readPageOptions(metadata),
+    publishTarget: readPublishTarget(metadata),
+    personalProfileSupported: readBoolean(metadata, "personalProfilePublishingSupported") ?? false,
+    linkedInTargets: parseLinkedInTargets(account.metadata as Prisma.JsonValue | null),
+    selectedTargetId: readString(metadata, "selectedPublishTarget"),
+    linkedInOrganizationAccessPending: readBoolean(metadata, "organizationAccessPending") ?? false,
+    authMethod: readString(metadata, "authMethod"),
+  };
 }
 
 // GET /api/users/[id]/social-tokens
@@ -146,52 +88,19 @@ export async function GET(
     const { id } = await params;
     const userId = await requireSelf(id);
 
-    const [user, memberships] = await Promise.all([
-      prisma.user.findUnique({
-        where: { id: userId },
-        select: { socialTokens: true },
-      }),
-      prisma.workspaceMember.findMany({
-        where: { userId },
-        select: {
-          workspaceId: true,
-          workspace: {
-            select: {
-              socialAccounts: true,
-            },
-          },
-        },
-      }),
-    ]);
+    const memberships = await prisma.workspaceMember.findMany({
+      where: { userId },
+      select: {
+        workspaceId: true,
+        workspace: { select: { socialAccounts: true } },
+      },
+    });
 
-    if (!user) {
-      throw new ApiError(404, "User not found");
-    }
-
-    const safe = toSafeTokens(user.socialTokens as Prisma.JsonValue | null);
-
+    const safe: Record<string, Record<string, SafeTokenData>> = {};
     for (const membership of memberships) {
-      safe[membership.workspaceId] ??= {};
-
-      for (const account of membership.workspace.socialAccounts) {
-        const metadata = account.metadata as Prisma.JsonValue | null;
-        safe[membership.workspaceId][account.platform] = {
-          accountId: account.externalAccountId,
-          accountName: account.displayName,
-          accountAvatar: account.avatarUrl ?? undefined,
-          connectedAt: account.connectedAt.toISOString(),
-          pageId: account.pageId ?? undefined,
-          pageName: account.pageName ?? undefined,
-          scope: Array.isArray(account.scopes) ? account.scopes.join(",") : undefined,
-          pageOptions: parseSafePageOptions(metadata),
-          publishTarget: parsePublishTarget(metadata),
-          personalProfileSupported: parseBooleanFlag(metadata, "personalProfilePublishingSupported") ?? false,
-          linkedInTargets: parseLinkedInTargets(metadata),
-          selectedTargetId: parseStringFlag(metadata, "selectedPublishTarget"),
-          linkedInOrganizationAccessPending: parseBooleanFlag(metadata, "organizationAccessPending") ?? false,
-          authMethod: parseStringFlag(metadata, "authMethod"),
-        };
-      }
+      safe[membership.workspaceId] = Object.fromEntries(
+        membership.workspace.socialAccounts.map((account) => [account.platform, toSafeTokenData(account)])
+      );
     }
 
     return NextResponse.json(safe, {
@@ -202,13 +111,14 @@ export async function GET(
   }
 }
 
+// PATCH /api/users/[id]/social-tokens — choose the Meta page or LinkedIn target to publish to.
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params;
-    const userId = await requireSelf(id);
+    await requireSelf(id);
     const body = await request.json() as {
       clientId?: string;
       platform?: string;
@@ -216,28 +126,29 @@ export async function PATCH(
       targetId?: string;
     };
 
-    const clientId = body.clientId?.trim() ?? "";
     const platform = body.platform?.trim() ?? "";
     const pageId = body.pageId?.trim() ?? "";
     const targetId = body.targetId?.trim() ?? "";
 
-    if (!clientId || !platform) {
+    if (!body.clientId?.trim() || !platform) {
       throw new ApiError(400, "clientId and platform are required");
     }
+
+    const { userId, workspaceId } = await requireWorkspaceAccess(body.clientId.trim());
 
     if (platform === "linkedin") {
       if (!targetId) {
         throw new ApiError(400, "targetId is required for LinkedIn target selection");
       }
 
-      const result = await updateLinkedInPublishTarget(userId, clientId, targetId);
+      const result = await selectLinkedInTarget(workspaceId, targetId);
 
       await logAuditEvent({
         action: "social.target_selected",
         entityType: "social_account",
-        entityId: `${clientId}:${platform}`,
+        entityId: `${workspaceId}:${platform}`,
         userId,
-        workspaceId: clientId,
+        workspaceId,
         payload: {
           platform,
           targetId: result.id,
@@ -251,7 +162,7 @@ export async function PATCH(
       });
     }
 
-    if (!["facebook", "instagram"].includes(platform)) {
+    if (platform !== "facebook" && platform !== "instagram") {
       throw new ApiError(400, "Selection updates are only available for Meta family connections or LinkedIn");
     }
 
@@ -259,14 +170,14 @@ export async function PATCH(
       throw new ApiError(400, "pageId is required for Meta page selection");
     }
 
-    const result = await updateSocialAccountPageSelection(userId, clientId, platform, pageId);
+    const result = await selectMetaPage(workspaceId, platform, pageId);
 
     await logAuditEvent({
       action: "social.page_selected",
       entityType: "social_account",
-      entityId: `${clientId}:${platform}`,
+      entityId: `${workspaceId}:${platform}`,
       userId,
-      workspaceId: clientId,
+      workspaceId,
       payload: {
         platform,
         pageId: result.pageId,
@@ -289,7 +200,7 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    const userId = await requireSelf(id);
+    await requireSelf(id);
     const clientId = request.nextUrl.searchParams.get("clientId");
     const platform = request.nextUrl.searchParams.get("platform");
 
@@ -297,42 +208,15 @@ export async function DELETE(
       throw new ApiError(400, "clientId and platform required");
     }
 
-    const user = await prisma.user.findUnique({ where: { id: userId }, select: { socialTokens: true, connectedAccounts: true } });
-
-    if (!user) {
-      throw new ApiError(404, "User not found");
-    }
-
-    const tokens = parseLegacySocialTokens(user.socialTokens);
-    const connectedAccounts = ((user.connectedAccounts ?? {}) as Record<string, string[]>) ?? {};
-
-    if (tokens[clientId]) {
-      delete tokens[clientId][platform];
-      if (Object.keys(tokens[clientId]).length === 0) {
-        delete tokens[clientId];
-      }
-    }
-
-    if (connectedAccounts[clientId]) {
-      connectedAccounts[clientId] = connectedAccounts[clientId].filter((entry) => entry !== platform);
-    }
-
-    await prisma.user.update({
-      where: { id: userId },
-      data: {
-        socialTokens: tokens as unknown as Prisma.InputJsonValue,
-        connectedAccounts: connectedAccounts as unknown as Prisma.InputJsonValue,
-      },
-    });
-
-    await removeSocialAccount(clientId, platform);
+    const { userId, workspaceId } = await requireWorkspaceAccess(clientId);
+    await removeSocialAccount(workspaceId, platform);
 
     await logAuditEvent({
       action: "social.disconnected",
       entityType: "social_account",
-      entityId: `${clientId}:${platform}`,
+      entityId: `${workspaceId}:${platform}`,
       userId,
-      workspaceId: clientId,
+      workspaceId,
       payload: { platform },
     });
 

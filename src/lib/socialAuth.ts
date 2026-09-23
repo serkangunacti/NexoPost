@@ -1,5 +1,6 @@
 import { env } from "@/lib/env";
 import { createHmac, timingSafeEqual } from "node:crypto";
+import { decryptSecret, encryptSecret } from "@/lib/secrets";
 
 export interface SocialTokenData {
   accessToken: string;
@@ -21,8 +22,6 @@ export type MetaPageOption = {
   name: string;
   accessToken?: string;
 };
-
-export type SocialTokens = Record<string, Record<string, SocialTokenData>>;
 
 export const SUPPORTED_PLATFORMS = [
   "twitter",
@@ -154,6 +153,20 @@ export async function generateCodeChallenge(verifier: string): Promise<string> {
   const encoded = new TextEncoder().encode(verifier);
   const digest = await crypto.subtle.digest("SHA-256", encoded);
   return base64url(new Uint8Array(digest));
+}
+
+// The PKCE verifier rides in a cookie between connect and callback; keep it encrypted.
+export function sealPkceVerifier(verifier: string) {
+  return encryptSecret(verifier);
+}
+
+export function readPkceVerifier(cookieValue: string | undefined) {
+  if (!cookieValue) return "";
+  try {
+    return decryptSecret(cookieValue);
+  } catch {
+    return "";
+  }
 }
 
 function base64url(bytes: Uint8Array): string {

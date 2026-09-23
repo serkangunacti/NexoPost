@@ -1,209 +1,73 @@
-import type { Prisma, SocialAccount, WorkspaceRole } from "@prisma/client";
+import type { WorkspaceRole } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { ApiError } from "@/lib/http";
-import type { MetaPageOption, SocialTokens, SocialTokenData } from "@/lib/socialAuth";
-import { deleteBlueskyOAuthSession } from "@/lib/blueskyOAuth";
+import { getSubscription } from "@/lib/billing";
+import { removeSocialAccount } from "@/lib/socialAccounts";
 import { isStaffEmail, isSuperadminEmail } from "@/lib/staff";
+import { toPendingPlanChange, toSubscriptionRecord, type PendingPlanChange, type SubscriptionRecord } from "@/lib/subscription";
+import { getUserPlan } from "@/lib/usage";
+import type { PlanId } from "@/lib/plans";
 
-type LegacyClient = {
-  id: string;
-  name: string;
-};
-
-type LegacyConnectedAccounts = Record<string, string[]>;
-
-type AppSessionPayload = {
+export type AppSessionPayload = {
   activeClientId: string;
-  clients: LegacyClient[];
-  connectedAccounts: LegacyConnectedAccounts;
+  clients: Array<{ id: string; name: string }>;
+  connectedAccounts: Record<string, string[]>;
   isStaff: boolean;
   isSuperadmin: boolean;
-  isLoggedIn: boolean;
-  pendingChange: Prisma.JsonValue | null;
-  subscription: Prisma.JsonValue | null;
-  userProfile: Prisma.JsonValue | null;
-  userType: string;
+  isLoggedIn: true;
+  pendingChange: PendingPlanChange | null;
+  subscription: SubscriptionRecord;
+  userProfile: {
+    companyName: string;
+    email: string;
+    fullName: string;
+    phone: string;
+  };
+  userType: PlanId;
 };
 
-function parseArrayJson<T>(value: unknown): T[] {
-  if (Array.isArray(value)) {
-    return value as T[];
-  }
+const MAX_WORKSPACE_NAME_LENGTH = 80;
 
-  if (typeof value === "string") {
-    try {
-      const parsed = JSON.parse(value);
-      return Array.isArray(parsed) ? (parsed as T[]) : [];
-    } catch {
-      return [];
-    }
+function normalizeWorkspaceName(name: string) {
+  const trimmed = name.trim().slice(0, MAX_WORKSPACE_NAME_LENGTH);
+  if (!trimmed) {
+    throw new ApiError(400, "Workspace name is required");
   }
-
-  return [];
+  return trimmed;
 }
 
-function parseObjectJson<T extends Record<string, unknown>>(value: unknown): T {
-  if (value && typeof value === "object" && !Array.isArray(value)) {
-    return value as T;
-  }
+async function createOwnedWorkspace(userId: string, name: string) {
+  const workspace = await prisma.workspace.create({
+    data: {
+      name,
+      ownerId: userId,
+      members: { create: { userId, role: "OWNER" } },
+    },
+  });
 
-  if (typeof value === "string") {
-    try {
-      const parsed = JSON.parse(value);
-      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
-        return parsed as T;
-      }
-    } catch {
-      return {} as T;
-    }
-  }
+  await prisma.user.update({
+    where: { id: userId },
+    data: { activeWorkspaceId: workspace.id },
+  });
 
-  return {} as T;
+  return workspace;
 }
 
-export function parseLegacyClients(value: unknown): LegacyClient[] {
-  return parseArrayJson<LegacyClient>(value)
-    .filter((client) => client && typeof client.id === "string" && typeof client.name === "string")
-    .map((client) => ({ id: client.id, name: client.name.trim() || "Workspace" }));
-}
+// Every account needs at least one workspace to connect accounts and publish.
+async function ensureDefaultWorkspace(userId: string) {
+  const membershipCount = await prisma.workspaceMember.count({ where: { userId } });
+  if (membershipCount > 0) return;
 
-export function parseLegacyConnectedAccounts(value: unknown): LegacyConnectedAccounts {
-  const raw = parseObjectJson<Record<string, unknown>>(value);
-  const result: LegacyConnectedAccounts = {};
-
-  for (const [workspaceId, platforms] of Object.entries(raw)) {
-    if (!Array.isArray(platforms)) continue;
-    result[workspaceId] = platforms.filter((platform): platform is string => typeof platform === "string");
-  }
-
-  return result;
-}
-
-export function parseLegacySocialTokens(value: unknown): SocialTokens {
-  return parseObjectJson<SocialTokens>(value);
-}
-
-async function bootstrapMissingWorkspaces(userId: string) {
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: {
-      id: true,
-      activeClientId: true,
-      clients: true,
-      connectedAccounts: true,
-      socialTokens: true,
-      userProfile: true,
-      workspaceMemberships: {
-        select: { workspaceId: true },
-      },
-    },
+    select: { companyName: true },
   });
 
   if (!user) {
     throw new ApiError(404, "User not found");
   }
 
-  const workspaceIds = new Set(user.workspaceMemberships.map((membership) => membership.workspaceId));
-  const legacyClients = parseLegacyClients(user.clients);
-  const tokens = parseLegacySocialTokens(user.socialTokens);
-  const connectedAccounts = parseLegacyConnectedAccounts(user.connectedAccounts);
-  const profile = parseObjectJson<{ companyName?: string }>(user.userProfile);
-
-  const seedClients =
-    legacyClients.length > 0
-      ? legacyClients
-      : [
-          {
-            id: user.activeClientId || `workspace_${user.id}`,
-            name: profile.companyName?.trim() || "Main Workspace",
-          },
-        ];
-
-  for (const client of seedClients) {
-    if (workspaceIds.has(client.id)) continue;
-
-    await prisma.workspace.upsert({
-      where: { id: client.id },
-      create: {
-        id: client.id,
-        name: client.name,
-        ownerId: user.id,
-        members: {
-          create: {
-            userId: user.id,
-            role: "OWNER",
-          },
-        },
-        brandProfile: {
-          create: {
-            emailSender: profile.companyName?.trim() || client.name,
-          },
-        },
-      },
-      update: {
-        name: client.name,
-        ownerId: user.id,
-        members: {
-          upsert: {
-            where: {
-              workspaceId_userId: {
-                workspaceId: client.id,
-                userId: user.id,
-              },
-            },
-            create: {
-              userId: user.id,
-              role: "OWNER",
-            },
-            update: {
-              role: "OWNER",
-            },
-          },
-        },
-      },
-    });
-  }
-
-  for (const [workspaceId, platformTokens] of Object.entries(tokens)) {
-    if (!seedClients.some((client) => client.id === workspaceId)) continue;
-
-    for (const [platform, token] of Object.entries(platformTokens)) {
-      await upsertSocialAccountFromToken(workspaceId, platform, token);
-    }
-  }
-
-  for (const [workspaceId, platforms] of Object.entries(connectedAccounts)) {
-    if (!seedClients.some((client) => client.id === workspaceId)) continue;
-
-    for (const platform of platforms) {
-      await prisma.socialAccount.upsert({
-        where: {
-          workspaceId_platform: {
-            workspaceId,
-            platform,
-          },
-        },
-        create: {
-          workspaceId,
-          platform,
-          externalAccountId: `${workspaceId}:${platform}`,
-          displayName: platform,
-          status: "DISCONNECTED",
-        },
-        update: {},
-      });
-    }
-  }
-
-  const nextActiveClientId =
-    seedClients.find((client) => client.id === user.activeClientId)?.id ?? seedClients[0]?.id ?? "";
-
-  if (nextActiveClientId && nextActiveClientId !== user.activeClientId) {
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { activeClientId: nextActiveClientId },
-    });
-  }
+  await createOwnedWorkspace(userId, user.companyName.trim() || "Main Workspace");
 }
 
 export async function ensureWorkspaceMembership(
@@ -211,15 +75,8 @@ export async function ensureWorkspaceMembership(
   workspaceId: string,
   allowedRoles?: WorkspaceRole[]
 ) {
-  await bootstrapMissingWorkspaces(userId);
-
   const membership = await prisma.workspaceMember.findUnique({
-    where: {
-      workspaceId_userId: {
-        workspaceId,
-        userId,
-      },
-    },
+    where: { workspaceId_userId: { workspaceId, userId } },
   });
 
   if (!membership) {
@@ -234,18 +91,19 @@ export async function ensureWorkspaceMembership(
 }
 
 export async function resolveActiveWorkspaceId(userId: string, preferredWorkspaceId?: string) {
-  await bootstrapMissingWorkspaces(userId);
-
   if (preferredWorkspaceId) {
     return preferredWorkspaceId;
   }
 
+  await ensureDefaultWorkspace(userId);
+
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: {
-      activeClientId: true,
+      activeWorkspaceId: true,
       workspaceMemberships: {
         orderBy: { createdAt: "asc" },
+        take: 1,
         select: { workspaceId: true },
       },
     },
@@ -255,33 +113,39 @@ export async function resolveActiveWorkspaceId(userId: string, preferredWorkspac
     throw new ApiError(404, "User not found");
   }
 
-  return user.activeClientId || user.workspaceMemberships[0]?.workspaceId || "";
+  return user.activeWorkspaceId ?? user.workspaceMemberships[0]?.workspaceId ?? "";
+}
+
+export async function setActiveWorkspace(userId: string, workspaceId: string) {
+  await ensureWorkspaceMembership(userId, workspaceId);
+  await prisma.user.update({
+    where: { id: userId },
+    data: { activeWorkspaceId: workspaceId },
+  });
 }
 
 export async function buildAppSession(userId: string): Promise<AppSessionPayload> {
-  await bootstrapMissingWorkspaces(userId);
+  await ensureDefaultWorkspace(userId);
+  const subscription = await getSubscription(userId);
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: {
-      id: true,
-      userType: true,
-      activeClientId: true,
       email: true,
-      pendingChange: true,
-      subscription: true,
-      userProfile: true,
-      connectedAccounts: true,
+      fullName: true,
+      companyName: true,
+      phone: true,
+      activeWorkspaceId: true,
       workspaceMemberships: {
         orderBy: { createdAt: "asc" },
         select: {
-          workspaceId: true,
           workspace: {
             select: {
               id: true,
               name: true,
               socialAccounts: {
-                select: { platform: true, status: true },
+                where: { status: "CONNECTED" },
+                select: { platform: true },
               },
             },
           },
@@ -294,375 +158,67 @@ export async function buildAppSession(userId: string): Promise<AppSessionPayload
     throw new ApiError(404, "User not found");
   }
 
-  const clients = user.workspaceMemberships.map((membership) => ({
-    id: membership.workspace.id,
-    name: membership.workspace.name,
-  }));
-
-  const legacyConnectedAccounts = parseLegacyConnectedAccounts(user.connectedAccounts);
-  const connectedAccounts = clients.reduce<LegacyConnectedAccounts>((acc, client) => {
-    const workspace = user.workspaceMemberships.find((membership) => membership.workspaceId === client.id)?.workspace;
-    const connectedFromRecords =
-      workspace?.socialAccounts
-        .filter((account) => account.status === "CONNECTED" || account.status === "DISCONNECTED")
-        .map((account) => account.platform) ?? [];
-
-    acc[client.id] = Array.from(new Set([...(legacyConnectedAccounts[client.id] ?? []), ...connectedFromRecords]));
-    return acc;
-  }, {});
-
+  const workspaces = user.workspaceMemberships.map((membership) => membership.workspace);
   const activeClientId =
-    clients.find((client) => client.id === user.activeClientId)?.id ?? clients[0]?.id ?? "";
-
-  if (activeClientId && activeClientId !== user.activeClientId) {
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { activeClientId },
-    });
-  }
+    workspaces.find((workspace) => workspace.id === user.activeWorkspaceId)?.id ?? workspaces[0]?.id ?? "";
 
   return {
     activeClientId,
-    clients,
-    connectedAccounts,
-    isStaff: !!user.email && isStaffEmail(user.email),
-    isSuperadmin: !!user.email && isSuperadminEmail(user.email),
+    clients: workspaces.map((workspace) => ({ id: workspace.id, name: workspace.name })),
+    connectedAccounts: Object.fromEntries(
+      workspaces.map((workspace) => [workspace.id, workspace.socialAccounts.map((account) => account.platform)])
+    ),
+    isStaff: isStaffEmail(user.email),
+    isSuperadmin: isSuperadminEmail(user.email),
     isLoggedIn: true,
-    pendingChange: (user.pendingChange as Prisma.JsonValue | null) ?? null,
-    subscription: (user.subscription as Prisma.JsonValue | null) ?? null,
-    userProfile: (user.userProfile as Prisma.JsonValue | null) ?? null,
-    userType: user.userType,
+    pendingChange: toPendingPlanChange(subscription),
+    subscription: toSubscriptionRecord(subscription),
+    userProfile: {
+      companyName: user.companyName,
+      email: user.email,
+      fullName: user.fullName,
+      phone: user.phone,
+    },
+    userType: subscription.plan,
   };
 }
 
-export async function syncWorkspacesForUser(userId: string, clients: LegacyClient[]) {
-  await bootstrapMissingWorkspaces(userId);
+export async function createWorkspace(userId: string, name: string) {
+  const plan = await getUserPlan(userId);
+  if (plan.maxWorkspaces !== null) {
+    const ownedCount = await prisma.workspace.count({ where: { ownerId: userId } });
+    if (ownedCount >= plan.maxWorkspaces) {
+      throw new ApiError(403, `${plan.label} plan allows up to ${plan.maxWorkspaces} workspace(s).`);
+    }
+  }
 
-  const current = await prisma.workspace.findMany({
-    where: { ownerId: userId },
+  return createOwnedWorkspace(userId, normalizeWorkspaceName(name));
+}
+
+export async function renameWorkspace(userId: string, workspaceId: string, name: string) {
+  await ensureWorkspaceMembership(userId, workspaceId, ["OWNER", "ADMIN"]);
+  return prisma.workspace.update({
+    where: { id: workspaceId },
+    data: { name: normalizeWorkspaceName(name) },
+  });
+}
+
+export async function deleteWorkspace(userId: string, workspaceId: string) {
+  await ensureWorkspaceMembership(userId, workspaceId, ["OWNER"]);
+
+  const membershipCount = await prisma.workspaceMember.count({ where: { userId } });
+  if (membershipCount <= 1) {
+    throw new ApiError(400, "You cannot delete your only workspace.");
+  }
+
+  // Bluesky sessions live outside the workspace cascade.
+  const blueskyAccount = await prisma.socialAccount.findUnique({
+    where: { workspaceId_platform: { workspaceId, platform: "bluesky" } },
     select: { id: true },
   });
-
-  const nextIds = new Set(clients.map((client) => client.id));
-  const currentIds = new Set(current.map((workspace) => workspace.id));
-
-  for (const client of clients) {
-    if (!currentIds.has(client.id)) {
-      throw new ApiError(400, "Workspace sync cannot create arbitrary workspace identifiers");
-    }
-
-    await prisma.workspace.updateMany({
-      where: { id: client.id, ownerId: userId },
-      data: {
-        name: client.name,
-      },
-    });
+  if (blueskyAccount) {
+    await removeSocialAccount(workspaceId, "bluesky");
   }
 
-  const staleWorkspaceIds = Array.from(currentIds).filter((workspaceId) => !nextIds.has(workspaceId));
-
-  if (staleWorkspaceIds.length > 0) {
-    await prisma.workspace.deleteMany({
-      where: {
-        ownerId: userId,
-        id: { in: staleWorkspaceIds },
-      },
-    });
-  }
-}
-
-export async function upsertSocialAccountFromToken(
-  workspaceId: string,
-  platform: string,
-  token: Partial<SocialTokenData> & { accessToken: string }
-) {
-  const nextStatus = token.accessToken ? "CONNECTED" : "DISCONNECTED";
-  const metadata = {
-    scope: token.scope ?? null,
-    ...(token.metadata ?? {}),
-  };
-
-  return prisma.socialAccount.upsert({
-    where: {
-      workspaceId_platform: {
-        workspaceId,
-        platform,
-      },
-    },
-    create: {
-      workspaceId,
-      platform,
-      externalAccountId: token.accountId ?? `${workspaceId}:${platform}`,
-      displayName: token.accountName ?? platform,
-      avatarUrl: token.accountAvatar,
-      accessToken: token.accessToken,
-      refreshToken: token.refreshToken,
-      tokenExpiresAt: token.expiresAt ? new Date(token.expiresAt) : null,
-      scopes: token.scope ? [token.scope] : undefined,
-      pageId: token.pageId,
-      pageName: token.pageName,
-      pageAccessToken: token.pageAccessToken,
-      status: nextStatus,
-      connectedAt: token.connectedAt ? new Date(token.connectedAt) : new Date(),
-      metadata,
-    },
-    update: {
-      externalAccountId: token.accountId ?? `${workspaceId}:${platform}`,
-      displayName: token.accountName ?? platform,
-      avatarUrl: token.accountAvatar,
-      accessToken: token.accessToken,
-      refreshToken: token.refreshToken,
-      tokenExpiresAt: token.expiresAt ? new Date(token.expiresAt) : null,
-      scopes: token.scope ? [token.scope] : undefined,
-      pageId: token.pageId,
-      pageName: token.pageName,
-      pageAccessToken: token.pageAccessToken,
-      status: nextStatus,
-      connectedAt: token.connectedAt ? new Date(token.connectedAt) : new Date(),
-      metadata,
-    },
-  });
-}
-
-export async function removeSocialAccount(workspaceId: string, platform: string) {
-  if (platform === "bluesky") {
-    const existing = await prisma.socialAccount.findFirst({
-      where: {
-        workspaceId,
-        platform,
-      },
-      select: {
-        externalAccountId: true,
-        metadata: true,
-      },
-    });
-
-    const metadata = existing?.metadata && typeof existing.metadata === "object" && !Array.isArray(existing.metadata)
-      ? existing.metadata as Record<string, unknown>
-      : {};
-    const did = typeof metadata.did === "string" ? metadata.did : existing?.externalAccountId;
-    if (did) {
-      await deleteBlueskyOAuthSession(did);
-    }
-  }
-
-  await prisma.socialAccount.deleteMany({
-    where: {
-      workspaceId,
-      platform,
-    },
-  });
-}
-
-function parseAvailableMetaPages(metadata: unknown): MetaPageOption[] {
-  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
-    return [];
-  }
-
-  const rawPages = (metadata as Record<string, unknown>).availablePages;
-  if (!Array.isArray(rawPages)) {
-    return [];
-  }
-
-  return rawPages
-    .filter((page): page is Record<string, unknown> => !!page && typeof page === "object" && !Array.isArray(page))
-    .map((page) => ({
-      id: typeof page.id === "string" ? page.id : "",
-      name: typeof page.name === "string" ? page.name : "",
-      accessToken: typeof page.accessToken === "string" ? page.accessToken : undefined,
-    }))
-    .filter((page) => page.id && page.name);
-}
-
-export async function updateSocialAccountPageSelection(
-  userId: string,
-  workspaceId: string,
-  platform: string,
-  pageId: string
-) {
-  const socialAccount = await prisma.socialAccount.findUnique({
-    where: {
-      workspaceId_platform: {
-        workspaceId,
-        platform,
-      },
-    },
-  });
-
-  if (!socialAccount) {
-    throw new ApiError(404, "Connected social account not found");
-  }
-
-  const availablePages = parseAvailableMetaPages(socialAccount.metadata);
-  const selectedPage = availablePages.find((page) => page.id === pageId);
-  if (!selectedPage) {
-    throw new ApiError(400, "Selected page is not available for this connection");
-  }
-
-  const nextMetadata = {
-    ...(socialAccount.metadata && typeof socialAccount.metadata === "object" && !Array.isArray(socialAccount.metadata)
-      ? socialAccount.metadata as Record<string, unknown>
-      : {}),
-    selectedPublishTarget: selectedPage.id,
-    publishTarget: "page",
-    personalProfilePublishingSupported: false,
-  };
-
-  await prisma.socialAccount.update({
-    where: {
-      workspaceId_platform: {
-        workspaceId,
-        platform,
-      },
-    },
-    data: {
-      pageId: selectedPage.id,
-      pageName: selectedPage.name,
-      pageAccessToken: selectedPage.accessToken ?? socialAccount.pageAccessToken,
-      metadata: nextMetadata,
-    },
-  });
-
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { socialTokens: true },
-  });
-
-  const tokens = parseLegacySocialTokens(user?.socialTokens);
-  if (tokens[workspaceId]?.[platform]) {
-    tokens[workspaceId][platform] = {
-      ...tokens[workspaceId][platform],
-      pageId: selectedPage.id,
-      pageName: selectedPage.name,
-      pageAccessToken: selectedPage.accessToken ?? tokens[workspaceId][platform].pageAccessToken,
-      metadata: {
-        ...(tokens[workspaceId][platform].metadata ?? {}),
-        selectedPublishTarget: selectedPage.id,
-        publishTarget: "page",
-        personalProfilePublishingSupported: false,
-      },
-    };
-
-    await prisma.user.update({
-      where: { id: userId },
-      data: {
-        socialTokens: tokens as unknown as Prisma.InputJsonValue,
-      },
-    });
-  }
-
-  return {
-    pageId: selectedPage.id,
-    pageName: selectedPage.name,
-  };
-}
-
-type LinkedInTargetOption = {
-  id: string;
-  name: string;
-  type: "profile" | "organization";
-};
-
-function parseLinkedInTargets(metadata: unknown): LinkedInTargetOption[] {
-  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
-    return [];
-  }
-
-  const rawTargets = (metadata as Record<string, unknown>).linkedInTargets;
-  if (!Array.isArray(rawTargets)) {
-    return [];
-  }
-
-  return rawTargets
-    .filter((target): target is Record<string, unknown> => !!target && typeof target === "object" && !Array.isArray(target))
-    .map((target) => ({
-      id: typeof target.id === "string" ? target.id : "",
-      name: typeof target.name === "string" ? target.name : "",
-      type: (target.type === "organization" ? "organization" : "profile") as "profile" | "organization",
-    }))
-    .filter((target) => target.id && target.name);
-}
-
-export async function updateLinkedInPublishTarget(
-  userId: string,
-  workspaceId: string,
-  targetId: string
-) {
-  const socialAccount = await prisma.socialAccount.findUnique({
-    where: {
-      workspaceId_platform: {
-        workspaceId,
-        platform: "linkedin",
-      },
-    },
-  });
-
-  if (!socialAccount) {
-    throw new ApiError(404, "Connected LinkedIn account not found");
-  }
-
-  const availableTargets = parseLinkedInTargets(socialAccount.metadata);
-  const selectedTarget = availableTargets.find((target) => target.id === targetId);
-  if (!selectedTarget) {
-    throw new ApiError(400, "Selected LinkedIn target is not available for this connection");
-  }
-
-  const nextMetadata = {
-    ...(socialAccount.metadata && typeof socialAccount.metadata === "object" && !Array.isArray(socialAccount.metadata)
-      ? socialAccount.metadata as Record<string, unknown>
-      : {}),
-    selectedPublishTarget: selectedTarget.id,
-    publishTarget: selectedTarget.type,
-  };
-
-  await prisma.socialAccount.update({
-    where: {
-      workspaceId_platform: {
-        workspaceId,
-        platform: "linkedin",
-      },
-    },
-    data: {
-      metadata: nextMetadata,
-    },
-  });
-
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { socialTokens: true },
-  });
-  const tokens = parseLegacySocialTokens(user?.socialTokens);
-  if (tokens[workspaceId]?.linkedin) {
-    tokens[workspaceId].linkedin = {
-      ...tokens[workspaceId].linkedin,
-      metadata: {
-        ...(tokens[workspaceId].linkedin.metadata ?? {}),
-        selectedPublishTarget: selectedTarget.id,
-        publishTarget: selectedTarget.type,
-      },
-    };
-
-    await prisma.user.update({
-      where: { id: userId },
-      data: {
-        socialTokens: tokens as unknown as Prisma.InputJsonValue,
-      },
-    });
-  }
-
-  return selectedTarget;
-}
-
-export async function getWorkspaceSocialAccounts(workspaceId: string) {
-  return prisma.socialAccount.findMany({
-    where: { workspaceId },
-    orderBy: { createdAt: "asc" },
-  });
-}
-
-export function findConnectedAccount(
-  socialAccounts: SocialAccount[],
-  platform: string
-) {
-  return socialAccounts.find((account) => account.platform === platform && account.status === "CONNECTED");
+  await prisma.workspace.delete({ where: { id: workspaceId } });
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback } from "react";
+import Link from "next/link";
 import { Check, AlertCircle, Building2, Pencil, Trash2, AlertTriangle } from "lucide-react";
 import { SiX, SiFacebook, SiInstagram, SiTiktok, SiBluesky, SiPinterest, SiYoutube } from "react-icons/si";
 import { FaLinkedin } from "react-icons/fa6";
@@ -8,7 +9,7 @@ import { useApp } from "@/context/AppContext";
 
 interface ConfirmModal {
   message: string;
-  onConfirm: () => void;
+  onConfirm: () => void | Promise<void>;
 }
 
 export default function AccountsPage() {
@@ -19,7 +20,6 @@ export default function AccountsPage() {
     connectedAccounts,
     removeClient,
     renameClient,
-    toggleAccount,
   } = useApp();
   const [editingClientId, setEditingClientId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState("");
@@ -35,7 +35,7 @@ export default function AccountsPage() {
 
   // Confirm modal
   const [confirmModal, setConfirmModal] = useState<ConfirmModal | null>(null);
-  const openConfirm = (message: string, onConfirm: () => void) => setConfirmModal({ message, onConfirm });
+  const openConfirm = (message: string, onConfirm: ConfirmModal["onConfirm"]) => setConfirmModal({ message, onConfirm });
   const closeConfirm = () => setConfirmModal(null);
   
   const defaultPlatforms = [
@@ -51,21 +51,21 @@ export default function AccountsPage() {
 
   const currentConnectedIds = connectedAccounts[activeClient.id] || [];
 
-  const handleToggle = (id: string) => {
-    toggleAccount(activeClient.id, id);
-  };
-
   const startEditing = (clientId: string, name: string) => {
     setEditingClientId(clientId);
     setEditingName(name);
   };
 
-  const handleRename = () => {
+  const handleRename = async () => {
     if (!editingClientId || !editingName.trim()) {
       return;
     }
 
-    renameClient(editingClientId, editingName);
+    const result = await renameClient(editingClientId, editingName);
+    if (!result.ok) {
+      showToast(result.error);
+      return;
+    }
     setEditingClientId(null);
     setEditingName("");
   };
@@ -75,8 +75,12 @@ export default function AccountsPage() {
       showToast("You cannot delete your only workspace.");
       return;
     }
-    openConfirm(`Delete "${clientName}" workspace? Connected accounts in this workspace will also be removed.`, () => {
-      removeClient(clientId);
+    openConfirm(`Delete "${clientName}" workspace? Connected accounts in this workspace will also be removed.`, async () => {
+      const result = await removeClient(clientId);
+      if (!result.ok) {
+        showToast(result.error);
+        return;
+      }
       if (editingClientId === clientId) {
         setEditingClientId(null);
         setEditingName("");
@@ -261,7 +265,7 @@ export default function AccountsPage() {
                 <div>
                   <h3 className="text-xl font-bold text-white mb-1 group-hover:text-violet-300 transition-colors">{platform.name}</h3>
                   {isConnected ? (
-                    <p className="text-sm text-neutral-400">@{activeClient.name.toLowerCase().replace(/\s+/g, '')}</p>
+                    <p className="text-sm text-neutral-400">Connected to {activeClient.name}</p>
                   ) : (
                     <p className="text-sm text-neutral-500 flex items-center gap-1.5 font-medium">
                       <AlertCircle className="w-3.5 h-3.5" /> Not connected
@@ -269,16 +273,16 @@ export default function AccountsPage() {
                   )}
                 </div>
                 
-                <button 
-                  onClick={() => handleToggle(platform.id)}
-                  className={`py-2 px-5 w-full rounded-xl text-sm font-bold transition-all ${
-                    isConnected 
-                    ? "bg-white/5 text-neutral-300 hover:bg-red-500/20 hover:text-red-400 border border-white/10 hover:border-red-500/30" 
+                <Link
+                  href="/connections"
+                  className={`py-2 px-5 w-full rounded-xl text-sm font-bold text-center transition-all ${
+                    isConnected
+                    ? "bg-white/5 text-neutral-300 hover:bg-white/10 border border-white/10"
                     : "bg-violet-600 text-white shadow-[0_0_15px_rgba(139,92,246,0.3)] hover:bg-violet-500 hover:scale-105 active:scale-95 border border-violet-400/50"
                   }`}
                 >
-                  {isConnected ? "Disconnect" : "Connect Account"}
-                </button>
+                  {isConnected ? "Manage Connection" : "Connect Account"}
+                </Link>
               </div>
             )
           })}

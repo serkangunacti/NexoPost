@@ -3,23 +3,40 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DATABASE_URL_UNPOOLED")
+}
+
+enum PlanId {
+  free
+  basic
+  pro
+  agency
+  agency_plus
+}
+
+enum BillingCycle {
+  monthly
+  annual
+}
+
+enum SubscriptionPhase {
+  free
+  trial
+  paid
+}
+
+enum PaymentStatus {
+  SUCCEEDED
+  FAILED
 }
 
 enum WorkspaceRole {
   OWNER
   ADMIN
   EDITOR
-  APPROVER
   VIEWER
-}
-
-enum SocialAccountStatus {
-  CONNECTED
-  DISCONNECTED
-  EXPIRED
-  ERROR
 }
 
 enum WorkspaceStatus {
@@ -28,11 +45,11 @@ enum WorkspaceStatus {
   ARCHIVED
 }
 
-enum ApprovalRequestStatus {
-  PENDING
-  APPROVED
-  REJECTED
-  CANCELLED
+enum SocialAccountStatus {
+  CONNECTED
+  DISCONNECTED
+  EXPIRED
+  ERROR
 }
 
 enum PublicationJobStatus {
@@ -48,78 +65,87 @@ enum PublicationJobStatus {
   BLOCKED_DAILY_CAP
 }
 
-model Post {
-  id                 String              @id @default(uuid())
-  content            String              @db.Text
-  platforms          Json
-  platformConfig     Json?               @map("platform_config")
-  status             String              @default("Draft")
-  date               String
-  time               String
-  scheduledAt        DateTime?           @map("scheduled_at")
-  autoOptimize       Boolean             @default(false) @map("auto_optimize")
-  mediaUrls          Json                @map("media_urls")
-  userId             String              @map("user_id")
-  workspaceId        String?             @map("workspace_id")
-  createdAt          DateTime            @default(now()) @map("created_at")
-  updatedAt          DateTime            @updatedAt @map("updated_at")
-  author             User                @relation("PostAuthor", fields: [userId], references: [id], onDelete: Cascade)
-  workspace          Workspace?          @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
-  approvalRequests   ApprovalRequest[]
-  mediaAssets        MediaAsset[]
-  publicationJobs    PublicationJob[]
-  publicationResults PublicationResult[]
-  variants           PostVariant[]
-
-  @@index([workspaceId, createdAt])
-  @@map("posts")
-}
-
 model User {
-  id                        String            @id @default(cuid())
-  email                     String?           @unique
-  hashedPassword            String?           @map("hashed_password")
-  userType                  String            @default("basic") @map("user_type")
-  superadminNote            String?           @map("superadmin_note") @db.Text
-  activeClientId            String?           @map("active_client_id")
-  clients                   Json              @default("[]")
-  connectedAccounts         Json              @default("{}") @map("connected_accounts")
-  socialTokens              Json?             @map("social_tokens")
-  subscription              Json?
-  pendingChange             Json?             @map("pending_change")
-  userProfile               Json?             @map("user_profile")
-  createdAt                 DateTime          @default(now()) @map("created_at")
-  updatedAt                 DateTime          @updatedAt @map("updated_at")
-  approvalRequestsRequested ApprovalRequest[] @relation("ApprovalRequester")
-  approvalRequestsReviewed  ApprovalRequest[] @relation("ApprovalReviewer")
-  auditLogs                 AuditLog[]
-  postsAuthored             Post[]            @relation("PostAuthor")
-  supportRequests           SupportRequest[]
-  supportRepliesAuthored    SupportReply[]
-  workspaceMemberships      WorkspaceMember[]
-  workspacesOwned           Workspace[]       @relation("WorkspaceOwner")
+  id                     String            @id @default(cuid())
+  email                  String            @unique
+  hashedPassword         String            @map("hashed_password")
+  fullName               String            @default("") @map("full_name")
+  companyName            String            @default("") @map("company_name")
+  phone                  String            @default("")
+  activeWorkspaceId      String?           @map("active_workspace_id")
+  superadminNote         String?           @map("superadmin_note") @db.Text
+  createdAt              DateTime          @default(now()) @map("created_at")
+  updatedAt              DateTime          @updatedAt @map("updated_at")
+  activeWorkspace        Workspace?        @relation("ActiveWorkspace", fields: [activeWorkspaceId], references: [id], onDelete: SetNull)
+  subscription           Subscription?
+  payments               Payment[]
+  auditLogs              AuditLog[]
+  postsAuthored          Post[]            @relation("PostAuthor")
+  supportRequests        SupportRequest[]
+  supportRepliesAuthored SupportReply[]
+  workspaceMemberships   WorkspaceMember[]
+  workspacesOwned        Workspace[]       @relation("WorkspaceOwner")
 
   @@map("users")
 }
 
+// One subscription per account owner; its plan applies to every workspace the user owns.
+model Subscription {
+  id                  String            @id @default(cuid())
+  userId              String            @unique @map("user_id")
+  plan                PlanId            @default(free)
+  billingCycle        BillingCycle      @default(monthly) @map("billing_cycle")
+  phase               SubscriptionPhase @default(free)
+  hasUsedTrial        Boolean           @default(false) @map("has_used_trial")
+  startedAt           DateTime          @default(now()) @map("started_at")
+  currentPeriodStart  DateTime?         @map("current_period_start")
+  currentPeriodEnd    DateTime?         @map("current_period_end")
+  pendingPlan         PlanId?           @map("pending_plan")
+  pendingBillingCycle BillingCycle?     @map("pending_billing_cycle")
+  pendingEffectiveAt  DateTime?         @map("pending_effective_at")
+  createdAt           DateTime          @default(now()) @map("created_at")
+  updatedAt           DateTime          @updatedAt @map("updated_at")
+  user                User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("subscriptions")
+}
+
+model Payment {
+  id              String        @id @default(cuid())
+  userId          String        @map("user_id")
+  provider        String
+  providerRef     String?       @map("provider_ref")
+  plan            PlanId
+  billingCycle    BillingCycle  @map("billing_cycle")
+  amountCents     Int           @map("amount_cents")
+  currency        String        @default("USD")
+  discountCodeId  String?       @map("discount_code_id")
+  discountPercent Int?          @map("discount_percent")
+  status          PaymentStatus
+  failureReason   String?       @map("failure_reason") @db.Text
+  createdAt       DateTime      @default(now()) @map("created_at")
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  discountCode    DiscountCode? @relation(fields: [discountCodeId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@map("payments")
+}
+
 model Workspace {
-  id                 String              @id @default(cuid())
+  id                 String                 @id @default(cuid())
   name               String
-  slug               String?             @unique
-  status             WorkspaceStatus     @default(ACTIVE)
-  ownerId            String              @map("owner_id")
-  createdAt          DateTime            @default(now()) @map("created_at")
-  updatedAt          DateTime            @updatedAt @map("updated_at")
-  approvalRequests   ApprovalRequest[]
+  status             WorkspaceStatus        @default(ACTIVE)
+  ownerId            String                 @map("owner_id")
+  createdAt          DateTime               @default(now()) @map("created_at")
+  updatedAt          DateTime               @updatedAt @map("updated_at")
+  owner              User                   @relation("WorkspaceOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  activeForUsers     User[]                 @relation("ActiveWorkspace")
   auditLogs          AuditLog[]
-  brandProfile       BrandProfile?
   members            WorkspaceMember[]
-  owner              User                @relation("WorkspaceOwner", fields: [ownerId], references: [id], onDelete: Cascade)
   posts              Post[]
   publicationJobs    PublicationJob[]
   publicationResults PublicationResult[]
   socialAccounts     SocialAccount[]
-  subscriptions      Subscription[]
   supportRequests    SupportRequest[]
   usagePeriods       WorkspaceUsagePeriod[]
   dailyUsage         WorkspaceDailyUsage[]
@@ -143,21 +169,8 @@ model WorkspaceMember {
   @@map("workspace_members")
 }
 
-model BrandProfile {
-  id              String    @id @default(cuid())
-  workspaceId     String    @unique @map("workspace_id")
-  logoUrl         String?   @map("logo_url")
-  domain          String?   @unique
-  primaryColor    String?   @map("primary_color")
-  emailSender     String?   @map("email_sender")
-  customLoginCopy String?   @map("custom_login_copy") @db.Text
-  createdAt       DateTime  @default(now()) @map("created_at")
-  updatedAt       DateTime  @updatedAt @map("updated_at")
-  workspace       Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-
-  @@map("brand_profiles")
-}
-
+// accessToken, refreshToken and pageAccessToken hold ciphertext from lib/secrets.
+// Page tokens inside metadata.availablePages are encrypted the same way.
 model SocialAccount {
   id                String              @id @default(cuid())
   workspaceId       String              @map("workspace_id")
@@ -181,8 +194,33 @@ model SocialAccount {
   workspace         Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@unique([workspaceId, platform])
-  @@index([platform, status])
   @@map("social_accounts")
+}
+
+model Post {
+  id                 String              @id @default(uuid())
+  content            String              @db.Text
+  platforms          Json
+  platformConfig     Json?               @map("platform_config")
+  status             String              @default("Draft")
+  date               String
+  time               String
+  scheduledAt        DateTime?           @map("scheduled_at")
+  autoOptimize       Boolean             @default(false) @map("auto_optimize")
+  mediaUrls          Json                @map("media_urls")
+  userId             String              @map("user_id")
+  workspaceId        String?             @map("workspace_id")
+  createdAt          DateTime            @default(now()) @map("created_at")
+  updatedAt          DateTime            @updatedAt @map("updated_at")
+  author             User                @relation("PostAuthor", fields: [userId], references: [id], onDelete: Cascade)
+  workspace          Workspace?          @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
+  mediaAssets        MediaAsset[]
+  publicationJobs    PublicationJob[]
+  publicationResults PublicationResult[]
+  variants           PostVariant[]
+
+  @@index([workspaceId, createdAt])
+  @@map("posts")
 }
 
 model MediaAsset {
@@ -217,59 +255,35 @@ model PostVariant {
   post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
 
   @@unique([postId, platform])
-  @@index([platform])
   @@map("post_variants")
 }
 
-model ApprovalRequest {
-  id            String                @id @default(cuid())
-  postId        String                @map("post_id")
-  workspaceId   String                @map("workspace_id")
-  requestedById String                @map("requested_by_id")
-  reviewerId    String?               @map("reviewer_id")
-  status        ApprovalRequestStatus @default(PENDING)
-  comment       String?               @db.Text
-  requestedAt   DateTime              @default(now()) @map("requested_at")
-  decidedAt     DateTime?             @map("decided_at")
-  createdAt     DateTime              @default(now()) @map("created_at")
-  updatedAt     DateTime              @updatedAt @map("updated_at")
-  post          Post                  @relation(fields: [postId], references: [id], onDelete: Cascade)
-  requestedBy   User                  @relation("ApprovalRequester", fields: [requestedById], references: [id], onDelete: Cascade)
-  reviewer      User?                 @relation("ApprovalReviewer", fields: [reviewerId], references: [id], onDelete: SetNull)
-  workspace     Workspace             @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-
-  @@index([workspaceId, status])
-  @@index([requestedById])
-  @@index([reviewerId])
-  @@map("approval_requests")
-}
-
 model PublicationJob {
-  id              String               @id @default(cuid())
-  postId          String               @map("post_id")
-  workspaceId     String               @map("workspace_id")
-  socialAccountId String?              @map("social_account_id")
-  platform        String
-  status          PublicationJobStatus @default(PENDING)
-  attempts        Int                  @default(0)
-  maxAttempts     Int                  @default(5) @map("max_attempts")
-  scheduledFor    DateTime?            @map("scheduled_for")
-  startedAt       DateTime?            @map("started_at")
-  finishedAt      DateTime?            @map("finished_at")
-  lastError       String?              @map("last_error") @db.Text
-  quotaChargedAt  DateTime?            @map("quota_charged_at")
-  quotaChargeUnits Int                 @default(0) @map("quota_charge_units")
-  xSpendChargedCents Int               @default(0) @map("x_spend_charged_cents")
-  payload         Json?
-  createdAt       DateTime             @default(now()) @map("created_at")
-  updatedAt       DateTime             @updatedAt @map("updated_at")
-  post            Post                 @relation(fields: [postId], references: [id], onDelete: Cascade)
-  result          PublicationResult?
-  socialAccount   SocialAccount?       @relation(fields: [socialAccountId], references: [id], onDelete: SetNull)
-  workspace       Workspace            @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  id                 String               @id @default(cuid())
+  postId             String               @map("post_id")
+  workspaceId        String               @map("workspace_id")
+  socialAccountId    String?              @map("social_account_id")
+  platform           String
+  status             PublicationJobStatus @default(PENDING)
+  attempts           Int                  @default(0)
+  maxAttempts        Int                  @default(5) @map("max_attempts")
+  scheduledFor       DateTime?            @map("scheduled_for")
+  startedAt          DateTime?            @map("started_at")
+  finishedAt         DateTime?            @map("finished_at")
+  lastError          String?              @map("last_error") @db.Text
+  quotaChargedAt     DateTime?            @map("quota_charged_at")
+  quotaChargeUnits   Int                  @default(0) @map("quota_charge_units")
+  xSpendChargedCents Int                  @default(0) @map("x_spend_charged_cents")
+  payload            Json?
+  createdAt          DateTime             @default(now()) @map("created_at")
+  updatedAt          DateTime             @updatedAt @map("updated_at")
+  post               Post                 @relation(fields: [postId], references: [id], onDelete: Cascade)
+  result             PublicationResult?
+  socialAccount      SocialAccount?       @relation(fields: [socialAccountId], references: [id], onDelete: SetNull)
+  workspace          Workspace            @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@index([status, scheduledFor])
-  @@index([workspaceId, platform])
+  @@index([workspaceId, createdAt])
   @@map("publication_jobs")
 }
 
@@ -290,59 +304,36 @@ model PublicationResult {
   post         Post                 @relation(fields: [postId], references: [id], onDelete: Cascade)
   workspace    Workspace            @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
-  @@index([workspaceId, platform, status])
+  @@index([workspaceId, createdAt])
   @@map("publication_results")
 }
 
-model Subscription {
-  id                 String    @id @default(cuid())
-  workspaceId        String    @map("workspace_id")
-  provider           String    @default("stripe")
-  externalId         String?   @map("external_id")
-  plan               String
-  status             String
-  billingCycle       String    @map("billing_cycle")
-  trialEndsAt        DateTime? @map("trial_ends_at")
-  currentPeriodStart DateTime? @map("current_period_start")
-  currentPeriodEnd   DateTime? @map("current_period_end")
-  cancelAtPeriodEnd  Boolean   @default(false) @map("cancel_at_period_end")
-  seats              Int       @default(1)
-  metadata           Json?
-  createdAt          DateTime  @default(now()) @map("created_at")
-  updatedAt          DateTime  @updatedAt @map("updated_at")
-  workspace          Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-
-  @@index([workspaceId, status])
-  @@map("subscriptions")
-}
-
 model WorkspaceUsagePeriod {
-  id                    String    @id @default(cuid())
-  workspaceId           String    @map("workspace_id")
-  plan                  String
-  billingCycle          String    @map("billing_cycle")
-  periodStart           DateTime  @map("period_start")
-  periodEnd             DateTime  @map("period_end")
-  platformJobsIncluded  Int?      @map("platform_jobs_included")
-  platformJobsUsed      Int       @default(0) @map("platform_jobs_used")
-  platformJobsBlocked   Int       @default(0) @map("platform_jobs_blocked")
-  xSpendCapCents        Int?      @map("x_spend_cap_cents")
-  xSpendUsedCents       Int       @default(0) @map("x_spend_used_cents")
-  xSpendBlockedCents    Int       @default(0) @map("x_spend_blocked_cents")
-  perPlatformMonthlyCounts Json?  @map("per_platform_monthly_counts")
-  createdAt             DateTime  @default(now()) @map("created_at")
-  updatedAt             DateTime  @updatedAt @map("updated_at")
-  workspace             Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  id                       String       @id @default(cuid())
+  workspaceId              String       @map("workspace_id")
+  plan                     PlanId
+  billingCycle             BillingCycle @map("billing_cycle")
+  periodStart              DateTime     @map("period_start")
+  periodEnd                DateTime     @map("period_end")
+  platformJobsIncluded     Int?         @map("platform_jobs_included")
+  platformJobsUsed         Int          @default(0) @map("platform_jobs_used")
+  platformJobsBlocked      Int          @default(0) @map("platform_jobs_blocked")
+  xSpendCapCents           Int?         @map("x_spend_cap_cents")
+  xSpendUsedCents          Int          @default(0) @map("x_spend_used_cents")
+  xSpendBlockedCents       Int          @default(0) @map("x_spend_blocked_cents")
+  perPlatformMonthlyCounts Json?        @map("per_platform_monthly_counts")
+  createdAt                DateTime     @default(now()) @map("created_at")
+  updatedAt                DateTime     @updatedAt @map("updated_at")
+  workspace                Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@unique([workspaceId, periodStart, periodEnd])
-  @@index([workspaceId, periodEnd])
   @@map("workspace_usage_periods")
 }
 
 model WorkspaceDailyUsage {
   id          String    @id @default(cuid())
   workspaceId String    @map("workspace_id")
-  date        DateTime
+  date        DateTime  @db.Date
   platform    String
   usedJobs    Int       @default(0) @map("used_jobs")
   blockedJobs Int       @default(0) @map("blocked_jobs")
@@ -351,41 +342,41 @@ model WorkspaceDailyUsage {
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@unique([workspaceId, date, platform])
-  @@index([workspaceId, date])
   @@map("workspace_daily_usage")
 }
 
 model DiscountCode {
-  id                  String   @id @default(cuid())
-  code                String   @unique
-  percentOff          Int      @map("percent_off")
-  startsAt            DateTime? @map("starts_at")
-  expiresAt           DateTime? @map("expires_at")
-  maxRedemptions      Int?     @map("max_redemptions")
-  redeemedCount       Int      @default(0) @map("redeemed_count")
-  allowedPlans        Json?    @map("allowed_plans")
-  allowedBillingCycles Json?   @map("allowed_billing_cycles")
-  isActive            Boolean  @default(true) @map("is_active")
-  metadata            Json?
-  createdById         String?  @map("created_by_id")
-  createdAt           DateTime @default(now()) @map("created_at")
-  updatedAt           DateTime @updatedAt @map("updated_at")
-  redemptions         DiscountRedemption[]
+  id                   String               @id @default(cuid())
+  code                 String               @unique
+  percentOff           Int                  @map("percent_off")
+  startsAt             DateTime?            @map("starts_at")
+  expiresAt            DateTime?            @map("expires_at")
+  maxRedemptions       Int?                 @map("max_redemptions")
+  redeemedCount        Int                  @default(0) @map("redeemed_count")
+  allowedPlans         Json?                @map("allowed_plans")
+  allowedBillingCycles Json?                @map("allowed_billing_cycles")
+  isActive             Boolean              @default(true) @map("is_active")
+  metadata             Json?
+  createdById          String?              @map("created_by_id")
+  createdAt            DateTime             @default(now()) @map("created_at")
+  updatedAt            DateTime             @updatedAt @map("updated_at")
+  redemptions          DiscountRedemption[]
+  payments             Payment[]
 
   @@index([isActive, expiresAt])
   @@map("discount_codes")
 }
 
 model DiscountRedemption {
-  id             String   @id @default(cuid())
-  discountCodeId String   @map("discount_code_id")
-  userId         String?  @map("user_id")
+  id             String       @id @default(cuid())
+  discountCodeId String       @map("discount_code_id")
+  userId         String?      @map("user_id")
   email          String?
-  plan           String
-  billingCycle   String   @map("billing_cycle")
-  percentOff     Int      @map("percent_off")
-  redeemedAt     DateTime @default(now()) @map("redeemed_at")
-  orderContext   Json?    @map("order_context")
+  plan           PlanId
+  billingCycle   BillingCycle @map("billing_cycle")
+  percentOff     Int          @map("percent_off")
+  redeemedAt     DateTime     @default(now()) @map("redeemed_at")
+  orderContext   Json?        @map("order_context")
   discountCode   DiscountCode @relation(fields: [discountCodeId], references: [id], onDelete: Cascade)
 
   @@index([discountCodeId, redeemedAt])
@@ -424,20 +415,20 @@ model AuditLog {
 }
 
 model SupportRequest {
-  id             String         @id @default(cuid())
-  userId         String         @map("user_id")
-  workspaceId    String?        @map("workspace_id")
-  subject        String
-  message        String         @db.Text
-  attachmentUrls Json?          @map("attachment_urls")
-  status         String         @default("OPEN")
-  lastUserReadAt DateTime?      @map("last_user_read_at")
-  lastStaffReadAt DateTime?     @map("last_staff_read_at")
-  createdAt      DateTime       @default(now()) @map("created_at")
-  updatedAt      DateTime       @updatedAt @map("updated_at")
-  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  workspace      Workspace?     @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
-  replies        SupportReply[]
+  id              String         @id @default(cuid())
+  userId          String         @map("user_id")
+  workspaceId     String?        @map("workspace_id")
+  subject         String
+  message         String         @db.Text
+  attachmentUrls  Json?          @map("attachment_urls")
+  status          String         @default("OPEN")
+  lastUserReadAt  DateTime?      @map("last_user_read_at")
+  lastStaffReadAt DateTime?      @map("last_staff_read_at")
+  createdAt       DateTime       @default(now()) @map("created_at")
+  updatedAt       DateTime       @updatedAt @map("updated_at")
+  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace       Workspace?     @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
+  replies         SupportReply[]
 
   @@index([userId, createdAt])
   @@index([workspaceId, createdAt])
@@ -467,10 +458,11 @@ model SupportReply {
   @@map("support_replies")
 }
 
+// OAuth state and session stores for the Bluesky client. `value` is ciphertext from lib/secrets.
 model OAuthStateStore {
   key       String   @id
   provider  String
-  value     Json
+  value     String   @db.Text
   expiresAt DateTime @map("expires_at")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -482,7 +474,7 @@ model OAuthStateStore {
 model OAuthSessionStore {
   key       String   @id
   provider  String
-  value     Json
+  value     String   @db.Text
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 

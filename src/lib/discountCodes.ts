@@ -1,4 +1,3 @@
-import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { ApiError } from "@/lib/http";
 import { isPlanId, type BillingCycle, type PlanId } from "@/lib/plans";
@@ -31,7 +30,6 @@ export async function validateDiscountCode(input: {
   code: string;
   plan: PlanId;
   userId?: string | null;
-  allowExistingPaid?: boolean;
 }) {
   const normalized = input.code.trim().toUpperCase();
   if (!normalized) {
@@ -71,13 +69,11 @@ export async function validateDiscountCode(input: {
     throw new ApiError(400, "Discount code is not valid for this billing cycle.");
   }
 
-  if (!input.allowExistingPaid && input.userId) {
-    const user = await prisma.user.findUnique({
-      where: { id: input.userId },
-      select: { subscription: true },
+  if (input.userId) {
+    const paidBefore = await prisma.payment.count({
+      where: { userId: input.userId, status: "SUCCEEDED" },
     });
-    const subscription = user?.subscription as { phase?: string } | null;
-    if (subscription?.phase === "paid") {
+    if (paidBefore > 0) {
       throw new ApiError(400, "Discount codes apply only to the first paid purchase.");
     }
   }
@@ -87,34 +83,4 @@ export async function validateDiscountCode(input: {
     codeId: code.id,
     percentOff: code.percentOff,
   } satisfies DiscountValidation;
-}
-
-export async function redeemDiscountCode(input: {
-  billingCycle: BillingCycle;
-  discount: DiscountValidation;
-  email?: string | null;
-  orderContext?: Record<string, unknown>;
-  plan: PlanId;
-  userId?: string | null;
-}) {
-  await prisma.$transaction(async (tx) => {
-    await tx.discountCode.update({
-      where: { id: input.discount.codeId },
-      data: {
-        redeemedCount: { increment: 1 },
-      },
-    });
-
-    await tx.discountRedemption.create({
-      data: {
-        billingCycle: input.billingCycle,
-        discountCodeId: input.discount.codeId,
-        email: input.email ?? null,
-        orderContext: (input.orderContext ?? {}) as Prisma.InputJsonValue,
-        percentOff: input.discount.percentOff,
-        plan: input.plan,
-        userId: input.userId ?? null,
-      },
-    });
-  });
 }

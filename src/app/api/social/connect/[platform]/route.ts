@@ -7,6 +7,7 @@ import {
   getCallbackUrl,
   getPlatformConfig,
   isSupportedPlatform,
+  sealPkceVerifier,
 } from "@/lib/socialAuth";
 import { getBlueskyAuthorizeUrl } from "@/lib/blueskyOAuth";
 import { requireWorkspaceAccess } from "@/lib/authz";
@@ -137,7 +138,7 @@ export async function GET(
 
       const pkceResponse = NextResponse.redirect(url.toString());
       pkceResponse.cookies.set("oauth_nonce", nonce, oauthCookieOptions);
-      pkceResponse.cookies.set("oauth_pkce", verifier, oauthCookieOptions);
+      pkceResponse.cookies.set("oauth_pkce", sealPkceVerifier(verifier), oauthCookieOptions);
       return pkceResponse;
     }
 

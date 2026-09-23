@@ -2,7 +2,7 @@ import type { SocialAccount } from "@prisma/client";
 import { restoreBlueskyOAuthAgent } from "@/lib/blueskyOAuth";
 import { env } from "@/lib/env";
 import { preparePlatformMedia, type PreparedMediaAsset } from "@/lib/mediaPreparation";
-import { prisma } from "@/lib/prisma";
+import { saveSocialAccountTokens } from "@/lib/socialAccounts";
 
 export const CORE_LAUNCH_PLATFORMS = [
   "twitter",
@@ -557,16 +557,11 @@ async function refreshYouTubeAccount(account: SocialAccount) {
     throw new Error("YouTube refresh did not return an access token.");
   }
 
-  const updated = await prisma.socialAccount.update({
-    where: { id: account.id },
-    data: {
-      accessToken: payload.access_token,
-      refreshToken: payload.refresh_token ?? account.refreshToken,
-      tokenExpiresAt: payload.expires_in ? new Date(Date.now() + payload.expires_in * 1000) : null,
-    },
+  return saveSocialAccountTokens(account.id, {
+    accessToken: payload.access_token,
+    refreshToken: payload.refresh_token,
+    tokenExpiresAt: payload.expires_in ? new Date(Date.now() + payload.expires_in * 1000) : null,
   });
-
-  return updated;
 }
 
 async function publishYouTube(input: ProviderPublishInput): Promise<ProviderPublishResult> {

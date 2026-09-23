@@ -46,7 +46,7 @@ export async function GET() {
             authorUser: {
               select: {
                 email: true,
-                userProfile: true,
+                fullName: true,
               },
             },
           },

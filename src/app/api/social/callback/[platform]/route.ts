@@ -1,20 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Agent } from "@atproto/api";
-import { prisma } from "@/lib/prisma";
-import { Prisma } from "@prisma/client";
 import {
   decodeState,
   getCallbackUrl,
   getPlatformConfig,
   isSupportedPlatform,
+  readPkceVerifier,
   type MetaPageOption,
   type SocialTokenData,
-  type SocialTokens,
   type SupportedPlatform,
 } from "@/lib/socialAuth";
 import { completeBlueskyOAuth } from "@/lib/blueskyOAuth";
 import { logAuditEvent } from "@/lib/audit";
-import { parseLegacyConnectedAccounts, upsertSocialAccountFromToken } from "@/lib/workspaces";
+import { upsertSocialAccountFromToken } from "@/lib/socialAccounts";
+import { ensureWorkspaceMembership } from "@/lib/workspaces";
 
 export async function GET(
   request: NextRequest,
@@ -129,7 +128,7 @@ async function exchangeCodeForTokens(
   const callbackUrl = getCallbackUrl(platform);
 
   if (platform === "twitter") {
-    const verifier = request.cookies.get("oauth_pkce")?.value ?? "";
+    const verifier = readPkceVerifier(request.cookies.get("oauth_pkce")?.value);
     const body = new URLSearchParams({
       code,
       grant_type: "authorization_code",
@@ -156,7 +155,7 @@ async function exchangeCodeForTokens(
   }
 
   if (platform === "tiktok") {
-    const verifier = request.cookies.get("oauth_pkce")?.value ?? "";
+    const verifier = readPkceVerifier(request.cookies.get("oauth_pkce")?.value);
     const body = new URLSearchParams({
       client_key: clientId,
       client_secret: clientSecret,
@@ -213,7 +212,7 @@ async function exchangeCodeForTokens(
   }
 
   if (config.usePKCE) {
-    const verifier = request.cookies.get("oauth_pkce")?.value ?? "";
+    const verifier = readPkceVerifier(request.cookies.get("oauth_pkce")?.value);
     if (!verifier) {
       throw new Error(`${platform} token exchange is missing the PKCE verifier.`);
     }
@@ -481,62 +480,27 @@ async function fetchProfile(
 
 async function saveTokens(
   userId: string,
-  clientId: string,
+  workspaceId: string,
   platform: SupportedPlatform,
   data: Partial<SocialTokenData> & { accessToken: string }
 ) {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { socialTokens: true, connectedAccounts: true },
-  });
-  const existing = ((user?.socialTokens ?? {}) as unknown as SocialTokens) ?? {};
-  const connectedAccounts = parseLegacyConnectedAccounts(user?.connectedAccounts);
+  await ensureWorkspaceMembership(userId, workspaceId);
 
-  const tokenEntry: SocialTokenData = {
-    accessToken: data.accessToken,
-    refreshToken: data.refreshToken,
-    expiresAt: data.expiresAt,
+  const account = await upsertSocialAccountFromToken(workspaceId, platform, {
+    ...data,
     accountId: data.accountId ?? "unknown",
     accountName: data.accountName ?? platform,
-    accountAvatar: data.accountAvatar,
-    scope: data.scope,
-    pageId: data.pageId,
-    pageName: data.pageName,
-    pageAccessToken: data.pageAccessToken,
-    connectedAt: new Date().toISOString(),
-    metadata: data.metadata,
-  };
-
-  const updated: SocialTokens = {
-    ...existing,
-    [clientId]: {
-      ...(existing[clientId] ?? {}),
-      [platform]: tokenEntry,
-    },
-  };
-
-  connectedAccounts[clientId] = Array.from(
-    new Set([...(connectedAccounts[clientId] ?? []), platform])
-  );
-
-  await prisma.user.update({
-    where: { id: userId },
-    data: {
-      socialTokens: updated as unknown as Prisma.InputJsonValue,
-      connectedAccounts: connectedAccounts as unknown as Prisma.InputJsonValue,
-    },
   });
 
-  await upsertSocialAccountFromToken(clientId, platform, tokenEntry);
   await logAuditEvent({
     action: "social.connected",
     entityType: "social_account",
-    entityId: `${clientId}:${platform}`,
+    entityId: account.id,
     userId,
-    workspaceId: clientId,
+    workspaceId,
     payload: {
       platform,
-      accountId: tokenEntry.accountId,
+      accountId: account.externalAccountId,
     },
   });
 }

@@ -24,8 +24,13 @@
 ## Discount Code Integrity
 
 - Apply a valid discount code in checkout and confirm the discount still works.
-- Replay the redeem request from DevTools while changing `percentOff` in the body and confirm the server ignores the tampered value.
-- Replay the redeem request with a different `codeId` and confirm the server validates the code from the code string, not the spoofed ID.
+- Replay `/api/billing/checkout` from DevTools with a different `plan` or a tampered price field and confirm the charged amount in the `payments` table is computed server-side.
+- Confirm a second paid purchase by the same account rejects discount codes.
+
+## Token Encryption
+
+- Connect any provider, then confirm `social_accounts.access_token` in Neon starts with `v1.` (ciphertext), not a raw token.
+- Confirm `oauth_session_store.value` rows are ciphertext and the `oauth_pkce` cookie is not a raw verifier.
 
 ## Cron Protection
 

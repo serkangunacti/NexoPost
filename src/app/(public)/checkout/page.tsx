@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useLanguage } from "@/context/LanguageContext";
 import { useApp } from "@/context/AppContext";
 import { formatDateTime, getSubscriptionSnapshot } from "@/lib/subscription";
+import { IS_TEST_PAYMENT } from "@/lib/paymentMode";
 import {
   PLAN_ORDER,
   formatPriceCents,
@@ -49,7 +50,7 @@ function parseStep(value: string | null): CheckoutStep {
 
 function CheckoutContent() {
   const { t } = useLanguage();
-  const { startPlan, subscription, userProfile } = useApp();
+  const { isLoggedIn, startPlan, subscription, userProfile } = useApp();
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialPlan = parseSelectedPlan(searchParams.get("plan"), subscription?.plan && subscription.plan !== "free" ? subscription.plan : "pro");
@@ -65,6 +66,7 @@ function CheckoutContent() {
   const [discountLoading, setDiscountLoading] = useState(false);
   const [appliedDiscount, setAppliedDiscount] = useState<AppliedDiscount | null>(null);
   const [purchaseResult, setPurchaseResult] = useState<PurchaseResult | null>(null);
+  const [purchaseError, setPurchaseError] = useState("");
 
   const plans = PAID_PLAN_IDS.map((id) => {
     const plan = getPlanConfig(id);
@@ -139,36 +141,26 @@ function CheckoutContent() {
       return;
     }
 
-    setLoading(true);
-    await new Promise((resolve) => setTimeout(resolve, 1200));
-
-    const result = startPlan({
-      billingCycle,
-      email: email.trim(),
-      fullName: fullName.trim(),
-      plan: selectedPlan,
-    });
-
-    if (appliedDiscount) {
-      await fetch("/api/discount-codes/redeem", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          billingCycle,
-          code: appliedDiscount.code,
-          email: email.trim(),
-          orderContext: {
-            finalPriceCents,
-            originalPriceCents: basePriceCents,
-          },
-          plan: selectedPlan,
-        }),
-      }).catch(() => undefined);
+    if (!isLoggedIn) {
+      router.push("/login");
+      return;
     }
 
-    setPurchaseResult(result);
-    setLoading(false);
-    setStep("success");
+    setLoading(true);
+    setPurchaseError("");
+    try {
+      const result = await startPlan({
+        billingCycle,
+        discountCode: appliedDiscount?.code ?? null,
+        plan: selectedPlan,
+      });
+      setPurchaseResult(result);
+      setStep("success");
+    } catch (error) {
+      setPurchaseError(error instanceof Error ? error.message : "Payment could not be completed.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (step === "success") {
@@ -439,8 +431,12 @@ function CheckoutContent() {
                   )}
                 </button>
 
+                {purchaseError ? <p className="text-center text-sm text-red-300">{purchaseError}</p> : null}
+
                 <p className="text-center text-neutral-600 text-xs font-medium">
-                  {t.checkout.security_note}
+                  {IS_TEST_PAYMENT
+                    ? "Test mode: no real payment is taken and card details are never sent."
+                    : t.checkout.security_note}
                 </p>
 
                 <button

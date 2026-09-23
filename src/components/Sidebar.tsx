@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { useApp } from "@/context/AppContext";
+import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import { getPlanConfig, getPlanLabel, isUnlimited, type PlanId } from "@/lib/plans";
 import {
@@ -57,9 +58,27 @@ function Modal({ title, icon, onClose, children }: { title: string; icon: React.
 }
 
 /* ── Add Workspace Modal ── */
-function AddWorkspaceModal({ onClose, onAdd }: { onClose: () => void; onAdd: (name: string) => void }) {
+type ModalAction = Promise<{ ok: true } | { ok: false; error: string }>;
+
+// Keeps a modal open with the server's error message when a save fails.
+function useModalSubmit(onClose: () => void) {
+  const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
+  const run = async (action: () => ModalAction) => {
+    setSaving(true);
+    setError("");
+    const result = await action();
+    setSaving(false);
+    if (result.ok) onClose();
+    else setError(result.error);
+  };
+  return { error, saving, run };
+}
+
+function AddWorkspaceModal({ onClose, onAdd }: { onClose: () => void; onAdd: (name: string) => ModalAction }) {
   const [name, setName] = useState("");
-  const handleSubmit = (e: React.SyntheticEvent) => { e.preventDefault(); if (!name.trim()) return; onAdd(name.trim()); onClose(); };
+  const { error, saving, run } = useModalSubmit(onClose);
+  const handleSubmit = (e: React.SyntheticEvent) => { e.preventDefault(); if (!name.trim()) return; run(() => onAdd(name.trim())); };
   return (
     <Modal title="New Workspace" icon={<Building2 className="w-5 h-5 text-violet-400" />} onClose={onClose}>
       <form onSubmit={handleSubmit} className="space-y-5">
@@ -69,19 +88,21 @@ function AddWorkspaceModal({ onClose, onAdd }: { onClose: () => void; onAdd: (na
         </div>
         <div className="flex gap-3 pt-2">
           <button type="button" onClick={onClose} className="flex-1 py-3 rounded-xl border border-white/10 text-neutral-400 hover:text-white hover:bg-white/5 font-semibold transition-all">Cancel</button>
-          <button type="submit" disabled={!name.trim()} className="flex-1 py-3 rounded-xl bg-violet-600 hover:bg-violet-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold transition-all flex items-center justify-center gap-2">
+          <button type="submit" disabled={!name.trim() || saving} className="flex-1 py-3 rounded-xl bg-violet-600 hover:bg-violet-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold transition-all flex items-center justify-center gap-2">
             <Plus className="w-4 h-4" /> Add
           </button>
         </div>
+        {error && <p className="text-sm text-red-300">{error}</p>}
       </form>
     </Modal>
   );
 }
 
 /* ── Edit Client Modal ── */
-function EditClientModal({ clientName, onClose, onSave }: { clientName: string; onClose: () => void; onSave: (name: string) => void }) {
+function EditClientModal({ clientName, onClose, onSave }: { clientName: string; onClose: () => void; onSave: (name: string) => ModalAction }) {
   const [name, setName] = useState(clientName);
-  const handleSubmit = (e: React.SyntheticEvent) => { e.preventDefault(); if (!name.trim()) return; onSave(name.trim()); onClose(); };
+  const { error, saving, run } = useModalSubmit(onClose);
+  const handleSubmit = (e: React.SyntheticEvent) => { e.preventDefault(); if (!name.trim()) return; run(() => onSave(name.trim())); };
   return (
     <Modal title="Edit Client" icon={<Building2 className="w-5 h-5 text-violet-400" />} onClose={onClose}>
       <form onSubmit={handleSubmit} className="space-y-5">
@@ -91,8 +112,9 @@ function EditClientModal({ clientName, onClose, onSave }: { clientName: string; 
         </div>
         <div className="flex gap-3 pt-2">
           <button type="button" onClick={onClose} className="flex-1 py-3 rounded-xl border border-white/10 text-neutral-400 hover:text-white hover:bg-white/5 font-semibold transition-all">Cancel</button>
-          <button type="submit" disabled={!name.trim()} className="flex-1 py-3 rounded-xl bg-violet-600 hover:bg-violet-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold transition-all">Save</button>
+          <button type="submit" disabled={!name.trim() || saving} className="flex-1 py-3 rounded-xl bg-violet-600 hover:bg-violet-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold transition-all">Save</button>
         </div>
+        {error && <p className="text-sm text-red-300">{error}</p>}
       </form>
     </Modal>
   );
@@ -102,25 +124,26 @@ function EditClientModal({ clientName, onClose, onSave }: { clientName: string; 
 function EditProfileModal({ profile, onClose, onSave }: {
   profile: { fullName: string; companyName: string; phone: string; email: string };
   onClose: () => void;
-  onSave: (updates: { fullName: string; companyName: string; phone: string; email: string }) => void;
+  onSave: (updates: { fullName: string; companyName: string; phone: string }) => ModalAction;
 }) {
   const [fullName, setFullName] = useState(profile.fullName);
   const [companyName, setCompanyName] = useState(profile.companyName);
   const [phone, setPhone] = useState(profile.phone);
-  const [email, setEmail] = useState(profile.email);
-  const valid = fullName.trim() && companyName.trim() && phone.trim() && email.trim();
-  const handleSubmit = (e: React.SyntheticEvent) => { e.preventDefault(); if (!valid) return; onSave({ fullName: fullName.trim(), companyName: companyName.trim(), phone: phone.trim(), email: email.trim() }); onClose(); };
+  const { error, saving, run } = useModalSubmit(onClose);
+  const valid = fullName.trim() && companyName.trim() && phone.trim();
+  const handleSubmit = (e: React.SyntheticEvent) => { e.preventDefault(); if (!valid) return; run(() => onSave({ fullName: fullName.trim(), companyName: companyName.trim(), phone: phone.trim() })); };
   return (
     <Modal title="Edit Profile" icon={<User className="w-5 h-5 text-violet-400" />} onClose={onClose}>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div><label className={labelCls}>Full Name <span className="text-red-400">*</span></label><input type="text" value={fullName} onChange={e => setFullName(e.target.value)} className={inputCls} /></div>
         <div><label className={labelCls}>Company Name <span className="text-red-400">*</span></label><input type="text" value={companyName} onChange={e => setCompanyName(e.target.value)} className={inputCls} /></div>
         <div><label className={labelCls}>Phone <span className="text-red-400">*</span></label><input type="tel" value={phone} onChange={e => setPhone(e.target.value)} className={inputCls} /></div>
-        <div><label className={labelCls}>Email <span className="text-red-400">*</span></label><input type="email" value={email} onChange={e => setEmail(e.target.value)} className={inputCls} /></div>
+        <div><label className={labelCls}>Email</label><input type="email" value={profile.email} readOnly disabled className={`${inputCls} opacity-60 cursor-not-allowed`} /></div>
         <div className="flex gap-3 pt-2">
           <button type="button" onClick={onClose} className="flex-1 py-3 rounded-xl border border-white/10 text-neutral-400 hover:text-white hover:bg-white/5 font-semibold transition-all">Cancel</button>
-          <button type="submit" disabled={!valid} className="flex-1 py-3 rounded-xl bg-violet-600 hover:bg-violet-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold transition-all">Save</button>
+          <button type="submit" disabled={!valid || saving} className="flex-1 py-3 rounded-xl bg-violet-600 hover:bg-violet-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold transition-all">Save</button>
         </div>
+        {error && <p className="text-sm text-red-300">{error}</p>}
       </form>
     </Modal>
   );
@@ -148,16 +171,31 @@ function SwitchWorkspaceModal({ clients, activeId, onSelect, onClose }: {
 }
 
 /* ── Change Password Modal ── */
-function ChangePasswordModal({ onClose }: { onClose: () => void }) {
+function ChangePasswordModal({ userId, onClose }: { userId: string; onClose: () => void }) {
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
   const [confirm, setConfirm] = useState("");
   const [done, setDone] = useState(false);
-  const valid = current.trim() && next.trim().length >= 6 && next === confirm;
-  const handleSubmit = (e: React.SyntheticEvent) => {
+  const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
+  const valid = current.trim() && next.trim().length >= 8 && next === confirm;
+  const handleSubmit = async (e: React.SyntheticEvent) => {
     e.preventDefault();
     if (!valid) return;
-    setDone(true);
+    setSaving(true);
+    setError("");
+    const res = await fetch(`/api/users/${encodeURIComponent(userId)}/password`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ currentPassword: current, newPassword: next }),
+    });
+    setSaving(false);
+    if (res.ok) {
+      setDone(true);
+      return;
+    }
+    const payload = await res.json().catch(() => ({})) as { error?: string };
+    setError(payload.error ?? "Password could not be changed.");
   };
   return (
     <Modal title="Change Password" icon={<KeyRound className="w-5 h-5 text-violet-400" />} onClose={onClose}>
@@ -172,12 +210,13 @@ function ChangePasswordModal({ onClose }: { onClose: () => void }) {
       ) : (
         <form onSubmit={handleSubmit} className="space-y-4">
           <div><label className={labelCls}>Current Password <span className="text-red-400">*</span></label><input type="password" value={current} onChange={e => setCurrent(e.target.value)} className={inputCls} /></div>
-          <div><label className={labelCls}>New Password <span className="text-red-400">*</span></label><input type="password" value={next} onChange={e => setNext(e.target.value)} placeholder="At least 6 characters" className={inputCls} /></div>
+          <div><label className={labelCls}>New Password <span className="text-red-400">*</span></label><input type="password" value={next} onChange={e => setNext(e.target.value)} placeholder="At least 8 characters" className={inputCls} /></div>
           <div><label className={labelCls}>Confirm New Password <span className="text-red-400">*</span></label><input type="password" value={confirm} onChange={e => setConfirm(e.target.value)} className={inputCls} /></div>
           {confirm && next !== confirm && <p className="text-red-400 text-xs font-semibold">Passwords do not match.</p>}
+          {error && <p className="text-red-400 text-xs font-semibold">{error}</p>}
           <div className="flex gap-3 pt-2">
             <button type="button" onClick={onClose} className="flex-1 py-3 rounded-xl border border-white/10 text-neutral-400 hover:text-white hover:bg-white/5 font-semibold transition-all">Cancel</button>
-            <button type="submit" disabled={!valid} className="flex-1 py-3 rounded-xl bg-violet-600 hover:bg-violet-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold transition-all">Save</button>
+            <button type="submit" disabled={!valid || saving} className="flex-1 py-3 rounded-xl bg-violet-600 hover:bg-violet-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold transition-all">Save</button>
           </div>
         </form>
       )}
@@ -238,6 +277,7 @@ export default function Sidebar({ className }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { userType, activeClient, setActiveClient, clients, addClient, renameClient, logout, userProfile, updateUserProfile, isStaff, isSuperadmin } = useApp();
+  const { data: authSession } = useSession();
   const [supportUnreadCount, setSupportUnreadCount] = useState(0);
   const visibleSupportUnreadCount = isStaff ? 0 : supportUnreadCount;
 
@@ -311,7 +351,7 @@ export default function Sidebar({ className }: SidebarProps) {
         />
       )}
       {showChangePassword && (
-        <ChangePasswordModal onClose={() => setShowChangePassword(false)} />
+        <ChangePasswordModal userId={authSession?.user?.id ?? ""} onClose={() => setShowChangePassword(false)} />
       )}
       {/* Hamburger button — mobile only, always visible when sidebar is closed */}
       <button

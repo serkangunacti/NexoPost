@@ -1,9 +1,9 @@
-import type { Prisma, PublicationJob, SocialAccount } from "@prisma/client";
+import type { Prisma, PublicationJob } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { logAuditEvent } from "@/lib/audit";
-import { getProviderAdapter } from "@/lib/providers";
+import { getProviderAdapter, type ProviderNormalizedContent, type ProviderPublishResult } from "@/lib/providers";
 import { buildPostPlatformConfig, normalizePostPlatformConfig, type PostPlatformConfig } from "@/lib/postPlatformConfig";
-import { findConnectedAccount, getWorkspaceSocialAccounts } from "@/lib/workspaces";
+import { getConnectedSocialAccount } from "@/lib/socialAccounts";
 import { reservePublicationUsage } from "@/lib/usage";
 
 type PostPayload = {
@@ -278,6 +278,22 @@ async function markJobBlocked(
   await finalizePostStatus(tx, job.postId);
 }
 
+function buildResultPayload(published: ProviderPublishResult, normalized: ProviderNormalizedContent) {
+  return {
+    ...(published.payload ?? {}),
+    normalizedWarnings: normalized.warnings,
+    preparedMedia: normalized.preparedMedia.map((asset) => ({
+      originalUrl: asset.originalUrl,
+      preparedUrl: asset.preparedUrl,
+      kind: asset.kind,
+      ratio: asset.targetAspectRatio,
+      mode: asset.transformMode,
+    })),
+  } as Prisma.InputJsonValue;
+}
+
+// Provider calls (uploads, container polling) can take far longer than an
+// interactive transaction allows, so only the bookkeeping runs in transactions.
 export async function runPublicationJob(jobId: string) {
   const job = await prisma.publicationJob.findUnique({
     where: { id: jobId },
@@ -287,114 +303,101 @@ export async function runPublicationJob(jobId: string) {
     return { status: "missing" as const };
   }
 
-  const socialAccounts = await getWorkspaceSocialAccounts(job.workspaceId);
-  const socialAccount = findConnectedAccount(socialAccounts, job.platform);
+  // Claim the job so overlapping cron runs cannot publish it twice.
+  const claimed = await prisma.publicationJob.updateMany({
+    where: { id: job.id, status: "PENDING" },
+    data: {
+      status: "PROCESSING",
+      startedAt: new Date(),
+      attempts: { increment: 1 },
+      lastError: null,
+    },
+  });
 
-  return prisma.$transaction(async (tx) => {
+  if (claimed.count === 0) {
+    return { status: "skipped" as const };
+  }
+
+  const fail = async (message: string) => {
+    await prisma.$transaction((tx) => markJobFailed(tx, job, message));
+    return { status: "failed" as const };
+  };
+
+  const socialAccount = await getConnectedSocialAccount(job.workspaceId, job.platform);
+  if (!socialAccount) {
+    return fail(`${job.platform} is not connected for this workspace.`);
+  }
+
+  const adapter = getProviderAdapter(job.platform);
+  const normalized = await adapter.normalizeContent(await getJobPayload(job));
+  const validation = await adapter.validateMedia(normalized);
+
+  if (!validation.ok) {
+    return fail(validation.issues.join(" "));
+  }
+
+  const usageReservation = await prisma.$transaction((tx) =>
+    reservePublicationUsage(tx, {
+      job,
+      mediaUrls: normalized.mediaUrls,
+    })
+  );
+
+  if (!usageReservation.ok) {
+    await prisma.$transaction((tx) => markJobBlocked(tx, job, usageReservation.reason, usageReservation.message));
+    return { status: "blocked" as const, reason: usageReservation.reason };
+  }
+
+  let published: ProviderPublishResult;
+  try {
+    published = await adapter.publishNow({
+      content: normalized.content,
+      mediaUrls: normalized.mediaUrls,
+      preparedMedia: normalized.preparedMedia,
+      postId: job.postId,
+      socialAccount,
+      workspaceId: job.workspaceId,
+    });
+  } catch (error) {
+    return fail(error instanceof Error ? error.message : "Publishing failed");
+  }
+
+  const resultPayload = buildResultPayload(published, normalized);
+  await prisma.$transaction(async (tx) => {
     await tx.publicationJob.update({
       where: { id: job.id },
       data: {
-        status: "PROCESSING",
-        startedAt: new Date(),
-        attempts: { increment: 1 },
+        status: "SUCCEEDED",
+        finishedAt: new Date(),
         lastError: null,
       },
     });
 
-    const payload = await getJobPayload(job);
-
-    if (!socialAccount) {
-      await markJobFailed(tx, job, `${job.platform} is not connected for this workspace.`);
-      return { status: "failed" as const };
-    }
-
-    const adapter = getProviderAdapter(job.platform);
-    const normalized = await adapter.normalizeContent(payload);
-    const validation = await adapter.validateMedia(normalized);
-
-    if (!validation.ok) {
-      await markJobFailed(tx, job, validation.issues.join(" "));
-      return { status: "failed" as const };
-    }
-
-    const usageReservation = await reservePublicationUsage(tx, {
-      job,
-      mediaUrls: normalized.mediaUrls,
+    await tx.publicationResult.upsert({
+      where: { jobId: job.id },
+      create: {
+        jobId: job.id,
+        postId: job.postId,
+        workspaceId: job.workspaceId,
+        platform: job.platform,
+        status: "SUCCEEDED",
+        remoteId: published.remoteId,
+        remoteUrl: published.remoteUrl,
+        payload: resultPayload,
+      },
+      update: {
+        status: "SUCCEEDED",
+        remoteId: published.remoteId,
+        remoteUrl: published.remoteUrl,
+        payload: resultPayload,
+        errorMessage: null,
+      },
     });
 
-    if (!usageReservation.ok) {
-      await markJobBlocked(tx, job, usageReservation.reason, usageReservation.message);
-      return { status: "blocked" as const, reason: usageReservation.reason };
-    }
-
-    try {
-      const published = await adapter.publishNow({
-        content: normalized.content,
-        mediaUrls: normalized.mediaUrls,
-        preparedMedia: normalized.preparedMedia,
-        postId: job.postId,
-        socialAccount: socialAccount as SocialAccount,
-        workspaceId: job.workspaceId,
-      });
-
-      await tx.publicationJob.update({
-        where: { id: job.id },
-        data: {
-          status: "SUCCEEDED",
-          finishedAt: new Date(),
-          lastError: null,
-        },
-      });
-
-      await tx.publicationResult.upsert({
-        where: { jobId: job.id },
-        create: {
-          jobId: job.id,
-          postId: job.postId,
-          workspaceId: job.workspaceId,
-          platform: job.platform,
-          status: "SUCCEEDED",
-          remoteId: published.remoteId,
-          remoteUrl: published.remoteUrl,
-          payload: {
-            ...(published.payload ?? {}),
-            normalizedWarnings: normalized.warnings,
-            preparedMedia: normalized.preparedMedia.map((asset) => ({
-              originalUrl: asset.originalUrl,
-              preparedUrl: asset.preparedUrl,
-              kind: asset.kind,
-              ratio: asset.targetAspectRatio,
-              mode: asset.transformMode,
-            })),
-          } as Prisma.InputJsonValue,
-        },
-        update: {
-          status: "SUCCEEDED",
-          remoteId: published.remoteId,
-          remoteUrl: published.remoteUrl,
-          payload: {
-            ...(published.payload ?? {}),
-            normalizedWarnings: normalized.warnings,
-            preparedMedia: normalized.preparedMedia.map((asset) => ({
-              originalUrl: asset.originalUrl,
-              preparedUrl: asset.preparedUrl,
-              kind: asset.kind,
-              ratio: asset.targetAspectRatio,
-              mode: asset.transformMode,
-            })),
-          } as Prisma.InputJsonValue,
-          errorMessage: null,
-        },
-      });
-
-      await finalizePostStatus(tx, job.postId);
-      return { status: "succeeded" as const };
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Publishing failed";
-      await markJobFailed(tx, job, message);
-      return { status: "failed" as const };
-    }
+    await finalizePostStatus(tx, job.postId);
   });
+
+  return { status: "succeeded" as const };
 }
 
 export async function runDuePublicationJobs(limit = 20) {

@@ -24,7 +24,7 @@ export async function GET() {
         user: {
           select: {
             email: true,
-            userProfile: true,
+            fullName: true,
           },
         },
         workspace: {
@@ -47,7 +47,7 @@ export async function GET() {
             authorUser: {
               select: {
                 email: true,
-                userProfile: true,
+                fullName: true,
               },
             },
           },

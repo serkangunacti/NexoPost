@@ -37,13 +37,6 @@ export type SupportRequestView = {
   replies: SupportReplyView[];
 };
 
-type JsonObject = Record<string, unknown>;
-
-export function parseObjectJson<T extends JsonObject>(value: Prisma.JsonValue | null): T | null {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
-  return value as T;
-}
-
 export function parseAttachmentUrls(value: Prisma.JsonValue | null): string[] {
   if (!Array.isArray(value)) return [];
   return value.filter((item): item is string => typeof item === "string" && item.startsWith("https://"));
@@ -161,13 +154,13 @@ export function serializeSupportRequest(
       createdAt: Date;
       updatedAt: Date;
       authorUser: {
-        email: string | null;
-        userProfile: Prisma.JsonValue | null;
+        email: string;
+        fullName: string;
       } | null;
     }>;
     user?: {
-      email: string | null;
-      userProfile: Prisma.JsonValue | null;
+      email: string;
+      fullName: string;
     };
     workspace?: {
       name: string;
@@ -186,7 +179,7 @@ export function serializeSupportRequest(
     user: request.user
       ? {
           email: request.user.email,
-          name: parseObjectJson<{ fullName?: string }>(request.user.userProfile)?.fullName ?? null,
+          name: request.user.fullName || null,
         }
       : undefined,
     workspace: request.workspace ?? null,
@@ -203,7 +196,7 @@ export function serializeSupportRequest(
       authorUser: reply.authorUser
         ? {
             email: reply.authorUser.email,
-            name: parseObjectJson<{ fullName?: string }>(reply.authorUser.userProfile)?.fullName ?? null,
+            name: reply.authorUser.fullName || null,
           }
         : null,
     })),

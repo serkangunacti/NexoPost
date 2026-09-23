@@ -1,29 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireSuperadminUser } from "@/lib/staff";
 import { ApiError, toErrorResponse } from "@/lib/http";
 import { logAuditEvent } from "@/lib/audit";
-import type { SubscriptionRecord } from "@/lib/subscription";
-
-function parseSubscription(value: Prisma.JsonValue | null): SubscriptionRecord | null {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
-  const candidate = value as Record<string, unknown>;
-  if (typeof candidate.plan !== "string" || typeof candidate.startedAt !== "string" || typeof candidate.billingCycle !== "string") {
-    return null;
-  }
-
-  return {
-    billingCycle: candidate.billingCycle as SubscriptionRecord["billingCycle"],
-    currentPeriodEnd: typeof candidate.currentPeriodEnd === "string" ? candidate.currentPeriodEnd : null,
-    currentPeriodStart: typeof candidate.currentPeriodStart === "string" ? candidate.currentPeriodStart : null,
-    expiresAt: typeof candidate.expiresAt === "string" ? candidate.expiresAt : null,
-    hasUsedTrial: Boolean(candidate.hasUsedTrial),
-    phase: (candidate.phase as SubscriptionRecord["phase"]) ?? "free",
-    plan: candidate.plan as SubscriptionRecord["plan"],
-    startedAt: candidate.startedAt,
-  };
-}
+import { assignPlan } from "@/lib/billing";
+import { isPlanId } from "@/lib/plans";
+import { toSubscriptionRecord } from "@/lib/subscription";
 
 export async function GET() {
   try {
@@ -34,10 +16,11 @@ export async function GET() {
       select: {
         id: true,
         email: true,
-        userType: true,
+        fullName: true,
+        companyName: true,
+        phone: true,
         subscription: true,
         superadminNote: true,
-        userProfile: true,
         workspaceMemberships: {
           select: {
             role: true,
@@ -78,7 +61,7 @@ export async function GET() {
     });
 
     const payload = users.map((user) => {
-      const subscription = parseSubscription(user.subscription as Prisma.JsonValue | null);
+      const subscription = user.subscription ? toSubscriptionRecord(user.subscription) : null;
       const workspaces = user.workspaceMemberships.map((membership) => {
         const publishFailures = membership.workspace.publicationResults.filter((result) =>
           ["FAILED", "BLOCKED_QUOTA", "BLOCKED_X_BUDGET", "BLOCKED_PLAN_ACCESS", "BLOCKED_DAILY_CAP"].includes(result.status)
@@ -106,10 +89,14 @@ export async function GET() {
       return {
         id: user.id,
         email: user.email,
-        plan: user.userType,
+        plan: subscription?.plan ?? "free",
         subscription,
         superadminNote: user.superadminNote,
-        userProfile: user.userProfile,
+        userProfile: {
+          fullName: user.fullName,
+          companyName: user.companyName,
+          phone: user.phone,
+        },
         workspaceCount: workspaces.length,
         workspaces,
         supportRequests: user.supportRequests.map((request) => ({
@@ -137,13 +124,16 @@ export async function PATCH(request: NextRequest) {
 
     if (body.type === "user") {
       if (!body.userId) throw new ApiError(400, "userId is required");
-      await prisma.user.update({
-        where: { id: body.userId },
-        data: {
-          ...(body.userType ? { userType: body.userType } : {}),
-          ...(body.superadminNote !== undefined ? { superadminNote: body.superadminNote } : {}),
-        },
-      });
+      if (body.userType !== undefined) {
+        if (!isPlanId(body.userType)) throw new ApiError(400, "Invalid plan");
+        await assignPlan(body.userId, body.userType);
+      }
+      if (body.superadminNote !== undefined) {
+        await prisma.user.update({
+          where: { id: body.userId },
+          data: { superadminNote: body.superadminNote },
+        });
+      }
       await logAuditEvent({
         action: "superadmin.user.updated",
         entityType: "user",

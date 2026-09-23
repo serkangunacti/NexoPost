@@ -1,14 +1,7 @@
 "use client";
-import React, { createContext, useContext, useEffect, useRef, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { useSession, signOut } from "next-auth/react";
-import {
-  BillingCycle,
-  PendingPlanChange,
-  PlanId,
-  SubscriptionRecord,
-  buildSubscriptionRecord,
-  getNextMonthStart,
-} from "@/lib/subscription";
+import type { BillingCycle, PendingPlanChange, PlanId, SubscriptionRecord } from "@/lib/subscription";
 
 type UserType = PlanId;
 type ActivationMode = "auto" | "trial" | "paid";
@@ -23,10 +16,9 @@ interface UserProfile {
   email: string;
   fullName: string;
   phone: string;
-  sessionId: string;
-  signedInAt: string;
 }
 
+// Mirrors the payload of GET /api/users/[id] (lib/workspaces buildAppSession).
 interface AppSession {
   activeClientId: string;
   clients: Client[];
@@ -40,45 +32,39 @@ interface AppSession {
   userType: UserType;
 }
 
-type PersistableAppSessionFields = Pick<AppSession, "activeClientId" | "userProfile">;
-
-interface StartPlanResult {
+export interface StartPlanResult {
   effectiveAt: string;
   phase: "free" | "trial" | "paid";
   scheduled: boolean;
 }
 
+type ActionResult = { ok: true } | { ok: false; error: string };
+
 interface AppContextType {
   isHydrated: boolean;
   userType: UserType;
-  setUserType: (type: UserType) => void;
   isLoggedIn: boolean;
-  setIsLoggedIn: (status: boolean) => void;
   pendingChange: PendingPlanChange | null;
   subscription: SubscriptionRecord | null;
   userProfile: UserProfile | null;
-  login: (input: { email: string; fullName: string; userType: UserType }) => void;
   logout: () => Promise<void>;
+  refreshSession: () => Promise<void>;
   startPlan: (input: {
     activationMode?: ActivationMode;
     billingCycle: BillingCycle;
-    companyName?: string;
-    email: string;
-    fullName: string;
-    phone?: string;
+    discountCode?: string | null;
     plan: UserType;
-  }) => StartPlanResult;
-  updateUserProfile: (updates: { fullName?: string; companyName?: string; phone?: string; email?: string }) => void;
+  }) => Promise<StartPlanResult>;
+  updateUserProfile: (updates: { fullName?: string; companyName?: string; phone?: string }) => Promise<ActionResult>;
   activeClient: Client;
   setActiveClient: (client: Client) => void;
   clients: Client[];
-  addClient: (name: string) => void;
-  removeClient: (clientId: string) => void;
-  renameClient: (clientId: string, name: string) => void;
+  addClient: (name: string) => Promise<ActionResult>;
+  removeClient: (clientId: string) => Promise<ActionResult>;
+  renameClient: (clientId: string, name: string) => Promise<ActionResult>;
   connectedAccounts: Record<string, string[]>;
   isStaff: boolean;
   isSuperadmin: boolean;
-  toggleAccount: (clientId: string, platformId: string) => void;
 }
 
 // Sentinel: used as fallback when no client workspaces exist
@@ -97,39 +83,59 @@ const defaultSession: AppSession = {
   userType: "free",
 };
 
+const notSignedIn: ActionResult = { ok: false, error: "You need to sign in first." };
+
 const defaultContextValue: AppContextType = {
   isHydrated: false,
   userType: "free",
-  setUserType: () => {},
   isLoggedIn: false,
-  setIsLoggedIn: () => {},
   pendingChange: null,
   subscription: null,
   userProfile: null,
-  login: () => {},
   logout: async () => {},
-  startPlan: () => ({ effectiveAt: "", phase: "paid", scheduled: false }),
-  updateUserProfile: () => {},
+  refreshSession: async () => {},
+  startPlan: async () => {
+    throw new Error(notSignedIn.error);
+  },
+  updateUserProfile: async () => notSignedIn,
   activeClient: defaultClient,
   setActiveClient: () => {},
   clients: [],
-  addClient: () => {},
-  removeClient: () => {},
-  renameClient: () => {},
+  addClient: async () => notSignedIn,
+  removeClient: async () => notSignedIn,
+  renameClient: async () => notSignedIn,
   connectedAccounts: {},
   isStaff: false,
   isSuperadmin: false,
-  toggleAccount: () => {},
 };
 
 // Context never undefined — default value provided
 const AppContext = createContext<AppContextType>(defaultContextValue);
+
+async function readError(response: Response, fallback: string) {
+  const payload = await response.json().catch(() => ({})) as { error?: string };
+  return payload.error ?? fallback;
+}
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<AppSession>(defaultSession);
   const [isHydrated, setIsHydrated] = useState(false);
   const uidRef = useRef<string | null>(null);
   const { data: authSession, status } = useSession();
+
+  const applySession = useCallback((data: Omit<AppSession, "isLoggedIn">) => {
+    setSession({ ...data, isLoggedIn: true });
+  }, []);
+
+  const refreshSession = useCallback(async () => {
+    const uid = uidRef.current;
+    if (!uid) return;
+
+    const res = await fetch(`/api/users/${uid}`, { cache: "no-store" });
+    if (res.ok) {
+      applySession(await res.json());
+    }
+  }, [applySession]);
 
   useEffect(() => {
     if (status === "loading") return;
@@ -150,67 +156,27 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
     uidRef.current = uid;
 
-    fetch(`/api/users/${uid}`)
-      .then(async (res) => {
-        if (!res.ok) return;
-        const data = await res.json() as AppSession;
-        setSession({
-          activeClientId: data.activeClientId ?? "",
-          clients: data.clients ?? [],
-          connectedAccounts: data.connectedAccounts ?? {},
-          isStaff: data.isStaff ?? false,
-          isSuperadmin: data.isSuperadmin ?? false,
-          isLoggedIn: true,
-          pendingChange: data.pendingChange ?? null,
-          subscription: data.subscription ?? null,
-          userProfile: data.userProfile ?? null,
-          userType: data.userType ?? "free",
-        });
-      })
+    refreshSession()
       .catch(console.error)
       .finally(() => setIsHydrated(true));
-  }, [status, authSession?.user?.id]);
+  }, [status, authSession?.user?.id, refreshSession]);
 
-  const persist = (updates: Partial<PersistableAppSessionFields>) => {
+  const updateUser = async (body: Record<string, unknown>): Promise<ActionResult> => {
     const uid = uidRef.current;
-    if (!uid) return;
-    fetch(`/api/users/${uid}`, {
+    if (!uid) return notSignedIn;
+
+    const res = await fetch(`/api/users/${uid}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(updates),
-    }).catch(console.error);
-  };
+      body: JSON.stringify(body),
+    });
 
-  const buildUserProfile = (
-    input: { email: string; fullName: string; companyName?: string; phone?: string },
-    existingProfile: UserProfile | null
-  ): UserProfile => ({
-    companyName: input.companyName ?? existingProfile?.companyName ?? "",
-    email: input.email,
-    fullName: input.fullName,
-    phone: input.phone ?? existingProfile?.phone ?? "",
-    sessionId:
-      existingProfile?.sessionId ??
-      (typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}`),
-    signedInAt: existingProfile?.signedInAt ?? new Date().toISOString(),
-  });
-
-  const setUserType = (type: UserType) => {
-    setSession((prev) => ({ ...prev, userType: type }));
-  };
-
-  const setIsLoggedIn = (status: boolean) => {
-    if (!status) {
-      logout();
-      return;
+    if (!res.ok) {
+      return { ok: false, error: await readError(res, "Could not save your changes.") };
     }
-    setSession((prev) => ({ ...prev, isLoggedIn: true }));
-  };
 
-  const login = ({ email, fullName, userType }: { email: string; fullName: string; userType: UserType }) => {
-    const userProfile = buildUserProfile({ email, fullName }, session.userProfile);
-    setSession((prev) => ({ ...prev, isLoggedIn: true, userProfile, userType }));
-    persist({ userProfile });
+    applySession(await res.json());
+    return { ok: true };
   };
 
   const logout = async () => {
@@ -219,135 +185,69 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setSession(defaultSession);
   };
 
-  const updateUserProfile = (updates: { fullName?: string; companyName?: string; phone?: string; email?: string }) => {
-    if (!session.userProfile) return;
-    const userProfile = { ...session.userProfile, ...updates };
-    setSession((prev) => ({ ...prev, userProfile }));
-    persist({ userProfile });
-  };
+  const updateUserProfile = (updates: { fullName?: string; companyName?: string; phone?: string }) =>
+    updateUser(updates);
 
-  const startPlan = ({
-    activationMode = "auto",
-    billingCycle,
-    companyName = "",
-    email,
-    fullName,
-    phone = "",
-    plan,
-  }: {
-    activationMode?: ActivationMode;
-    billingCycle: BillingCycle;
-    companyName?: string;
-    email: string;
-    fullName: string;
-    phone?: string;
-    plan: UserType;
-  }): StartPlanResult => {
-    const now = new Date();
-    const currentSubscription = session.subscription;
-    const hasUsedTrial = currentSubscription?.hasUsedTrial ?? false;
-    const isActivePaidSubscription =
-      currentSubscription?.phase === "paid" &&
-      (!!currentSubscription.expiresAt && new Date(currentSubscription.expiresAt).getTime() > now.getTime());
+  const startPlan: AppContextType["startPlan"] = async (input) => {
+    const res = await fetch("/api/billing/checkout", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    });
 
-    if (
-      isActivePaidSubscription &&
-      currentSubscription &&
-      (currentSubscription.plan !== plan || currentSubscription.billingCycle !== billingCycle)
-    ) {
-      const effectiveAt = getNextMonthStart(now).toISOString();
-      const pendingChange: PendingPlanChange = { billingCycle, effectiveAt, plan };
-      const userProfile = buildUserProfile({ email, fullName, companyName, phone }, session.userProfile);
-      setSession((prev) => ({ ...prev, isLoggedIn: true, pendingChange, userProfile }));
-      persist({ userProfile });
-      return { effectiveAt, phase: "paid", scheduled: true };
+    if (!res.ok) {
+      throw new Error(await readError(res, "Plan could not be activated."));
     }
 
-    const phase: SubscriptionRecord["phase"] =
-      plan === "free"
-        ? "free"
-        : activationMode === "trial"
-          ? "trial"
-          : activationMode === "paid"
-            ? "paid"
-            : hasUsedTrial
-              ? "paid"
-              : "trial";
-
-    const subscription: SubscriptionRecord =
-      phase === "trial"
-        ? {
-            billingCycle,
-            currentPeriodEnd: new Date(now.getTime() + 15 * 24 * 60 * 60 * 1000).toISOString(),
-            currentPeriodStart: now.toISOString(),
-            expiresAt: new Date(now.getTime() + 15 * 24 * 60 * 60 * 1000).toISOString(),
-            hasUsedTrial: true,
-            phase,
-            plan,
-            startedAt: now.toISOString(),
-          }
-        : buildSubscriptionRecord({
-            billingCycle,
-            hasUsedTrial: phase !== "free",
-            phase,
-            plan,
-            startedAt: now,
-          });
-
-    const userProfile = buildUserProfile({ email, fullName, companyName, phone }, session.userProfile);
-
-    const nextSession: AppSession = {
-      ...session,
-      isLoggedIn: true,
-      pendingChange: null,
-      subscription,
-      userProfile,
-      userType: plan,
-    };
-
-    setSession(nextSession);
-    persist({ userProfile });
-
-    return { effectiveAt: now.toISOString(), phase, scheduled: false };
+    const result = await res.json() as StartPlanResult;
+    await refreshSession();
+    return result;
   };
 
-  const toggleAccount = (clientId: string, platformId: string) => {
-    const current = session.connectedAccounts[clientId] || [];
-    const next = current.includes(platformId)
-      ? current.filter((id) => id !== platformId)
-      : [...current, platformId];
-    const connectedAccounts = { ...session.connectedAccounts, [clientId]: next };
-    setSession((prev) => ({ ...prev, connectedAccounts }));
+  const addClient = async (name: string): Promise<ActionResult> => {
+    const res = await fetch("/api/workspaces", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name }),
+    });
+
+    if (!res.ok) {
+      return { ok: false, error: await readError(res, "Workspace could not be created.") };
+    }
+
+    await refreshSession();
+    return { ok: true };
   };
 
-  const addClient = (name: string) => {
-    const newClient: Client = { id: Date.now().toString(), name };
-    const clients = [...session.clients, newClient];
-    const connectedAccounts = { ...session.connectedAccounts, [newClient.id]: [] };
-    setSession((prev) => ({ ...prev, activeClientId: newClient.id, clients, connectedAccounts }));
+  const renameClient = async (clientId: string, name: string): Promise<ActionResult> => {
+    const res = await fetch(`/api/workspaces/${encodeURIComponent(clientId)}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name }),
+    });
+
+    if (!res.ok) {
+      return { ok: false, error: await readError(res, "Workspace could not be renamed.") };
+    }
+
+    await refreshSession();
+    return { ok: true };
   };
 
-  const renameClient = (clientId: string, name: string) => {
-    const trimmedName = name.trim();
-    if (!trimmedName) return;
-    const clients = session.clients.map((c) => c.id === clientId ? { ...c, name: trimmedName } : c);
-    setSession((prev) => ({ ...prev, clients }));
-  };
+  const removeClient = async (clientId: string): Promise<ActionResult> => {
+    const res = await fetch(`/api/workspaces/${encodeURIComponent(clientId)}`, { method: "DELETE" });
 
-  const removeClient = (clientId: string) => {
-    if (session.clients.length === 1) return;
-    const clients = session.clients.filter((c) => c.id !== clientId);
-    if (clients.length === session.clients.length) return;
-    const connectedAccounts = { ...session.connectedAccounts };
-    delete connectedAccounts[clientId];
-    const activeClientId =
-      session.activeClientId === clientId ? clients[0].id : session.activeClientId;
-    setSession((prev) => ({ ...prev, activeClientId, clients, connectedAccounts }));
+    if (!res.ok) {
+      return { ok: false, error: await readError(res, "Workspace could not be deleted.") };
+    }
+
+    await refreshSession();
+    return { ok: true };
   };
 
   const setActiveClient = (client: Client) => {
     setSession((prev) => ({ ...prev, activeClientId: client.id }));
-    persist({ activeClientId: client.id });
+    updateUser({ activeClientId: client.id }).catch(console.error);
   };
 
   const activeClient =
@@ -360,14 +260,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       value={{
         isHydrated,
         userType: session.userType,
-        setUserType,
         isLoggedIn: session.isLoggedIn,
-        setIsLoggedIn,
         pendingChange: session.pendingChange,
         subscription: session.subscription,
         userProfile: session.userProfile,
-        login,
         logout,
+        refreshSession,
         startPlan,
         updateUserProfile,
         activeClient,
@@ -379,7 +277,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         connectedAccounts: session.connectedAccounts,
         isStaff: session.isStaff,
         isSuperadmin: session.isSuperadmin,
-        toggleAccount,
       }}
     >
       {children}
