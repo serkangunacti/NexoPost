@@ -1,0 +1,32 @@
+# Vercel Hobby only allows daily crons, so GitHub Actions triggers the
+# publish endpoint every 5 minutes. The repo is public: never print the
+# response body, it contains publish results.
+name: Publish scheduled posts
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: publish-scheduled
+  cancel-in-progress: false
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - name: Call publish endpoint
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          status=$(curl --silent --show-error --max-time 300 \
+            --output response.json --write-out "%{http_code}" \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            "https://www.nexopost.com/api/cron/publish-scheduled")
+          echo "HTTP ${status}"
+          if [ "${status}" != "200" ]; then
+            exit 1
+          fi
+          echo "Processed jobs: $(jq -r '.processed' response.json)"
