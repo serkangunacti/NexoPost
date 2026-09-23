@@ -17,6 +17,7 @@ export const metadata: Metadata = {
   authors: [{ name: "Uptexx Bilgi Teknolojileri", url: "https://www.uptexx.com" }],
   creator: "NexoPost",
   robots: "index, follow",
+  icons: { icon: "/favicon.ico" },
   openGraph: {
     title: "NexoPost - Social Media Management",
     description: "Manage, schedule, and analyze your social media effortlessly.",

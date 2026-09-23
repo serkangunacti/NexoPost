@@ -4,7 +4,7 @@ NexoPost is a Next.js 16 + React 19 application with Prisma/MySQL backing store.
 
 ## Prerequisites
 
-- Node.js 20+
+- Node.js 24 (see `.nvmrc`)
 - npm 10+
 - MySQL 8+ (or compatible)
 
